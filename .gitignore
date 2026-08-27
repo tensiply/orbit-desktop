@@ -1,3 +1,5 @@
 ui/node_modules/
 ui/dist/
 src-tauri/target/
+target/
+.cargo/config.toml

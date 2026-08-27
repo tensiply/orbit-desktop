@@ -1,0 +1,12 @@
+# Renombrar a config.toml para desarrollo local simultáneo con el repo orbit.
+# Reemplaza las git deps por path deps locales (asume orbit/ y orbit-desktop/
+# están en el mismo directorio padre).
+#
+# USO:
+#   cp .cargo/config.toml.dev .cargo/config.toml
+#   # (no commitear config.toml — está en .gitignore)
+
+[patch."https://github.com/tensiply/orbit"]
+orbit-core   = { path = "../orbit/crates/orbit-core" }
+orbit-engine = { path = "../orbit/crates/orbit-engine" }
+orbit-client = { path = "../orbit/crates/orbit-client" }
