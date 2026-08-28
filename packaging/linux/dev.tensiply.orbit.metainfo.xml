@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<component type="desktop-application">
+  <id>dev.tensiply.orbit</id>
+  <metadata_license>MIT</metadata_license>
+  <project_license>MIT</project_license>
+  <name>Orbit</name>
+  <summary>AI development toolkit — scope-aware, daemon-based, multi-engine</summary>
+  <description>
+    <p>
+      Orbit is the unified entry point for AI-assisted development. It runs as a persistent
+      daemon, maintains structured context across your codebase hierarchy (workspace → tenant →
+      project → repository), and connects natively with any AI engine — Claude, Gemini, or
+      GitHub Copilot.
+    </p>
+    <p>Features:</p>
+    <ul>
+      <li>Scope-aware context loading — the right context in every session automatically</li>
+      <li>Persistent daemon with session history and resumption</li>
+      <li>Multi-engine: Claude, Gemini, GitHub Copilot — interchangeable</li>
+      <li>Plugin system via MCP servers</li>
+      <li>AI planner with scheduled, gate-approved, or event-triggered plans</li>
+      <li>Secrets management via OS keychain</li>
+    </ul>
+  </description>
+  <launchable type="desktop-id">dev.tensiply.orbit.desktop</launchable>
+  <url type="homepage">https://tensiply.dev/orbit</url>
+  <url type="bugtracker">https://github.com/eloircorona/orbit/issues</url>
+  <categories>
+    <category>Development</category>
+    <category>IDE</category>
+  </categories>
+  <keywords>
+    <keyword>ai</keyword>
+    <keyword>development</keyword>
+    <keyword>orbit</keyword>
+    <keyword>tensiply</keyword>
+    <keyword>claude</keyword>
+    <keyword>gemini</keyword>
+    <keyword>terminal</keyword>
+  </keywords>
+  <provides>
+    <binary>orbit</binary>
+  </provides>
+  <content_rating type="oars-1.1"/>
+</component>

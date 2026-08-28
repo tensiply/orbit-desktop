@@ -1,0 +1,62 @@
+name: orbit-desktop
+base: core24
+version: '0.1.0'
+summary: AI development toolkit — scope-aware, daemon-based, multi-engine
+description: |
+  Orbit is the unified entry point for AI-assisted development. It runs as a
+  persistent daemon, maintains structured context across your codebase hierarchy,
+  and connects natively with any AI engine — Claude, Gemini, or GitHub Copilot.
+
+  Features:
+  - Scope-aware context loading (workspace → tenant → project → repository)
+  - Persistent daemon with session history and resumption
+  - Multi-engine: Claude, Gemini, GitHub Copilot — interchangeable
+  - Plugin system via MCP servers
+  - Secrets management via OS keychain
+
+grade: stable
+confinement: strict
+
+architectures:
+  - build-on: amd64
+  - build-on: arm64
+
+apps:
+  orbit-desktop:
+    command: bin/orbit-desktop
+    desktop: share/applications/dev.tensiply.orbit.desktop
+    extensions: [gnome]
+    plugs:
+      - home
+      - network
+      - network-bind
+      - desktop
+      - desktop-legacy
+      - wayland
+      - x11
+      - opengl
+      - password-manager-service
+
+parts:
+  orbit-desktop:
+    plugin: rust
+    source: .
+    source-subdir: src-tauri
+    build-packages:
+      - libssl-dev
+      - pkg-config
+      - libwebkit2gtk-4.1-dev
+      - libayatana-appindicator3-dev
+    stage-packages:
+      - libssl3
+      - libwebkit2gtk-4.1-0
+    override-build: |
+      cd $CRAFT_PART_SRC/../ui && npm ci && npm run build
+      craftctl default
+      install -Dm755 target/release/orbit-desktop $CRAFT_PART_INSTALL/bin/orbit-desktop
+      install -Dm644 $CRAFT_PART_SRC/../packaging/linux/dev.tensiply.orbit.desktop \
+        $CRAFT_PART_INSTALL/share/applications/dev.tensiply.orbit.desktop
+      install -Dm644 $CRAFT_PART_SRC/../src-tauri/icons/128x128.png \
+        $CRAFT_PART_INSTALL/share/icons/hicolor/128x128/apps/dev.tensiply.orbit.png
+      install -Dm644 $CRAFT_PART_SRC/../src-tauri/icons/256x256.png \
+        $CRAFT_PART_INSTALL/share/icons/hicolor/256x256/apps/dev.tensiply.orbit.png

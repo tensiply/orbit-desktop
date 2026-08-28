@@ -1,0 +1,40 @@
+app-id: dev.tensiply.orbit
+runtime: org.freedesktop.Platform
+runtime-version: '24.08'
+sdk: org.freedesktop.Sdk
+sdk-extensions:
+  - org.freedesktop.Sdk.Extension.rust-stable
+  - org.freedesktop.Sdk.Extension.node20
+command: orbit
+
+finish-args:
+  - --share=ipc
+  - --share=network
+  - --socket=wayland
+  - --socket=fallback-x11
+  - --device=dri
+  - --filesystem=home
+  - --talk-name=org.freedesktop.secrets   # keychain access
+
+build-options:
+  append-path: /usr/lib/sdk/rust-stable/bin:/usr/lib/sdk/node20/bin
+  env:
+    CARGO_HOME: /run/build/orbit/cargo
+
+modules:
+  - name: orbit-desktop
+    buildsystem: simple
+    build-commands:
+      - npm ci --prefix ui
+      - npm run build --prefix ui
+      - cargo build --release --manifest-path src-tauri/Cargo.toml
+      - install -Dm755 src-tauri/target/release/orbit-desktop /app/bin/orbit-desktop
+      - install -Dm644 packaging/linux/dev.tensiply.orbit.desktop /app/share/applications/dev.tensiply.orbit.desktop
+      - install -Dm644 packaging/linux/dev.tensiply.orbit.metainfo.xml /app/share/metainfo/dev.tensiply.orbit.metainfo.xml
+      - install -Dm644 src-tauri/icons/128x128.png /app/share/icons/hicolor/128x128/apps/dev.tensiply.orbit.png
+      - install -Dm644 src-tauri/icons/256x256.png /app/share/icons/hicolor/256x256/apps/dev.tensiply.orbit.png
+      - install -Dm644 src-tauri/icons/512x512.png /app/share/icons/hicolor/512x512/apps/dev.tensiply.orbit.png
+    sources:
+      - type: git
+        url: https://github.com/eloircorona/orbit-desktop.git
+        tag: v0.1.0
