@@ -20,6 +20,12 @@ pub struct PtyRegistry {
     map: Arc<Mutex<HashMap<String, PtyHandle>>>,
 }
 
+impl Default for PtyRegistry {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl PtyRegistry {
     pub fn new() -> Self {
         Self { map: Arc::new(Mutex::new(HashMap::new())) }

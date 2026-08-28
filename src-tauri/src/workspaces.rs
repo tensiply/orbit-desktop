@@ -1,16 +1,10 @@
-use orbit_core::workspace_registry::WorkspaceRegistry;
+use std::sync::Arc;
+use tauri::State;
 
+use crate::domain::ports::workspace_repository::WorkspaceRepository;
 use crate::domain::workspace::WorkspaceInfo;
 
 #[tauri::command]
-pub fn workspace_list() -> Vec<WorkspaceInfo> {
-    WorkspaceRegistry::load()
-        .workspaces
-        .into_iter()
-        .map(|e| WorkspaceInfo {
-            name: e.name,
-            slug: e.slug,
-            is_default: e.is_default,
-        })
-        .collect()
+pub fn workspace_list(repo: State<'_, Arc<dyn WorkspaceRepository>>) -> Vec<WorkspaceInfo> {
+    repo.list()
 }

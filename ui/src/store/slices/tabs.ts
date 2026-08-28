@@ -1,5 +1,5 @@
 import type { StateCreator } from 'zustand'
-import type { Tab, Session } from '../../types'
+import type { Tab, Session, LaunchedInfo } from '../../types'
 import { tauriService } from '../../services/tauri'
 import { sendTerminalCmd } from '../../lib/terminalBus'
 import { workspaceFromWorkDir } from '../../domain/scope'
@@ -31,6 +31,32 @@ export const createTabsSlice: StateCreator<AppStore, [], [], TabsSlice> = (set, 
   // Sync drawer state whenever the active tab changes.
   const syncActive = (tabId: string | null) => get().syncDrawerToTab(tabId)
 
+  // Wire up PTY and tab state after a session has already been launched.
+  const attachLaunchedSession = async (
+    launched: LaunchedInfo,
+    label: string | undefined,
+    opts: { focusPanel?: boolean; markBlank?: boolean } = {},
+  ): Promise<string> => {
+    if (opts.markBlank) get().markSessionBlank(launched.session_id)
+    const tabId = await tauriService.ptyOpen(launched.tmux_name)
+    const tab: Tab = {
+      id:          tabId,
+      title:       label ?? '',
+      type:        'terminal',
+      sessionId:   launched.session_id,
+      tmuxSession: launched.tmux_name,
+    }
+    sessionCache.setLastSession(launched.session_id)
+    set((state) => ({
+      tabs: [...state.tabs, tab],
+      activeTabId: tabId,
+      navView: 'terminal',
+      ...(opts.focusPanel ? { focusedPanel: 'main' as const } : {}),
+    }))
+    syncActive(tabId)
+    return tabId
+  }
+
   return {
     tabs: [],
     activeTabId: null,
@@ -60,25 +86,14 @@ export const createTabsSlice: StateCreator<AppStore, [], [], TabsSlice> = (set, 
       if (session.is_history) {
         // History sessions have a dead tmux session — re-launch orbit at the same scope.
         const launched = await tauriService.sessionLaunch({
-          workspace:  workspaceFromWorkDir(session.work_dir),
-          tenant:     session.tenant     || null,
-          project:    session.project    || null,
-          repository: session.repository || null,
-          engine:     session.engine,
+          workspace:   workspaceFromWorkDir(session.work_dir),
+          tenant:      session.tenant     || null,
+          project:     session.project    || null,
+          repository:  session.repository || null,
+          engine:      session.engine,
           new_session: true,
         })
-        get().markSessionBlank(launched.session_id)
-        const tabId = await tauriService.ptyOpen(launched.tmux_name)
-        const tab: Tab = {
-          id:          tabId,
-          title:       label,
-          type:        'terminal',
-          sessionId:   launched.session_id,
-          tmuxSession: launched.tmux_name,
-        }
-        sessionCache.setLastSession(launched.session_id)
-        set((state) => ({ tabs: [...state.tabs, tab], activeTabId: tabId, navView: 'terminal', focusedPanel: 'main' }))
-        syncActive(tabId)
+        await attachLaunchedSession(launched, label, { markBlank: true, focusPanel: true })
         return
       }
 
@@ -203,9 +218,8 @@ export const createTabsSlice: StateCreator<AppStore, [], [], TabsSlice> = (set, 
     },
 
     duplicateSession: async (session: Session) => {
-      const ws = workspaceFromWorkDir(session.work_dir)
       const launched = await tauriService.sessionLaunch({
-        workspace:   ws,
+        workspace:   workspaceFromWorkDir(session.work_dir),
         tenant:      session.tenant     || null,
         project:     session.project    || null,
         repository:  session.repository || null,
@@ -213,17 +227,7 @@ export const createTabsSlice: StateCreator<AppStore, [], [], TabsSlice> = (set, 
         new_session: true,
       })
       const label = session.repository || session.project || session.tenant || 'shell'
-      const tabId = await tauriService.ptyOpen(launched.tmux_name)
-      const tab: Tab = {
-        id:          tabId,
-        title:       label,
-        type:        'terminal',
-        sessionId:   launched.session_id,
-        tmuxSession: launched.tmux_name,
-      }
-      sessionCache.setLastSession(launched.session_id)
-      set((state) => ({ tabs: [...state.tabs, tab], activeTabId: tabId, navView: 'terminal' }))
-      syncActive(tabId)
+      await attachLaunchedSession(launched, label)
       await get().refreshSessions()
     },
 
@@ -238,18 +242,7 @@ export const createTabsSlice: StateCreator<AppStore, [], [], TabsSlice> = (set, 
         new_session: true,
       })
       const label = repository || project || tenant || workspace || 'shell'
-      get().markSessionBlank(launched.session_id)
-      const tabId = await tauriService.ptyOpen(launched.tmux_name)
-      const tab: Tab = {
-        id:          tabId,
-        title:       label,
-        type:        'terminal',
-        sessionId:   launched.session_id,
-        tmuxSession: launched.tmux_name,
-      }
-      sessionCache.setLastSession(launched.session_id)
-      set((state) => ({ tabs: [...state.tabs, tab], activeTabId: tabId, navView: 'terminal', focusedPanel: 'main' }))
-      syncActive(tabId)
+      await attachLaunchedSession(launched, label, { markBlank: true, focusPanel: true })
       await get().refreshSessions()
     },
 
@@ -267,9 +260,8 @@ export const createTabsSlice: StateCreator<AppStore, [], [], TabsSlice> = (set, 
         })
         syncActive(get().activeTabId)
       }
-      const ws = workspaceFromWorkDir(session.work_dir)
       const launched = await tauriService.sessionLaunch({
-        workspace:   ws,
+        workspace:   workspaceFromWorkDir(session.work_dir),
         tenant:      session.tenant     || null,
         project:     session.project    || null,
         repository:  session.repository || null,
@@ -277,17 +269,7 @@ export const createTabsSlice: StateCreator<AppStore, [], [], TabsSlice> = (set, 
         new_session: true,
       })
       const label = session.repository || session.project || session.tenant || 'shell'
-      const tabId = await tauriService.ptyOpen(launched.tmux_name)
-      const newTab: Tab = {
-        id:          tabId,
-        title:       label,
-        type:        'terminal',
-        sessionId:   launched.session_id,
-        tmuxSession: launched.tmux_name,
-      }
-      sessionCache.setLastSession(launched.session_id)
-      set((state) => ({ tabs: [...state.tabs, newTab], activeTabId: tabId, navView: 'terminal' }))
-      syncActive(tabId)
+      await attachLaunchedSession(launched, label)
       await get().refreshSessions()
     },
   }

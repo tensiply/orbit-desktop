@@ -2,5 +2,8 @@ pub mod arch_catalog;
 pub mod document_store;
 pub mod harness_inspector;
 pub mod orbit_client;
+pub mod plugin_repository;
 pub mod pty_repository;
 pub mod scope_repository;
+pub mod session_title_reader;
+pub mod workspace_repository;

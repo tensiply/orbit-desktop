@@ -21,14 +21,20 @@ use domain::ports::{
     arch_catalog::ArchCatalogRepo,
     document_store::DocumentStore,
     harness_inspector::HarnessInspector,
+    plugin_repository::PluginRepository,
     scope_repository::ScopeRepository,
+    session_title_reader::SessionTitleReader,
+    workspace_repository::WorkspaceRepository,
 };
 use infrastructure::{
+    claude_session_title::ClaudeSessionTitleReader,
     fs_arch_catalog::FsArchCatalog,
     fs_document_store::FsDocumentStore,
     fs_scope_repo::FsScopeRepo,
     orbit_engine_harness::OrbitEngineHarness,
     orbit_ipc::OrbitIpcClient,
+    orbit_plugin_repo::OrbitPluginRepo,
+    orbit_workspace_repo::OrbitWorkspaceRepo,
     pty_registry::PtyRegistry,
 };
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt, Layer};
@@ -70,6 +76,9 @@ pub fn run() {
         .manage(Arc::new(FsDocumentStore) as Arc<dyn DocumentStore>)
         .manage(Arc::new(OrbitEngineHarness) as Arc<dyn HarnessInspector>)
         .manage(Arc::new(FsArchCatalog) as Arc<dyn ArchCatalogRepo>)
+        .manage(Arc::new(ClaudeSessionTitleReader) as Arc<dyn SessionTitleReader>)
+        .manage(Arc::new(OrbitPluginRepo) as Arc<dyn PluginRepository>)
+        .manage(Arc::new(OrbitWorkspaceRepo) as Arc<dyn WorkspaceRepository>)
         .invoke_handler(tauri::generate_handler![
             // Sessions
             sessions::session_list,
