@@ -14,7 +14,15 @@ mod scopes;
 mod sessions;
 mod workspaces;
 
+use std::sync::Arc;
+
 use command_recorder::CommandRecorder;
+use domain::ports::{
+    arch_catalog::ArchCatalogRepo,
+    document_store::DocumentStore,
+    harness_inspector::HarnessInspector,
+    scope_repository::ScopeRepository,
+};
 use infrastructure::{
     fs_arch_catalog::FsArchCatalog,
     fs_document_store::FsDocumentStore,
@@ -58,10 +66,10 @@ pub fn run() {
         .manage(recorder)
         .manage(OrbitIpcClient)
         .manage(PtyRegistry::new())
-        .manage(FsScopeRepo)
-        .manage(FsDocumentStore)
-        .manage(OrbitEngineHarness)
-        .manage(FsArchCatalog)
+        .manage(Arc::new(FsScopeRepo) as Arc<dyn ScopeRepository>)
+        .manage(Arc::new(FsDocumentStore) as Arc<dyn DocumentStore>)
+        .manage(Arc::new(OrbitEngineHarness) as Arc<dyn HarnessInspector>)
+        .manage(Arc::new(FsArchCatalog) as Arc<dyn ArchCatalogRepo>)
         .invoke_handler(tauri::generate_handler![
             // Sessions
             sessions::session_list,

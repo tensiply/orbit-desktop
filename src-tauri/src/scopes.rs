@@ -1,10 +1,10 @@
+use std::sync::Arc;
 use tauri::State;
 
 use crate::domain::{ports::scope_repository::ScopeRepository, scope::ScopeTreeWorkspace};
-use crate::infrastructure::fs_scope_repo::FsScopeRepo;
 
 #[tauri::command]
-pub fn scope_tree(repo: State<'_, FsScopeRepo>) -> Vec<ScopeTreeWorkspace> {
+pub fn scope_tree(repo: State<'_, Arc<dyn ScopeRepository>>) -> Vec<ScopeTreeWorkspace> {
     repo.scope_tree()
 }
 

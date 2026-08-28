@@ -1,14 +1,14 @@
+use std::sync::Arc;
 use base64::{engine::general_purpose::STANDARD, Engine as _};
 use tauri::State;
 
 use crate::domain::{document::DocInfo, ports::document_store::DocumentStore};
-use crate::infrastructure::fs_document_store::FsDocumentStore;
 
 /// Returns file content as base64 so the frontend can build a Blob URL without hitting
 /// Tauri's CSP restrictions on asset:// URLs inside iframes.
 #[tauri::command]
 pub fn document_read_b64(
-    store: State<'_, FsDocumentStore>,
+    store: State<'_, Arc<dyn DocumentStore>>,
     path: String,
 ) -> Result<String, String> {
     let bytes = store.read_bytes(&path).map_err(|e| e.to_string())?;
@@ -17,7 +17,7 @@ pub fn document_read_b64(
 
 #[tauri::command]
 pub fn document_delete(
-    store: State<'_, FsDocumentStore>,
+    store: State<'_, Arc<dyn DocumentStore>>,
     id: String,
     workspace: String,
 ) -> Result<(), String> {
@@ -26,7 +26,7 @@ pub fn document_delete(
 
 #[tauri::command]
 pub fn document_archive(
-    store: State<'_, FsDocumentStore>,
+    store: State<'_, Arc<dyn DocumentStore>>,
     id: String,
     workspace: String,
 ) -> Result<(), String> {
@@ -34,7 +34,7 @@ pub fn document_archive(
 }
 
 #[tauri::command]
-pub fn document_list(store: State<'_, FsDocumentStore>) -> Vec<DocInfo> {
+pub fn document_list(store: State<'_, Arc<dyn DocumentStore>>) -> Vec<DocInfo> {
     store.list()
 }
 

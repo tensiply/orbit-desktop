@@ -1,5 +1,6 @@
 use orbit_core::session::Session;
 use std::io::{BufRead, BufReader};
+use std::sync::Arc;
 use std::time::{Instant, UNIX_EPOCH};
 use tauri::State;
 
@@ -7,7 +8,6 @@ use crate::command_recorder::CommandRecorder;
 use crate::domain::ports::harness_inspector::HarnessInspector;
 use crate::domain::ports::orbit_client::OrbitClient;
 use crate::domain::session::{HarnessReport, LaunchScope, LaunchedInfo};
-use crate::infrastructure::orbit_engine_harness::OrbitEngineHarness;
 use crate::infrastructure::orbit_ipc::OrbitIpcClient;
 
 #[tauri::command]
@@ -121,7 +121,7 @@ pub async fn session_harness(
     project: Option<String>,
     repository: Option<String>,
     engine: String,
-    inspector: State<'_, OrbitEngineHarness>,
+    inspector: State<'_, Arc<dyn HarnessInspector>>,
     recorder: State<'_, CommandRecorder>,
 ) -> Result<HarnessReport, String> {
     let t = Instant::now();
