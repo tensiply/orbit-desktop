@@ -1,0 +1,214 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*"
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Tag to release (e.g. v0.2.0)"
+        required: true
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  # ── Verify the tag matches versions in tauri.conf.json and Cargo.toml ─────────
+  verify:
+    name: Verify version
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.ver.outputs.version }}
+      tag: ${{ steps.ver.outputs.tag }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.inputs.tag || github.ref }}
+
+      - name: Extract and verify versions
+        id: ver
+        run: |
+          TAG="${{ github.event.inputs.tag || github.ref_name }}"
+          VERSION="${TAG#v}"
+          echo "tag=${TAG}"         >> $GITHUB_OUTPUT
+          echo "version=${VERSION}" >> $GITHUB_OUTPUT
+
+          TAURI_VER=$(python3 -c "import json; print(json.load(open('src-tauri/tauri.conf.json'))['version'])")
+          CARGO_VER=$(grep '^version' src-tauri/Cargo.toml | head -1 | sed 's/.*"\(.*\)".*/\1/')
+          UI_VER=$(python3 -c "import json; print(json.load(open('ui/package.json'))['version'])")
+
+          FAIL=0
+          if [ "${TAURI_VER}" != "${VERSION}" ]; then
+            echo "::error::tauri.conf.json has ${TAURI_VER} but tag is ${TAG}"; FAIL=1
+          fi
+          if [ "${CARGO_VER}" != "${VERSION}" ]; then
+            echo "::error::src-tauri/Cargo.toml has ${CARGO_VER} but tag is ${TAG}"; FAIL=1
+          fi
+          if [ "${UI_VER}" != "${VERSION}" ]; then
+            echo "::error::ui/package.json has ${UI_VER} but tag is ${TAG}"; FAIL=1
+          fi
+          [ $FAIL -eq 0 ] && echo "All versions verified: ${TAG}"
+          exit $FAIL
+
+  # ── Security gate: block on critical/high CVEs before building ────────────────
+  security:
+    name: Security audit
+    needs: verify
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.inputs.tag || github.ref }}
+
+      - uses: dtolnay/rust-toolchain@stable
+
+      - uses: taiki-e/install-action@v2
+        with:
+          tool: cargo-audit
+
+      - name: Audit — deny critical/high
+        run: cargo audit --deny warnings --deny unsound
+
+  # ── Build Tauri app for all target platforms ──────────────────────────────────
+  build:
+    name: Build — ${{ matrix.platform }}
+    needs: [verify, security]
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - platform: ubuntu-22.04
+            artifact_suffix: linux
+            args: ""
+
+          - platform: macos-latest
+            artifact_suffix: macos
+            # Universal binary (Intel + Apple Silicon)
+            args: "--target universal-apple-darwin"
+
+    runs-on: ${{ matrix.platform }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.inputs.tag || github.ref }}
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: ui/package-lock.json
+
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.platform == 'macos-latest' && 'aarch64-apple-darwin,x86_64-apple-darwin' || '' }}
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: ". -> target"
+          key: ${{ matrix.platform }}
+
+      - name: Install Linux system deps
+        if: matrix.platform == 'ubuntu-22.04'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            libwebkit2gtk-4.1-dev \
+            libappindicator3-dev \
+            librsvg2-dev \
+            patchelf
+
+      - name: Install frontend deps
+        working-directory: ui
+        run: npm ci
+
+      - name: Build frontend
+        working-directory: ui
+        run: npm run build
+
+      - name: Build Tauri app
+        uses: tauri-apps/tauri-action@v0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # Code signing disabled until Developer ID Certificate is configured (gap #4)
+          # APPLE_CERTIFICATE: ${{ secrets.APPLE_CERTIFICATE }}
+          # APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
+          # APPLE_SIGNING_IDENTITY: ${{ secrets.APPLE_SIGNING_IDENTITY }}
+          # APPLE_ID: ${{ secrets.APPLE_ID }}
+          # APPLE_PASSWORD: ${{ secrets.APPLE_PASSWORD }}
+          # APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+        with:
+          tagName: ${{ needs.verify.outputs.tag }}
+          releaseName: "Orbit Desktop ${{ needs.verify.outputs.tag }}"
+          releaseBody: "__Release notes will be updated below.__"
+          releaseDraft: true
+          prerelease: true
+          tauriScript: cargo tauri
+          args: ${{ matrix.args }}
+
+  # ── Finalize: add checksums + release notes, publish ─────────────────────────
+  publish:
+    name: Publish release
+    needs: [verify, build]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.inputs.tag || github.ref }}
+
+      - name: Extract release notes from CHANGELOG
+        env:
+          VERSION: ${{ needs.verify.outputs.version }}
+        run: |
+          python3 - <<'EOF'
+          import re, os
+          v = os.environ["VERSION"]
+          with open("CHANGELOG.md") as f:
+              cl = f.read()
+          m = re.search(
+              rf"(?m)^## \[{re.escape(v)}\][^\n]*\n(.*?)(?=^## \[|\Z)",
+              cl, re.DOTALL
+          )
+          body = m.group(1).strip() if m else "_No changelog entry found._"
+          note = (
+              "> [!WARNING]\n"
+              "> macOS builds are **unsigned** — Gatekeeper will block them. "
+              "Right-click the .dmg → Open to bypass, or wait for code signing to be configured.\n\n"
+              + body
+          )
+          with open("release_notes.md", "w") as f:
+              f.write(note + "\n")
+          EOF
+
+      - name: Download all release assets
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG: ${{ needs.verify.outputs.tag }}
+        run: |
+          mkdir -p artifacts
+          gh release download "${TAG}" --dir artifacts --skip-existing || true
+
+      - name: Create checksums
+        run: |
+          cd artifacts
+          sha256sum * > checksums.txt || true
+          cat checksums.txt
+
+      - name: Upload checksums
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG: ${{ needs.verify.outputs.tag }}
+        run: gh release upload "${TAG}" artifacts/checksums.txt --clobber
+
+      - name: Update release notes and publish
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG: ${{ needs.verify.outputs.tag }}
+        run: |
+          gh release edit "${TAG}" \
+            --notes-file release_notes.md \
+            --draft=false \
+            --prerelease=true \
+            --title "Orbit Desktop ${TAG}"

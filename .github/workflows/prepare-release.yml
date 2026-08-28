@@ -1,0 +1,107 @@
+name: Prepare Release
+
+# ── Usage ──────────────────────────────────────────────────────────────────────
+# 1. Actions → Prepare Release → Run workflow → enter version (X.Y.Z)
+# 2. "CI" gate runs — frontend, fmt, clippy, tests, security audit.
+# 3. "Preview" shows the CHANGELOG diff and a pre-flight summary.
+# 4. "Release" job waits for manual approval (Environment: release).
+# 5. Review the summary → "Review pending deployments" → Approve.
+# 6. Commit + tag are pushed, triggering release.yml automatically.
+#
+# One-time setup: Settings → Environments → "release" → Required reviewers → add yourself
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Version to release (e.g. 0.2.0)"
+        required: true
+        type: string
+      prerelease:
+        description: "Mark as pre-release (unsigned macOS builds)"
+        required: false
+        type: boolean
+        default: true
+
+jobs:
+  # ── Job 1: CI gate ────────────────────────────────────────────────────────────
+  ci:
+    name: CI gate
+    uses: ./.github/workflows/ci.yml
+    secrets: inherit
+
+  # ── Job 2: validate + security gate + show summary ───────────────────────────
+  preview:
+    name: Preview v${{ inputs.version }}
+    needs: ci
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+
+      - name: Validate version format
+        env:
+          VERSION: ${{ inputs.version }}
+        run: |
+          if ! echo "$VERSION" | grep -qE '^[0-9]+\.[0-9]+\.[0-9]+$'; then
+            echo "::error::Invalid version '$VERSION' — must be X.Y.Z (e.g. 0.2.0)"
+            exit 1
+          fi
+          if git ls-remote --tags origin "refs/tags/v$VERSION" | grep -q .; then
+            echo "::error::Tag v$VERSION already exists"
+            exit 1
+          fi
+          FIRST=$(awk '/^## \[Unreleased\]/{f=1;next} /^## \[/{if(f)exit} f&&NF{print;exit}' CHANGELOG.md)
+          if [ -z "$FIRST" ]; then
+            echo "::error::[Unreleased] section is empty — add changelog entries before releasing"
+            exit 1
+          fi
+
+      - uses: dtolnay/rust-toolchain@stable
+
+      - uses: taiki-e/install-action@v2
+        with:
+          tool: cargo-audit
+
+      - name: Security audit — block on critical/high
+        run: cargo audit --deny warnings --deny unsound
+
+      - name: Write summary
+        env:
+          VERSION: ${{ inputs.version }}
+          PRERELEASE: ${{ inputs.prerelease }}
+        run: python3 .github/scripts/preview_release.py
+
+  # ── Job 3: execute release (waits for manual approval) ───────────────────────
+  release:
+    name: Release v${{ inputs.version }}
+    needs: preview
+    runs-on: ubuntu-latest
+    environment: release
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout main
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Bump versions and update CHANGELOG
+        env:
+          VERSION: ${{ inputs.version }}
+        run: |
+          export TODAY=$(date -u +%Y-%m-%d)
+          python3 .github/scripts/bump_versions.py
+
+      - name: Commit, tag, push
+        env:
+          VERSION: ${{ inputs.version }}
+        run: |
+          git config user.name  "Eloir Corona"
+          git config user.email "eloircoronah@outlook.com"
+          git add CHANGELOG.md ui/package.json src-tauri/tauri.conf.json src-tauri/Cargo.toml Cargo.lock
+          git commit -m "chore: release v${VERSION}"
+          git tag "v${VERSION}"
+          git push --atomic origin main "v${VERSION}"
