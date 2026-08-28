@@ -1,7 +1,7 @@
 import {
   ListChecks, Terminal, FileText, LayoutGrid, Server, Activity,
   Network, BookOpen, Settings, Keyboard, User, Sun, Moon,
-  Files,
+  Files, Download, Package,
 } from 'lucide-react'
 import { useAppStore } from '../../store'
 import type { NavView } from '../../types'
@@ -72,18 +72,30 @@ export function RailButton({
 }
 
 export function SettingsRailButton() {
-  const openShortcuts = useAppStore((s) => s.openShortcuts)
-  const openSettings  = useAppStore((s) => s.openSettings)
-  const theme         = useAppStore((s) => s.theme)
-  const toggleTheme   = useAppStore((s) => s.toggleTheme)
-  const blurSidebar   = useAppStore((s) => s.blurSidebar)
+  const openShortcuts   = useAppStore((s) => s.openShortcuts)
+  const openSettings    = useAppStore((s) => s.openSettings)
+  const theme           = useAppStore((s) => s.theme)
+  const toggleTheme     = useAppStore((s) => s.toggleTheme)
+  const blurSidebar     = useAppStore((s) => s.blurSidebar)
+  const cliInfo         = useAppStore((s) => s.cliInfo)
+  const updateCheck     = useAppStore((s) => s.updateCheck)
+  const openWizard      = useAppStore((s) => s.openInstallWizard)
+
+  const cliNotInstalled  = cliInfo !== null && !cliInfo.installed
+  const updatesAvailable = updateCheck
+    ? (updateCheck.cli.has_update || updateCheck.desktop.has_update)
+    : false
+  const hasBadge = cliNotInstalled || updatesAvailable
 
   return (
     <SidebarMenuItem className="w-full flex justify-center">
       <DropdownMenu onOpenChange={(open) => { if (open) blurSidebar() }}>
         <DropdownMenuTrigger asChild>
-          <SidebarMenuButton tooltip="Settings" className="!size-8 !p-0 !justify-center">
+          <SidebarMenuButton tooltip="Settings" className="!size-8 !p-0 !justify-center relative">
             <Settings />
+            {hasBadge && (
+              <span className="absolute top-0.5 right-0.5 w-1.5 h-1.5 rounded-full bg-primary" />
+            )}
           </SidebarMenuButton>
         </DropdownMenuTrigger>
 
@@ -110,6 +122,24 @@ export function SettingsRailButton() {
               <Kbd className="text-[9px] px-1 py-px border-foreground/20 text-foreground/50">,</Kbd>
             </DropdownMenuShortcut>
           </DropdownMenuItem>
+          {cliNotInstalled && (
+            <>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem className="text-xs gap-2 text-primary" onClick={openWizard}>
+                <Package />
+                Install Orbit CLI…
+              </DropdownMenuItem>
+            </>
+          )}
+          {updatesAvailable && (
+            <>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem className="text-xs gap-2 text-primary" onClick={openSettings}>
+                <Download />
+                Updates available
+              </DropdownMenuItem>
+            </>
+          )}
           <DropdownMenuSeparator />
           <DropdownMenuItem className="text-xs gap-2" onClick={toggleTheme}>
             {theme === 'dark' ? <Sun /> : <Moon />}

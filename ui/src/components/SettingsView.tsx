@@ -1,6 +1,6 @@
 import { useState, useCallback } from 'react'
 import {
-  Settings2, Monitor, Terminal, Cpu, ShieldCheck, RotateCcw, Search,
+  Settings2, Monitor, Terminal, Cpu, ShieldCheck, RotateCcw, Search, Download,
 } from 'lucide-react'
 import { useAppStore } from '../store'
 import type { Setting, SettingCategory } from '../types'
@@ -13,15 +13,19 @@ import {
 } from './ui/select'
 import { Input } from './ui/input'
 import { Button } from './ui/button'
+import { UpdatesSection } from './UpdatesSection'
 
 // ── Category config ────────────────────────────────────────────────────────────
 
-const CATEGORIES: { id: SettingCategory; label: string; icon: React.ReactNode }[] = [
+type ExtendedCategory = SettingCategory | 'updates'
+
+const CATEGORIES: { id: ExtendedCategory; label: string; icon: React.ReactNode }[] = [
   { id: 'general',    label: 'General',    icon: <Settings2 size={14} /> },
   { id: 'appearance', label: 'Appearance', icon: <Monitor size={14} />   },
   { id: 'terminal',   label: 'Terminal',   icon: <Terminal size={14} />  },
   { id: 'engine',     label: 'Engine',     icon: <Cpu size={14} />       },
   { id: 'privacy',    label: 'Privacy',    icon: <ShieldCheck size={14} /> },
+  { id: 'updates',    label: 'Updates',    icon: <Download size={14} />  },
 ]
 
 // ── Controls ───────────────────────────────────────────────────────────────────
@@ -180,8 +184,9 @@ export function SettingsView() {
   const updateSetting = useAppStore((s) => s.updateSetting)
   const resetSetting  = useAppStore((s) => s.resetSetting)
   const resetAll      = useAppStore((s) => s.resetAllSettings)
+  const updateCheck   = useAppStore((s) => s.updateCheck)
 
-  const [activeCategory, setActiveCategory] = useState<SettingCategory>('general')
+  const [activeCategory, setActiveCategory] = useState<ExtendedCategory>('general')
   const [search, setSearch]                 = useState('')
   const [showResetAll, setShowResetAll]     = useState(false)
 
@@ -194,6 +199,8 @@ export function SettingsView() {
   const q = search.toLowerCase().trim()
   const isSearching = q.length > 0
 
+  const isUpdatesCategory = activeCategory === 'updates'
+
   const filtered = isSearching
     ? settings.filter(
         (s) =>
@@ -201,18 +208,24 @@ export function SettingsView() {
           s.description.toLowerCase().includes(q) ||
           s.key.toLowerCase().includes(q),
       )
+    : isUpdatesCategory
+    ? []
     : settings.filter((s) => s.category === activeCategory)
 
   const modifiedCount = settings.filter((s) => s.value !== s.default).length
+  const updatesAvailable = updateCheck
+    ? (updateCheck.cli.has_update || updateCheck.desktop.has_update)
+    : false
 
   return (
     <div className="flex h-full overflow-hidden">
       {/* ── Left nav ───────────────────────────────────────────────────────────── */}
       <nav className="w-44 shrink-0 border-r border-foreground/8 flex flex-col py-2 overflow-y-auto">
         {CATEGORIES.map((cat) => {
-          const catModified = settings.filter(
-            (s) => s.category === cat.id && s.value !== s.default,
-          ).length
+          const catModified = cat.id !== 'updates'
+            ? settings.filter((s) => s.category === cat.id && s.value !== s.default).length
+            : 0
+          const showUpdateDot = cat.id === 'updates' && updatesAvailable
           return (
             <button
               key={cat.id}
@@ -229,6 +242,9 @@ export function SettingsView() {
                 <span className="text-[9px] w-4 h-4 flex items-center justify-center rounded-full bg-primary/20 text-primary/70 font-semibold shrink-0">
                   {catModified}
                 </span>
+              )}
+              {showUpdateDot && (
+                <span className="w-1.5 h-1.5 rounded-full bg-primary shrink-0" />
               )}
             </button>
           )
@@ -311,29 +327,22 @@ export function SettingsView() {
 
         {/* Settings list */}
         <div className="flex-1 overflow-y-auto min-h-0">
-          {filtered.length === 0 ? (
+          {isUpdatesCategory && !isSearching ? (
+            <UpdatesSection />
+          ) : filtered.length === 0 ? (
             <div className="flex items-center justify-center h-40 text-xs text-foreground/30">
               {isSearching ? `No settings match "${search}"` : 'No settings in this category'}
             </div>
           ) : (
             <>
-              {isSearching
-                ? filtered.map((s) => (
-                    <SettingRow
-                      key={s.id}
-                      setting={s}
-                      onUpdate={handleUpdate}
-                      onReset={handleReset}
-                    />
-                  ))
-                : filtered.map((s) => (
-                    <SettingRow
-                      key={s.id}
-                      setting={s}
-                      onUpdate={handleUpdate}
-                      onReset={handleReset}
-                    />
-                  ))}
+              {filtered.map((s) => (
+                <SettingRow
+                  key={s.id}
+                  setting={s}
+                  onUpdate={handleUpdate}
+                  onReset={handleReset}
+                />
+              ))}
             </>
           )}
         </div>

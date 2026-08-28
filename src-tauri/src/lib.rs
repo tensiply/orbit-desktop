@@ -12,6 +12,7 @@ mod plugins;
 mod pty;
 mod scopes;
 mod sessions;
+mod updates;
 mod workspaces;
 
 use std::sync::Arc;
@@ -121,6 +122,10 @@ pub fn run() {
             architecture::architecture_save_layout,
             architecture::architecture_load_routes,
             architecture::architecture_save_routes,
+            // Updates & CLI
+            updates::cli_check,
+            updates::cli_install,
+            updates::check_updates,
             // Dev tools
             open_devtools,
         ])

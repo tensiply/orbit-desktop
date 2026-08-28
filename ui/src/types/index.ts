@@ -91,3 +91,22 @@ export interface Shortcut {
 // ── TS-only type aliases ───────────────────────────────────────────────────────
 export type ArchLayout = Record<string, [number, number]>
 export type ArchRoutes = Record<string, Record<string, number>>
+
+// ── Updates / CLI types ────────────────────────────────────────────────────────
+
+export interface CliInfo {
+  installed: boolean
+  version: string | null
+  path: string | null
+}
+
+export interface ComponentUpdate {
+  current: string | null
+  latest: string | null
+  has_update: boolean
+}
+
+export interface UpdateCheck {
+  cli: ComponentUpdate
+  desktop: ComponentUpdate
+}

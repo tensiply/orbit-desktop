@@ -19,6 +19,7 @@ import { ArchitectureView } from './components/ArchitectureView'
 import { DesktopUIView } from './components/DesktopUIView'
 import { SessionHeader } from './components/SessionHeader'
 import { LaunchPickerModal } from './components/LaunchPickerModal'
+import { InstallWizardModal } from './components/InstallWizardModal'
 import { useSidebarResize } from './hooks/useSidebarResize'
 import { useSessionPoller } from './hooks/useSessionPoller'
 import { useGlobalShortcuts } from './hooks/useGlobalShortcuts'
@@ -91,15 +92,40 @@ export default function App() {
     SIDEBAR_MAX,
   )
 
-  const loadWorkspaces = useAppStore((s) => s.loadWorkspaces)
+  const loadWorkspaces          = useAppStore((s) => s.loadWorkspaces)
+  const checkCli                = useAppStore((s) => s.checkCli)
+  const checkUpdates            = useAppStore((s) => s.checkUpdates)
+  const cliInfo                 = useAppStore((s) => s.cliInfo)
+  const openInstallWizard       = useAppStore((s) => s.openInstallWizard)
+  const installWizardTriggered  = useAppStore((s) => s.installWizardTriggeredOnce)
+  const markWizardTriggered     = useAppStore((s) => s.markInstallWizardTriggered)
 
   useEffect(() => { void loadWorkspaces() }, [])
+
+  // Check CLI and updates once on startup (after a brief delay to let the daemon come up)
+  useEffect(() => {
+    const timer = setTimeout(async () => {
+      await checkCli()
+      void checkUpdates()
+    }, 2000)
+    return () => clearTimeout(timer)
+  }, [])
+
+  // Auto-open install wizard when CLI is not detected (once per session)
+  useEffect(() => {
+    if (cliInfo && !cliInfo.installed && !installWizardTriggered) {
+      markWizardTriggered()
+      openInstallWizard()
+    }
+  }, [cliInfo?.installed])
+
   useSessionPoller(5000)
   useGlobalShortcuts()
 
   return (
     <TooltipProvider delayDuration={600}>
       <LaunchPickerModal />
+      <InstallWizardModal />
       <ContextMenu>
         <ContextMenuContent className="w-44 text-xs">
           <ContextMenuItem className="text-xs gap-2" onClick={() => void invoke('open_devtools').catch(() => void 0)}>
