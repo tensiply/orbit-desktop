@@ -2,12 +2,9 @@ import type { StateCreator } from 'zustand'
 import type { Tab, Session } from '../../types'
 import { tauriService } from '../../services/tauri'
 import { sendTerminalCmd } from '../../lib/terminalBus'
+import { workspaceFromWorkDir } from '../../domain/scope'
+import { sessionCache } from '../../infrastructure/storage/sessionCache'
 import type { AppStore } from '../types'
-
-function workspaceFromWorkDir(workDir: string): string | null {
-  const parts = workDir.split('/').filter(Boolean)
-  return parts.length >= 3 && parts[0] === 'home' ? parts[2] : null
-}
 
 export interface TabsSlice {
   tabs: Tab[]
@@ -49,7 +46,7 @@ export const createTabsSlice: StateCreator<AppStore, [], [], TabsSlice> = (set, 
     openSession: async (session: Session) => {
       const existing = get().tabs.find((t) => t.sessionId === session.id)
       if (existing) {
-        localStorage.setItem('orbit-last-session', session.id)
+        sessionCache.setLastSession(session.id)
         set({ activeTabId: existing.id, navView: 'terminal', focusedPanel: 'main' })
         syncActive(existing.id)
         // Force DOM focus on the terminal — panel may already have been 'main'
@@ -79,13 +76,19 @@ export const createTabsSlice: StateCreator<AppStore, [], [], TabsSlice> = (set, 
           sessionId:   launched.session_id,
           tmuxSession: launched.tmux_name,
         }
-        localStorage.setItem('orbit-last-session', launched.session_id)
+        sessionCache.setLastSession(launched.session_id)
         set((state) => ({ tabs: [...state.tabs, tab], activeTabId: tabId, navView: 'terminal', focusedPanel: 'main' }))
         syncActive(tabId)
         return
       }
 
-      const tabId = await tauriService.ptyOpen(session.tmux_session ?? null)
+      let tabId: string
+      try {
+        tabId = await tauriService.ptyOpen(session.tmux_session ?? null)
+      } catch (err) {
+        console.error('[orbit] ptyOpen failed for session', session.id, err)
+        return
+      }
       const tab: Tab = {
         id:          tabId,
         title:       label,
@@ -93,7 +96,7 @@ export const createTabsSlice: StateCreator<AppStore, [], [], TabsSlice> = (set, 
         sessionId:   session.id,
         tmuxSession: session.tmux_session,
       }
-      localStorage.setItem('orbit-last-session', session.id)
+      sessionCache.setLastSession(session.id)
       set((state) => ({ tabs: [...state.tabs, tab], activeTabId: tabId, navView: 'terminal', focusedPanel: 'main' }))
       syncActive(tabId)
     },
@@ -181,7 +184,7 @@ export const createTabsSlice: StateCreator<AppStore, [], [], TabsSlice> = (set, 
     setActiveTab: (tabId: string) => {
       const tab = get().tabs.find((t) => t.id === tabId)
       if (tab?.sessionId) {
-        localStorage.setItem('orbit-last-session', tab.sessionId)
+        sessionCache.setLastSession(tab.sessionId)
       }
       const navView =
         tab?.type === 'document'     ? 'documents' as const :
@@ -218,7 +221,7 @@ export const createTabsSlice: StateCreator<AppStore, [], [], TabsSlice> = (set, 
         sessionId:   launched.session_id,
         tmuxSession: launched.tmux_name,
       }
-      localStorage.setItem('orbit-last-session', launched.session_id)
+      sessionCache.setLastSession(launched.session_id)
       set((state) => ({ tabs: [...state.tabs, tab], activeTabId: tabId, navView: 'terminal' }))
       syncActive(tabId)
       await get().refreshSessions()
@@ -244,7 +247,7 @@ export const createTabsSlice: StateCreator<AppStore, [], [], TabsSlice> = (set, 
         sessionId:   launched.session_id,
         tmuxSession: launched.tmux_name,
       }
-      localStorage.setItem('orbit-last-session', launched.session_id)
+      sessionCache.setLastSession(launched.session_id)
       set((state) => ({ tabs: [...state.tabs, tab], activeTabId: tabId, navView: 'terminal', focusedPanel: 'main' }))
       syncActive(tabId)
       await get().refreshSessions()
@@ -282,7 +285,7 @@ export const createTabsSlice: StateCreator<AppStore, [], [], TabsSlice> = (set, 
         sessionId:   launched.session_id,
         tmuxSession: launched.tmux_name,
       }
-      localStorage.setItem('orbit-last-session', launched.session_id)
+      sessionCache.setLastSession(launched.session_id)
       set((state) => ({ tabs: [...state.tabs, newTab], activeTabId: tabId, navView: 'terminal' }))
       syncActive(tabId)
       await get().refreshSessions()

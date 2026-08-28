@@ -1,12 +1,6 @@
 use orbit_core::workspace_registry::WorkspaceRegistry;
-use serde::Serialize;
 
-#[derive(Debug, Serialize)]
-pub struct WorkspaceInfo {
-    pub name: String,
-    pub slug: String,
-    pub is_default: bool,
-}
+use crate::domain::workspace::WorkspaceInfo;
 
 #[tauri::command]
 pub fn workspace_list() -> Vec<WorkspaceInfo> {

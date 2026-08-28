@@ -1,4 +1,4 @@
-import { useMemo, useState, useEffect } from 'react'
+import { useMemo, useState, useEffect, useRef } from 'react'
 import { STATUS_COLORS } from '../theme'
 import { getCurrentWindow } from '@tauri-apps/api/window'
 import { Minus, Square, X, ChevronDown, Check, Layers } from 'lucide-react'
@@ -53,6 +53,7 @@ function WorkspacePicker() {
   const setSelectedWorkspace = useAppStore((s) => s.setSelectedWorkspace)
   const blurSidebar          = useAppStore((s) => s.blurSidebar)
   const [menuOpen, setMenuOpen] = useState(false)
+  const triggerRef = useRef<HTMLButtonElement>(null)
 
   const handleMenuOpenChange = (open: boolean) => {
     if (open) blurSidebar()
@@ -90,7 +91,7 @@ function WorkspacePicker() {
             <Button
               key={ws.slug}
               variant="ghost"
-              onClick={() => setSelectedWorkspace(ws.name)}
+              onClick={(e) => { setSelectedWorkspace(ws.name); (e.currentTarget as HTMLElement).blur() }}
               title={ws.name}
               className={cn(
                 'h-6 px-2 text-[11px] truncate max-w-[80px] border',
@@ -107,7 +108,13 @@ function WorkspacePicker() {
       {/* Workspace selector dropdown — controlled so Alt+W can open it */}
       <DropdownMenu open={menuOpen} onOpenChange={handleMenuOpenChange}>
         <DropdownMenuTrigger asChild>
-          <Button variant="ghost" className="h-6 px-2 flex items-center gap-1.5 text-[11px] border border-foreground/12 text-foreground/50 hover:text-foreground/80 hover:bg-foreground/8 hover:border-foreground/20 data-[state=open]:bg-foreground/8 data-[state=open]:text-foreground/80 data-[state=open]:border-foreground/20">
+          <Button
+            ref={triggerRef}
+            tabIndex={-1}
+            onFocus={(e) => e.currentTarget.blur()}
+            variant="ghost"
+            className="h-6 px-2 flex items-center gap-1.5 text-[11px] border border-foreground/12 text-foreground/50 hover:text-foreground/80 hover:bg-foreground/8 hover:border-foreground/20 data-[state=open]:bg-foreground/8 data-[state=open]:text-foreground/80 data-[state=open]:border-foreground/20"
+          >
             <Layers size={10} className="shrink-0" />
             <span className="max-w-[100px] truncate">
               {selectedWorkspace ?? 'All'}

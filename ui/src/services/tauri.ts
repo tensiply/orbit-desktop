@@ -2,7 +2,7 @@ import { invoke } from '@tauri-apps/api/core'
 import type {
   Session, LaunchScope, LaunchedInfo, WorkspaceInfo, ScopeTreeWorkspace,
   ArchCatalogDto, ArchEntityDto, SaveEntityArgs, ArchLayout, ArchRoutes,
-  HarnessReport,
+  HarnessReport, PluginInfo,
 } from '../types'
 
 export const tauriService = {
@@ -65,4 +65,25 @@ export const tauriService = {
 
   architectureSaveRoutes: (catalogPath: string, routes: ArchRoutes): Promise<void> =>
     invoke('architecture_save_routes', { catalogPath, routes }),
+
+  scopeOpenFolder: (pathSegments: string[]): Promise<void> =>
+    invoke('scope_open_folder', { pathSegments }),
+
+  documentReadB64: (path: string): Promise<string> =>
+    invoke('document_read_b64', { path }),
+
+  documentReveal: (path: string): Promise<void> =>
+    invoke('document_reveal', { path }),
+
+  sessionClean: (): Promise<number> =>
+    invoke('session_clean'),
+
+  pluginList: (): Promise<PluginInfo[]> =>
+    invoke('plugin_list'),
+
+  pluginEnable: (name: string, scope: string): Promise<void> =>
+    invoke('plugin_enable', { name, scope }),
+
+  pluginDisable: (name: string, scope: string): Promise<void> =>
+    invoke('plugin_disable', { name, scope }),
 }

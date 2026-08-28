@@ -1,18 +1,11 @@
-use anyhow::Result;
-use serde::Serialize;
-use tauri::AppHandle;
+use tauri::State;
 
-#[derive(Debug, Serialize)]
-pub struct DaemonStatus {
-    pub running: bool,
-    pub uptime_secs: Option<u64>,
-    pub session_count: usize,
-    pub pid: Option<u32>,
-}
+use crate::domain::{daemon::DaemonStatus, ports::orbit_client::OrbitClient};
+use crate::infrastructure::orbit_ipc::OrbitIpcClient;
 
 #[tauri::command]
-pub async fn daemon_status() -> Result<DaemonStatus, String> {
-    if !orbit_client::ipc::is_available() {
+pub async fn daemon_status(client: State<'_, OrbitIpcClient>) -> Result<DaemonStatus, String> {
+    if !client.is_available() {
         return Ok(DaemonStatus {
             running: false,
             uptime_secs: None,
@@ -20,42 +13,10 @@ pub async fn daemon_status() -> Result<DaemonStatus, String> {
             pid: None,
         });
     }
-    match orbit_client::ipc::status().await {
-        Ok(info) => Ok(DaemonStatus {
-            running: true,
-            uptime_secs: Some(info.uptime_secs),
-            session_count: info.session_count,
-            pid: Some(info.pid),
-        }),
-        Err(_) => Ok(DaemonStatus {
-            running: false,
-            uptime_secs: None,
-            session_count: 0,
-            pid: None,
-        }),
-    }
+    client.daemon_status().await.map_err(|e| e.to_string())
 }
 
 #[tauri::command]
-pub async fn daemon_ensure_running(_app: AppHandle) -> Result<(), String> {
-    ensure_running(&_app).await.map_err(|e| e.to_string())
-}
-
-pub async fn ensure_running(_app: &AppHandle) -> Result<()> {
-    if orbit_client::ipc::is_available() {
-        return Ok(());
-    }
-    // Daemon not running — spawn orbitd in background
-    let status = tokio::process::Command::new("orbitd")
-        .arg("--detach")
-        .spawn()
-        .map_err(|e| anyhow::anyhow!("failed to spawn orbitd: {e}"))?
-        .wait()
-        .await?;
-    if !status.success() {
-        tracing::warn!("orbitd exited with status {status}");
-    }
-    // Give daemon a moment to bind the socket
-    tokio::time::sleep(tokio::time::Duration::from_millis(500)).await;
-    Ok(())
+pub async fn daemon_ensure_running(client: State<'_, OrbitIpcClient>) -> Result<(), String> {
+    client.ensure_running().await.map_err(|e| e.to_string())
 }

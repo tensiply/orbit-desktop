@@ -111,6 +111,7 @@ export function useGlobalShortcuts() {
       // Alt+W — open workspace menu
       if (e.altKey && !e.ctrlKey && !e.metaKey && e.key.toLowerCase() === 'w') {
         e.preventDefault()
+        blurSidebar()
         window.dispatchEvent(new CustomEvent('orbit:open-workspace-menu'))
         return
       }
@@ -137,6 +138,7 @@ export function useGlobalShortcuts() {
         if (ws) {
           e.preventDefault()
           setSelectedWorkspace(ws.name)
+          ;(document.activeElement as HTMLElement)?.blur()
         }
         return
       }
@@ -159,9 +161,12 @@ export function useGlobalShortcuts() {
         }
       }
 
+      // Skip all sidebar navigation when a Radix UI popup menu is open and capturing input
+      const radixMenuOpen = !!(document.querySelector('[role="menu"], [role="listbox"]'))
+
       // ArrowDown activates sidebar focus when not already focused (documents, terminal, architecture).
       // Skip when xterm has DOM focus — the terminal must receive the key (history navigation, etc.)
-      if (!sidebarFocused && !e.ctrlKey && !e.metaKey && !e.altKey && !e.shiftKey && e.key === 'ArrowDown') {
+      if (!radixMenuOpen && !sidebarFocused && !e.ctrlKey && !e.metaKey && !e.altKey && !e.shiftKey && e.key === 'ArrowDown') {
         const terminalHasFocus = !!(document.activeElement?.closest('.xterm'))
         if (!terminalHasFocus) {
           const hasScopeFilter = navView === 'terminal' || navView === 'documents' || navView === 'architecture'
@@ -176,7 +181,7 @@ export function useGlobalShortcuts() {
       }
 
       // Sidebar navigation — active when sidebar has keyboard focus
-      if (sidebarFocused && !e.ctrlKey && !e.metaKey && !e.altKey && !e.shiftKey) {
+      if (!radixMenuOpen && sidebarFocused && !e.ctrlKey && !e.metaKey && !e.altKey && !e.shiftKey) {
         const len = sidebarItems.length
 
         if (e.key === 'ArrowDown') {

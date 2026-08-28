@@ -17,11 +17,14 @@ Built with Tauri 2 + React + TypeScript.
 # Dev mode (hot-reload)
 make dev
 
-# Production build
+# Build binary (no deb/rpm/appimage)
 make build
 
 # Install binary to ~/.local/bin
 make install
+
+# Build distribution packages (requires internet for AppImage tools)
+make bundle
 ```
 
 ## Local development with orbit source
@@ -46,8 +49,9 @@ Revert with `rm .cargo/config.toml`.
 | Target | Description |
 |---|---|
 | `make dev` | Dev mode with hot-reload |
-| `make build` | Production bundle |
-| `make install` | Install to `~/.local/bin` |
+| `make build` | Build binary only (no deb/rpm/appimage) |
+| `make bundle` | Build distribution packages (deb, rpm, AppImage) |
+| `make install` | Build binary and install to `~/.local/bin` |
 | `make uninstall` | Remove installed binary |
 | `make clean` | Remove build artifacts |
 | `make dev-local` | Enable path deps for local orbit dev |

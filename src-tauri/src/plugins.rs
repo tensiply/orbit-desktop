@@ -1,65 +1,48 @@
-use anyhow::Result;
-use serde::{Deserialize, Serialize};
-use std::process::Command;
+use orbit_core::plugin::{load_all, PluginState};
 
-#[derive(Debug, Serialize, Deserialize)]
-pub struct PluginInfo {
-    pub name: String,
-    pub description: String,
-    pub category: String,
-    pub installed: bool,
-    pub mcp_enabled: bool,
-}
+use crate::domain::plugin::PluginInfo;
 
-/// List plugins by shelling out to `orbit plugins list --json`.
-/// Phase 3 will add direct orbit-core integration.
 #[tauri::command]
 pub async fn plugin_list() -> Result<Vec<PluginInfo>, String> {
     tokio::task::spawn_blocking(|| {
-        let output = Command::new("orbit")
-            .args(["plugins", "list", "--json"])
-            .output()
-            .map_err(|e| e.to_string())?;
-
-        if !output.status.success() {
-            return Ok(vec![]);
-        }
-
-        let plugins: Vec<PluginInfo> =
-            serde_json::from_slice(&output.stdout).unwrap_or_default();
-        Ok(plugins)
+        let state = PluginState::load();
+        let infos = load_all()
+            .into_iter()
+            .map(|p| {
+                let installed = p.is_installed();
+                let mcp_enabled = !p.mcp.is_empty() && state.is_enabled(&p.name);
+                PluginInfo {
+                    name: p.name,
+                    description: p.description,
+                    category: p.category,
+                    installed,
+                    mcp_enabled,
+                }
+            })
+            .collect();
+        Ok(infos)
     })
     .await
     .map_err(|e| e.to_string())?
 }
 
 #[tauri::command]
-pub async fn plugin_enable(name: String, scope: String) -> Result<(), String> {
+pub async fn plugin_enable(name: String, _scope: String) -> Result<(), String> {
     tokio::task::spawn_blocking(move || {
-        let output = Command::new("orbit")
-            .args(["plugins", "enable", &name, "--scope", &scope])
-            .output()
-            .map_err(|e| e.to_string())?;
-        if !output.status.success() {
-            return Err(String::from_utf8_lossy(&output.stderr).into_owned());
-        }
-        Ok(())
+        let mut state = PluginState::load();
+        state.enable(&name);
+        state.save().map_err(|e| e.to_string())
     })
     .await
     .map_err(|e| e.to_string())?
 }
 
 #[tauri::command]
-pub async fn plugin_disable(name: String, scope: String) -> Result<(), String> {
+pub async fn plugin_disable(name: String, _scope: String) -> Result<(), String> {
     tokio::task::spawn_blocking(move || {
-        let output = Command::new("orbit")
-            .args(["plugins", "disable", &name, "--scope", &scope])
-            .output()
-            .map_err(|e| e.to_string())?;
-        if !output.status.success() {
-            return Err(String::from_utf8_lossy(&output.stderr).into_owned());
-        }
-        Ok(())
+        let mut state = PluginState::load();
+        state.disable(&name);
+        state.save().map_err(|e| e.to_string())
     })
     .await
     .map_err(|e| e.to_string())?

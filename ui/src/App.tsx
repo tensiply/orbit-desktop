@@ -1,6 +1,7 @@
 import { useRef, useEffect } from 'react'
 import { getCurrentWindow } from '@tauri-apps/api/window'
-import { TerminalSquare } from 'lucide-react'
+import { invoke } from '@tauri-apps/api/core'
+import { Bug, RefreshCw, TerminalSquare } from 'lucide-react'
 import { useAppStore } from './store'
 import { TerminalPane } from './components/Terminal'
 import { TabBar } from './components/TabBar'
@@ -22,6 +23,13 @@ import { useSidebarResize } from './hooks/useSidebarResize'
 import { useSessionPoller } from './hooks/useSessionPoller'
 import { useGlobalShortcuts } from './hooks/useGlobalShortcuts'
 import { TooltipProvider } from './components/ui/tooltip'
+import {
+  ContextMenu,
+  ContextMenuContent,
+  ContextMenuItem,
+  ContextMenuSeparator,
+  ContextMenuTrigger,
+} from './components/ui/context-menu'
 import {
   Empty,
   EmptyContent,
@@ -92,7 +100,18 @@ export default function App() {
   return (
     <TooltipProvider delayDuration={600}>
       <LaunchPickerModal />
-      <div className="flex h-screen w-screen text-foreground overflow-hidden bg-sidebar gap-2">
+      <ContextMenu>
+        <ContextMenuContent className="w-44 text-xs">
+          <ContextMenuItem className="text-xs gap-2" onClick={() => void invoke('open_devtools').catch(() => void 0)}>
+            <Bug size={13} />Open DevTools
+          </ContextMenuItem>
+          <ContextMenuSeparator />
+          <ContextMenuItem className="text-xs gap-2" onClick={() => window.location.reload()}>
+            <RefreshCw size={13} />Reload UI
+          </ContextMenuItem>
+        </ContextMenuContent>
+        <ContextMenuTrigger asChild>
+          <div className="flex h-screen w-screen text-foreground overflow-hidden bg-sidebar gap-2 rounded-2xl">
         <ResizeHandles />
 
         <Sidebar width={sidebarWidth} collapsed={sidebarHidden} />
@@ -205,7 +224,9 @@ export default function App() {
             <TerminalDrawer />
           </div>
         </main>
-      </div>
+          </div>
+        </ContextMenuTrigger>
+      </ContextMenu>
     </TooltipProvider>
   )
 }

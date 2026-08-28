@@ -1,4 +1,6 @@
 import type { Session, DocEntry, ScopeTreeWorkspace } from '../types'
+import { workspaceFromWorkDir } from '../domain/scope'
+export { workspaceFromWorkDir } from '../domain/scope'
 
 // ── Item types ────────────────────────────────────────────────────────────────
 
@@ -8,13 +10,6 @@ export type SidebarNavItem =
   | { type: 'session'; session: Session }
   | { type: 'document'; doc: DocEntry }
   | { type: 'scope-architecture'; workspace: string; tenant: string }
-
-// ── Scope helpers ─────────────────────────────────────────────────────────────
-
-export function workspaceFromWorkDir(workDir: string): string | null {
-  const parts = workDir.split('/').filter(Boolean)
-  return parts.length >= 3 && parts[0] === 'home' ? parts[2] : null
-}
 
 // When selectedWorkspace is set, path is relative (starts at tenant).
 // Compute the full [workspace, tenant, project, repo] path for lookups.

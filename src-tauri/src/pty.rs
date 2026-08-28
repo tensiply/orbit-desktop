@@ -1,39 +1,28 @@
 use anyhow::Result;
-use portable_pty::{Child, CommandBuilder, MasterPty, NativePtySystem, PtySize, PtySystem};
-use std::collections::HashMap;
-use std::io::{Read, Write};
-use std::sync::{Arc, Mutex, OnceLock};
-use tauri::{AppHandle, Emitter};
+use portable_pty::{CommandBuilder, NativePtySystem, PtySize, PtySystem};
+use std::io::Read;
+use tauri::{AppHandle, Emitter, State};
 use uuid::Uuid;
 
-#[derive(Debug, Clone, serde::Serialize)]
-pub struct PtyDataEvent {
-    pub tab_id: String,
-    pub data: String,
-}
-
-struct PtyHandle {
-    writer: Box<dyn Write + Send>,
-    master: Box<dyn MasterPty + Send>,
-    _child: Box<dyn Child + Send + Sync>,
-}
-
-static PTY_MAP: OnceLock<Arc<Mutex<HashMap<String, PtyHandle>>>> = OnceLock::new();
-
-fn pty_map() -> &'static Arc<Mutex<HashMap<String, PtyHandle>>> {
-    PTY_MAP.get_or_init(|| Arc::new(Mutex::new(HashMap::new())))
-}
+use crate::domain::{ports::pty_repository::PtyRepository, pty::PtyDataEvent};
+use crate::infrastructure::pty_registry::{PtyHandle, PtyRegistry};
 
 /// Open a PTY and return the tab_id.
 /// If `tmux_session` is Some, attaches to that tmux session.
 /// Otherwise opens the user's default shell.
+///
+/// PTY creation and the reader-thread setup stay here (presentation) because
+/// the reader emits Tauri events — that coupling to AppHandle is intentional.
+/// The resulting handle is stored in PtyRegistry (infrastructure).
 #[tauri::command]
 pub async fn pty_open(
     app: AppHandle,
+    registry: State<'_, PtyRegistry>,
     tmux_session: Option<String>,
 ) -> Result<String, String> {
     let tab_id = Uuid::new_v4().to_string();
     let tid = tab_id.clone();
+    let reg = registry.inner().clone();
 
     tokio::task::spawn_blocking(move || -> Result<()> {
         let pty_system = NativePtySystem::default();
@@ -49,6 +38,10 @@ pub async fn pty_open(
         let cmd = if let Some(ref name) = tmux_session {
             let mut c = CommandBuilder::new("tmux");
             c.args(["attach-session", "-t", name]);
+            // Clear nesting vars so tmux creates a fresh client inside this PTY
+            // instead of switching the caller's existing tmux client.
+            c.env("TMUX", "");
+            c.env("TMUX_PANE", "");
             c
         } else {
             let shell = std::env::var("SHELL").unwrap_or_else(|_| "/bin/bash".into());
@@ -72,6 +65,7 @@ pub async fn pty_open(
             .take_writer()
             .map_err(|e| anyhow::anyhow!("take writer: {e}"))?;
 
+        // Emit PTY output as Tauri events (presentation concern — stays here)
         let tid_reader = tid.clone();
         let app_reader = app.clone();
         std::thread::spawn(move || {
@@ -83,24 +77,14 @@ pub async fn pty_open(
                         let data = String::from_utf8_lossy(&buf[..n]).into_owned();
                         let _ = app_reader.emit(
                             "pty-data",
-                            PtyDataEvent {
-                                tab_id: tid_reader.clone(),
-                                data,
-                            },
+                            PtyDataEvent { tab_id: tid_reader.clone(), data },
                         );
                     }
                 }
             }
         });
 
-        pty_map().lock().unwrap().insert(
-            tid,
-            PtyHandle {
-                writer,
-                master: pair.master,
-                _child: child,
-            },
-        );
+        reg.insert(tid, PtyHandle { writer, master: pair.master, _child: child });
         Ok(())
     })
     .await
@@ -111,46 +95,42 @@ pub async fn pty_open(
 }
 
 #[tauri::command]
-pub async fn pty_write(tab_id: String, data: String) -> Result<(), String> {
+pub async fn pty_write(
+    registry: State<'_, PtyRegistry>,
+    tab_id: String,
+    data: String,
+) -> Result<(), String> {
+    let reg = registry.inner().clone();
     tokio::task::spawn_blocking(move || {
-        let mut map = pty_map().lock().unwrap();
-        if let Some(handle) = map.get_mut(&tab_id) {
-            handle
-                .writer
-                .write_all(data.as_bytes())
-                .map_err(|e| e.to_string())?;
-        }
-        Ok::<_, String>(())
+        reg.write(&tab_id, data.as_bytes()).map_err(|e| e.to_string())
     })
     .await
     .map_err(|e| e.to_string())?
 }
 
 #[tauri::command]
-pub async fn pty_resize(tab_id: String, cols: u16, rows: u16) -> Result<(), String> {
+pub async fn pty_resize(
+    registry: State<'_, PtyRegistry>,
+    tab_id: String,
+    cols: u16,
+    rows: u16,
+) -> Result<(), String> {
+    let reg = registry.inner().clone();
     tokio::task::spawn_blocking(move || {
-        let map = pty_map().lock().unwrap();
-        if let Some(handle) = map.get(&tab_id) {
-            handle
-                .master
-                .resize(PtySize {
-                    rows,
-                    cols,
-                    pixel_width: 0,
-                    pixel_height: 0,
-                })
-                .map_err(|e| e.to_string())?;
-        }
-        Ok::<_, String>(())
+        reg.resize(&tab_id, cols, rows).map_err(|e| e.to_string())
     })
     .await
     .map_err(|e| e.to_string())?
 }
 
 #[tauri::command]
-pub async fn pty_close(tab_id: String) -> Result<(), String> {
+pub async fn pty_close(
+    registry: State<'_, PtyRegistry>,
+    tab_id: String,
+) -> Result<(), String> {
+    let reg = registry.inner().clone();
     tokio::task::spawn_blocking(move || {
-        pty_map().lock().unwrap().remove(&tab_id);
+        reg.close(&tab_id);
         Ok::<_, String>(())
     })
     .await
