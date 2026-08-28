@@ -1,5 +1,32 @@
 use serde::{Deserialize, Serialize};
 
+fn is_false(b: &bool) -> bool {
+    !b
+}
+
+/// Session as returned to the frontend — mirrors orbit_core::session::Session but
+/// with `work_dir` as String (PathBuf is not TS-safe) and without internal fields.
+#[derive(Debug, Serialize)]
+#[cfg_attr(test, derive(ts_rs::TS))]
+#[cfg_attr(test, ts(export))]
+pub struct SessionDto {
+    pub id: String,
+    pub pid: u32,
+    pub engine: String,
+    pub tenant: String,
+    pub project: String,
+    pub repository: String,
+    pub work_dir: String,
+    #[cfg_attr(test, ts(type = "number"))]
+    pub started_at: u64,
+    pub global_mode: bool,
+    #[serde(default, skip_serializing_if = "is_false")]
+    pub is_history: bool,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    #[cfg_attr(test, ts(optional))]
+    pub tmux_session: Option<String>,
+}
+
 /// Input for launching a new session. Received from the frontend as a Tauri command argument.
 #[derive(Debug, Serialize, Deserialize)]
 #[cfg_attr(test, derive(ts_rs::TS))]

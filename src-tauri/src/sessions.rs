@@ -1,4 +1,3 @@
-use orbit_core::session::Session;
 use std::sync::Arc;
 use std::time::Instant;
 use tauri::State;
@@ -7,12 +6,32 @@ use crate::command_recorder::CommandRecorder;
 use crate::domain::ports::harness_inspector::HarnessInspector;
 use crate::domain::ports::orbit_client::OrbitClient;
 use crate::domain::ports::session_title_reader::SessionTitleReader;
-use crate::domain::session::{HarnessReport, LaunchScope, LaunchedInfo};
+use crate::domain::session::{HarnessReport, LaunchScope, LaunchedInfo, SessionDto};
 use crate::infrastructure::orbit_ipc::OrbitIpcClient;
 
+fn to_dto(s: orbit_core::session::Session) -> SessionDto {
+    SessionDto {
+        id:           s.id,
+        pid:          s.pid,
+        engine:       s.engine,
+        tenant:       s.tenant,
+        project:      s.project,
+        repository:   s.repository,
+        work_dir:     s.work_dir.to_string_lossy().into_owned(),
+        started_at:   s.started_at,
+        global_mode:  s.global_mode,
+        is_history:   s.is_history,
+        tmux_session: s.tmux_session,
+    }
+}
+
 #[tauri::command]
-pub async fn session_list(client: State<'_, OrbitIpcClient>) -> Result<Vec<Session>, String> {
-    client.list_sessions().await.map_err(|e| e.to_string())
+pub async fn session_list(client: State<'_, OrbitIpcClient>) -> Result<Vec<SessionDto>, String> {
+    client
+        .list_sessions()
+        .await
+        .map(|ss| ss.into_iter().map(to_dto).collect())
+        .map_err(|e| e.to_string())
 }
 
 #[tauri::command]

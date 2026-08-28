@@ -1,5 +1,6 @@
 pub mod arch_catalog;
 pub mod document_store;
+pub mod folder_opener;
 pub mod harness_inspector;
 pub mod orbit_client;
 pub mod plugin_repository;

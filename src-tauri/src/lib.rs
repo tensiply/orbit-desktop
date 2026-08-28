@@ -20,6 +20,7 @@ use command_recorder::CommandRecorder;
 use domain::ports::{
     arch_catalog::ArchCatalogRepo,
     document_store::DocumentStore,
+    folder_opener::FolderOpener,
     harness_inspector::HarnessInspector,
     plugin_repository::PluginRepository,
     scope_repository::ScopeRepository,
@@ -36,6 +37,7 @@ use infrastructure::{
     orbit_plugin_repo::OrbitPluginRepo,
     orbit_workspace_repo::OrbitWorkspaceRepo,
     pty_registry::PtyRegistry,
+    xdg_folder_opener::XdgFolderOpener,
 };
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt, Layer};
 
@@ -79,6 +81,7 @@ pub fn run() {
         .manage(Arc::new(ClaudeSessionTitleReader) as Arc<dyn SessionTitleReader>)
         .manage(Arc::new(OrbitPluginRepo) as Arc<dyn PluginRepository>)
         .manage(Arc::new(OrbitWorkspaceRepo) as Arc<dyn WorkspaceRepository>)
+        .manage(Arc::new(XdgFolderOpener) as Arc<dyn FolderOpener>)
         .invoke_handler(tauri::generate_handler![
             // Sessions
             sessions::session_list,

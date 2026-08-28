@@ -1,7 +1,7 @@
 use std::sync::Arc;
 use tauri::State;
 
-use crate::domain::{ports::scope_repository::ScopeRepository, scope::ScopeTreeWorkspace};
+use crate::domain::{ports::folder_opener::FolderOpener, ports::scope_repository::ScopeRepository, scope::ScopeTreeWorkspace};
 
 #[tauri::command]
 pub fn scope_tree(repo: State<'_, Arc<dyn ScopeRepository>>) -> Vec<ScopeTreeWorkspace> {
@@ -11,7 +11,10 @@ pub fn scope_tree(repo: State<'_, Arc<dyn ScopeRepository>>) -> Vec<ScopeTreeWor
 /// Open a scope folder in the system file manager.
 /// `path_segments` is `[workspace, tenant?, project?, repository?]`.
 #[tauri::command]
-pub fn scope_open_folder(path_segments: Vec<String>) -> Result<(), String> {
+pub fn scope_open_folder(
+    path_segments: Vec<String>,
+    opener: State<'_, Arc<dyn FolderOpener>>,
+) -> Result<(), String> {
     if path_segments.is_empty() {
         return Err("no path segments".into());
     }
@@ -19,9 +22,5 @@ pub fn scope_open_folder(path_segments: Vec<String>) -> Result<(), String> {
         .map(std::path::PathBuf::from)
         .unwrap_or_else(|_| std::path::PathBuf::from("/tmp"));
     let path = path_segments.iter().fold(home, |acc, seg| acc.join(seg));
-    std::process::Command::new("xdg-open")
-        .arg(&path)
-        .spawn()
-        .map_err(|e| e.to_string())?;
-    Ok(())
+    opener.open(&path)
 }
