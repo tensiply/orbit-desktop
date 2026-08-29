@@ -83,7 +83,6 @@ export function SettingsRailButton() {
   const updateCheck     = useAppStore((s) => s.updateCheck)
   const openWizard      = useAppStore((s) => s.openInstallWizard)
   const setNavView      = useAppStore((s) => s.setNavView)
-
   const cliNotInstalled  = cliInfo !== null && !cliInfo.installed
   const updatesAvailable = updateCheck
     ? (updateCheck.cli.has_update || updateCheck.desktop.has_update)
@@ -102,7 +101,7 @@ export function SettingsRailButton() {
           </SidebarMenuButton>
         </DropdownMenuTrigger>
 
-        <DropdownMenuContent side="right" align="end" className="w-64">
+        <DropdownMenuContent side="right" align="end" className="w-64" onCloseAutoFocus={(e) => e.preventDefault()}>
           <DropdownMenuGroup>
             <DropdownMenuLabel className="pt-1">Settings</DropdownMenuLabel>
             <DropdownMenuItem className="text-xs gap-2" onClick={openSettings}>
