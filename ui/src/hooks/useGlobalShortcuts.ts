@@ -108,6 +108,19 @@ export function useGlobalShortcuts() {
     })
 
     const onKeyDown = (e: KeyboardEvent) => {
+      // Space — escape sidebar navigation and return to terminal.
+      // Only intercepts when the sidebar has virtual keyboard focus so normal
+      // terminal typing (where DOM focus may briefly land on body) is never blocked.
+      if (!e.ctrlKey && !e.metaKey && !e.altKey && !e.shiftKey && e.key === ' ' && sidebarFocused) {
+        e.preventDefault()
+        e.stopPropagation()
+        ;(document.activeElement as HTMLElement)?.blur()
+        blurSidebar()
+        const tabId = focusedPanel === 'drawer' ? drawerTabId : activeTabId
+        if (tabId) sendTerminalCmd(tabId, 'focus')
+        return
+      }
+
       // Alt+W — open workspace menu
       if (e.altKey && !e.ctrlKey && !e.metaKey && e.key.toLowerCase() === 'w') {
         e.preventDefault()
@@ -374,9 +387,26 @@ export function useGlobalShortcuts() {
       }
     }
 
+    // Fallback: when focus escapes to body (e.g. after closing a dropdown),
+    // redirect it to the active terminal so the app never sits idle.
+    const onFocusOut = () => {
+      requestAnimationFrame(() => {
+        const el = document.activeElement
+        if (!el || el === document.body || el === document.documentElement) {
+          if (document.querySelector('[role="dialog"], [role="alertdialog"]')) return
+          const tabId = focusedPanel === 'drawer' ? drawerTabId : activeTabId
+          if (tabId && !sidebarFocused) sendTerminalCmd(tabId, 'focus')
+        }
+      })
+    }
+
     // Capture phase: intercept before xterm.js or child elements consume the event.
     document.addEventListener('keydown', onKeyDown, true)
-    return () => document.removeEventListener('keydown', onKeyDown, true)
+    document.addEventListener('focusout', onFocusOut)
+    return () => {
+      document.removeEventListener('keydown', onKeyDown, true)
+      document.removeEventListener('focusout', onFocusOut)
+    }
   }, [shortcuts, tabs, activeTabId, allSessions, selectedWorkspace,
       openShell, closeTab, setActiveTab,
       openShortcuts, openSettings, toggleTheme, toggleSidebar, setNavView,
