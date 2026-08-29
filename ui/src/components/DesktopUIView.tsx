@@ -177,7 +177,6 @@ export function DesktopUIView() {
                   ['orbit.desktop.sidebar.rail.plans',        'Plans'],
                   ['orbit.desktop.sidebar.rail.plugins',      'Plugins'],
                   ['orbit.desktop.sidebar.rail.mcps',         'MCPs'],
-                  ['orbit.desktop.sidebar.rail.activity',     'Activity'],
                   ['orbit.desktop.sidebar.rail.architecture', 'Architecture'],
                   ['orbit.desktop.sidebar.rail.docs',         'Documentation'],
                   ['orbit.desktop.sidebar.rail.settings',     'Settings (abre dropdown)'],

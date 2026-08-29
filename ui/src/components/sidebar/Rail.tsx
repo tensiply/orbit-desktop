@@ -29,7 +29,7 @@ export const PANEL_LABELS: Partial<Record<NavView, string>> = {
   plugins:      'Plugins',
   mcps:         'MCPs',
   activity:     'Activity',
-  documents:    'Documents',
+  documents:    'Files',
   architecture: 'Architecture',
   profile:      'Profile',
   docs:         'Documentation',
@@ -40,9 +40,8 @@ type RailItem = { label: string; view: NavView; icon: React.ReactNode }
 export const NAV_ITEMS: RailItem[] = [
   { label: 'Tasks',        view: 'tasks',        icon: <ListChecks /> },
   { label: 'Sessions',     view: 'terminal',     icon: <Terminal /> },
-  { label: 'Documents',    view: 'documents',    icon: <Files /> },
+  { label: 'Files',        view: 'documents',    icon: <Files /> },
   { label: 'Plans',        view: 'plans',        icon: <FileText /> },
-  { label: 'Activity',     view: 'activity',     icon: <Activity /> },
   { label: 'Architecture', view: 'architecture', icon: <Network /> },
 ]
 
@@ -83,6 +82,7 @@ export function SettingsRailButton() {
   const cliInfo         = useAppStore((s) => s.cliInfo)
   const updateCheck     = useAppStore((s) => s.updateCheck)
   const openWizard      = useAppStore((s) => s.openInstallWizard)
+  const setNavView      = useAppStore((s) => s.setNavView)
 
   const cliNotInstalled  = cliInfo !== null && !cliInfo.installed
   const updatesAvailable = updateCheck
@@ -124,6 +124,10 @@ export function SettingsRailButton() {
               <span className="text-[9px] text-foreground/25">+</span>
               <Kbd className="text-[9px] px-1 py-px border-foreground/20 text-foreground/50">,</Kbd>
             </DropdownMenuShortcut>
+          </DropdownMenuItem>
+          <DropdownMenuItem className="text-xs gap-2" onClick={() => setNavView('activity')}>
+            <Activity />
+            Activity
           </DropdownMenuItem>
           {cliNotInstalled && (
             <>
