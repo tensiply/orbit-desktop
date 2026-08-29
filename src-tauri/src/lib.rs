@@ -42,6 +42,7 @@ use infrastructure::{
 };
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt, Layer};
 
+#[cfg(debug_assertions)]
 #[tauri::command]
 fn open_devtools(window: tauri::WebviewWindow) {
     window.open_devtools();
@@ -126,7 +127,8 @@ pub fn run() {
             updates::cli_check,
             updates::cli_install,
             updates::check_updates,
-            // Dev tools
+            // Dev tools (debug builds only)
+            #[cfg(debug_assertions)]
             open_devtools,
         ])
         .setup(|_app| {
