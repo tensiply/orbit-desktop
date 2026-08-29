@@ -1,11 +1,18 @@
 import { useState } from 'react'
 import {
   RefreshCw, ArrowUpCircle, CheckCircle2, Terminal, Monitor, Loader2,
+  MoreHorizontal, Download, Hammer,
 } from 'lucide-react'
 import { listen } from '@tauri-apps/api/event'
 import { useAppStore } from '../store'
 import { tauriService } from '../services/tauri'
 import { Button } from './ui/button'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from './ui/dropdown-menu'
 
 // ── Component row ──────────────────────────────────────────────────────────────
 
@@ -16,6 +23,7 @@ function ComponentRow({
   latest,
   hasUpdate,
   onUpdate,
+  onCompile,
   updating,
 }: {
   label: string
@@ -24,6 +32,7 @@ function ComponentRow({
   latest: string | null
   hasUpdate: boolean
   onUpdate?: () => void
+  onCompile?: () => void
   updating?: boolean
 }) {
   return (
@@ -60,19 +69,52 @@ function ComponentRow({
         </div>
       </div>
 
-      {hasUpdate && onUpdate && (
-        <Button
-          size="xs"
-          variant={updating ? 'ghost' : 'default'}
-          onClick={onUpdate}
-          disabled={updating}
-          className="shrink-0 gap-1.5 text-[10px]"
-        >
-          {updating
-            ? <><Loader2 size={11} className="animate-spin" />Updating…</>
-            : <><ArrowUpCircle size={11} />Update</>
-          }
-        </Button>
+      {hasUpdate && (
+        <div className="flex items-center gap-1 shrink-0">
+          {onUpdate && (
+            <Button
+              size="xs"
+              variant={updating ? 'ghost' : 'default'}
+              onClick={onUpdate}
+              disabled={updating}
+              className="gap-1.5 text-[10px]"
+            >
+              {updating
+                ? <><Loader2 size={11} className="animate-spin" />Updating…</>
+                : <><ArrowUpCircle size={11} />Update</>
+              }
+            </Button>
+          )}
+
+          {(onUpdate || onCompile) && (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  size="xs"
+                  variant="ghost"
+                  disabled={updating}
+                  className="px-1.5"
+                >
+                  <MoreHorizontal size={13} />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="min-w-44">
+                {onUpdate && (
+                  <DropdownMenuItem onClick={onUpdate} disabled={updating} className="gap-2 text-xs">
+                    <Download size={12} />
+                    Download binary
+                  </DropdownMenuItem>
+                )}
+                {onCompile && (
+                  <DropdownMenuItem onClick={onCompile} disabled={updating} className="gap-2 text-xs">
+                    <Hammer size={12} />
+                    Compile from source
+                  </DropdownMenuItem>
+                )}
+              </DropdownMenuContent>
+            </DropdownMenu>
+          )}
+        </div>
       )}
     </div>
   )
@@ -81,19 +123,19 @@ function ComponentRow({
 // ── UpdatesSection ─────────────────────────────────────────────────────────────
 
 export function UpdatesSection() {
-  const cliInfo        = useAppStore((s) => s.cliInfo)
-  const updateCheck    = useAppStore((s) => s.updateCheck)
+  const cliInfo         = useAppStore((s) => s.cliInfo)
+  const updateCheck     = useAppStore((s) => s.updateCheck)
   const updatesChecking = useAppStore((s) => s.updatesChecking)
-  const checkUpdates   = useAppStore((s) => s.checkUpdates)
-  const checkCli       = useAppStore((s) => s.checkCli)
-  const openWizard     = useAppStore((s) => s.openInstallWizard)
+  const checkUpdates    = useAppStore((s) => s.checkUpdates)
+  const checkCli        = useAppStore((s) => s.checkCli)
+  const openWizard      = useAppStore((s) => s.openInstallWizard)
 
-  const [cliUpdating, setCliUpdating]         = useState(false)
-  const [cliUpdateLog, setCliUpdateLog]       = useState<string[]>([])
-  const [cliUpdateError, setCliUpdateError]   = useState<string | null>(null)
-  const [cliUpdateDone, setCliUpdateDone]     = useState(false)
+  const [cliUpdating, setCliUpdating]       = useState(false)
+  const [cliUpdateLog, setCliUpdateLog]     = useState<string[]>([])
+  const [cliUpdateError, setCliUpdateError] = useState<string | null>(null)
+  const [cliUpdateDone, setCliUpdateDone]   = useState(false)
 
-  const handleCliUpdate = async () => {
+  const runCliInstall = async (method: 'github' | 'cargo') => {
     setCliUpdating(true)
     setCliUpdateLog([])
     setCliUpdateError(null)
@@ -104,7 +146,7 @@ export function UpdatesSection() {
     })
 
     try {
-      await tauriService.cliInstall('cargo')
+      await tauriService.cliInstall(method)
       await checkCli()
       await checkUpdates()
       setCliUpdateDone(true)
@@ -116,12 +158,12 @@ export function UpdatesSection() {
     }
   }
 
-  const cliCurrent  = cliInfo?.version ?? null
-  const cliLatest   = updateCheck?.cli.latest ?? null
+  const cliCurrent   = cliInfo?.version ?? null
+  const cliLatest    = updateCheck?.cli.latest ?? null
   const cliHasUpdate = updateCheck?.cli.has_update ?? false
 
-  const desktopCurrent  = updateCheck?.desktop.current ?? null
-  const desktopLatest   = updateCheck?.desktop.latest ?? null
+  const desktopCurrent   = updateCheck?.desktop.current ?? null
+  const desktopLatest    = updateCheck?.desktop.latest ?? null
   const desktopHasUpdate = updateCheck?.desktop.has_update ?? false
 
   return (
@@ -159,7 +201,8 @@ export function UpdatesSection() {
           current={cliCurrent}
           latest={cliLatest}
           hasUpdate={cliHasUpdate}
-          onUpdate={() => void handleCliUpdate()}
+          onUpdate={() => void runCliInstall('github')}
+          onCompile={() => void runCliInstall('cargo')}
           updating={cliUpdating}
         />
       ) : (
@@ -187,18 +230,20 @@ export function UpdatesSection() {
         onUpdate={
           desktopHasUpdate
             ? () => {
-                // Tauri updater not wired yet — open GitHub releases page
                 void window.open?.('https://github.com/tensiply/orbit-desktop/releases/latest', '_blank')
               }
             : undefined
         }
       />
 
-      {/* CLI update log */}
-      {cliUpdateLog.length > 0 && (
+      {/* CLI update log — visible as soon as an update starts */}
+      {(cliUpdating || cliUpdateLog.length > 0 || cliUpdateDone || cliUpdateError) && (
         <div className="px-6 py-3 border-b border-foreground/5">
-          <p className="text-[10px] text-foreground/40 mb-1.5">Update output</p>
-          <div className="max-h-32 overflow-y-auto rounded-lg bg-black/50 p-2 font-mono text-[10px] text-green-400/80 leading-relaxed">
+          <p className="text-[10px] text-foreground/40 mb-1.5">Output</p>
+          <div className="max-h-40 overflow-y-auto rounded-lg bg-black/50 p-2 font-mono text-[10px] text-green-400/80 leading-relaxed">
+            {cliUpdateLog.length === 0 && cliUpdating && (
+              <span className="text-foreground/30">Starting…</span>
+            )}
             {cliUpdateLog.map((line, i) => <div key={i}>{line}</div>)}
           </div>
           {cliUpdateDone && (

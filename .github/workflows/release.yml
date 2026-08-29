@@ -203,12 +203,7 @@ jobs:
               cl, re.DOTALL
           )
           body = m.group(1).strip() if m else "_No changelog entry found._"
-          note = (
-              "> [!WARNING]\n"
-              "> macOS builds are **unsigned** — Gatekeeper will block them. "
-              "Right-click the .dmg → Open to bypass, or wait for code signing to be configured.\n\n"
-              + body
-          )
+          note = body
           with open("release_notes.md", "w") as f:
               f.write(note + "\n")
           EOF
