@@ -42,10 +42,13 @@ export const NAV_ITEMS: RailItem[] = [
   { label: 'Sessions',     view: 'terminal',     icon: <Terminal /> },
   { label: 'Documents',    view: 'documents',    icon: <Files /> },
   { label: 'Plans',        view: 'plans',        icon: <FileText /> },
-  { label: 'Plugins',      view: 'plugins',      icon: <LayoutGrid /> },
-  { label: 'MCPs',         view: 'mcps',         icon: <Server /> },
   { label: 'Activity',     view: 'activity',     icon: <Activity /> },
   { label: 'Architecture', view: 'architecture', icon: <Network /> },
+]
+
+export const BOTTOM_NAV_ITEMS: RailItem[] = [
+  { label: 'Plugins', view: 'plugins', icon: <LayoutGrid /> },
+  { label: 'MCPs',    view: 'mcps',    icon: <Server /> },
 ]
 
 export function RailButton({

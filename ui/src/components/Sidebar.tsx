@@ -16,6 +16,7 @@ import { Separator } from './ui/separator'
 import {
   PANEL_LABELS,
   NAV_ITEMS,
+  BOTTOM_NAV_ITEMS,
   RailButton,
   SettingsRailButton,
 } from './sidebar/Rail'
@@ -130,6 +131,14 @@ export function Sidebar({ width, collapsed }: { width: number; collapsed?: boole
             </SidebarMenu>
             <div className="mt-auto flex flex-col gap-0.5 pt-1 w-full">
               <SidebarMenu className="w-full">
+                {BOTTOM_NAV_ITEMS.map((item) => (
+                  <RailButton
+                    key={item.view}
+                    item={item}
+                    active={navView === item.view}
+                    onClick={() => setNavView(item.view)}
+                  />
+                ))}
                 <RailButton
                   item={{ label: 'Documentation', view: 'docs', icon: <BookOpen /> }}
                   active={navView === 'docs'}
