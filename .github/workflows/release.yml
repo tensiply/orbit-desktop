@@ -67,8 +67,8 @@ jobs:
         with:
           tool: cargo-audit
 
-      - name: Audit — deny critical/high
-        run: cargo audit --deny warnings --deny unsound
+      - name: Audit — deny vulnerabilities
+        run: cargo audit --config src-tauri/audit.toml --deny vulnerability --deny unsound
 
   # ── Build Tauri app for all target platforms ──────────────────────────────────
   build:

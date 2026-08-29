@@ -1,0 +1,47 @@
+# cargo audit configuration for orbit-desktop
+#
+# Policy: block on actual vulnerabilities (CVSS-scored CVEs).
+# Ignore unmaintained/unsound advisories in transitive deps we do not own:
+#   - GTK3 bindings: pulled by Tauri 2 on Linux (webkit2gtk chain)
+#   - glib:          pulled by Tauri 2 on Linux
+#   - serde_yml / libyml: pulled by orbit-core (upstream repo)
+#   - proc-macro-error: transitive proc-macro dep, no replacement available
+#   - serial:        transitive dep, not directly used
+#   - unic-*:        transitive dep, not directly used
+#
+# Re-evaluate ignores on each Tauri major version bump or orbit-core upgrade.
+
+[advisories]
+ignore = [
+    # gtk-rs GTK3 bindings — unmaintained, pulled by Tauri/webkit2gtk on Linux
+    "RUSTSEC-2024-0413",  # atk
+    "RUSTSEC-2024-0416",  # atk-sys
+    "RUSTSEC-2024-0412",  # gdk
+    "RUSTSEC-2024-0418",  # gdk-sys
+    "RUSTSEC-2024-0411",  # gdkwayland-sys
+    "RUSTSEC-2024-0417",  # gdkx11
+    "RUSTSEC-2024-0414",  # gdkx11-sys
+    "RUSTSEC-2024-0415",  # gtk
+    "RUSTSEC-2024-0420",  # gtk-sys
+    "RUSTSEC-2024-0419",  # gtk3-macros
+
+    # glib — unsound VariantStrIter, pulled by Tauri/webkit2gtk on Linux
+    "RUSTSEC-2024-0429",  # glib
+
+    # serde_yml / libyml — unsound, pulled by orbit-core (orbit CLI dep)
+    "RUSTSEC-2025-0067",  # libyml
+    "RUSTSEC-2025-0068",  # serde_yml
+
+    # proc-macro-error — unmaintained, transitive proc-macro dep
+    "RUSTSEC-2024-0370",
+
+    # serial — unmaintained since 2017, transitive dep
+    "RUSTSEC-2017-0008",
+
+    # unic-* — unmaintained, transitive Unicode utility crates
+    "RUSTSEC-2025-0081",  # unic-char-property
+    "RUSTSEC-2025-0075",  # unic-char-range
+    "RUSTSEC-2025-0080",  # unic-common
+    "RUSTSEC-2025-0100",  # unic-ucd-ident
+    "RUSTSEC-2025-0098",  # unic-ucd-version
+]
