@@ -97,6 +97,8 @@ jobs:
   build:
     name: Build — ${{ matrix.platform }}
     needs: [verify, security]
+    permissions:
+      contents: write
     strategy:
       fail-fast: false
       matrix:
