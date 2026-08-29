@@ -142,6 +142,11 @@ jobs:
             librsvg2-dev \
             patchelf
 
+      - name: Install Tauri CLI
+        uses: taiki-e/install-action@v2
+        with:
+          tool: cargo-tauri
+
       - name: Generate TypeScript bindings
         run: |
           mkdir -p ui/src/bindings
