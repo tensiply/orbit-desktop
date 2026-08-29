@@ -8,8 +8,9 @@ import { ToggleGroup, ToggleGroupItem } from '../ui/toggle-group'
 import {
   ContextMenu,
   ContextMenuContent,
+  ContextMenuGroup,
   ContextMenuItem,
-  ContextMenuSeparator,
+  ContextMenuLabel,
   ContextMenuSub,
   ContextMenuSubContent,
   ContextMenuSubTrigger,
@@ -190,45 +191,50 @@ export function ScopeNavigator({
                       </button>
                     </ContextMenuTrigger>
                     <ContextMenuContent className="w-48 text-xs">
-                      <ContextMenuSub>
-                        <ContextMenuSubTrigger className="text-xs gap-2">
-                          <Plus size={13} />New session with…
-                        </ContextMenuSubTrigger>
-                        <ContextMenuSubContent className="w-40 text-xs">
-                          {ENGINES_MENU.map(({ id, label, Icon }) => (
-                            <ContextMenuItem
-                              key={id}
-                              className="text-xs gap-2"
-                              onClick={() => launchFolder(name, id)}
-                            >
-                              <Icon size={13} />{label}
-                            </ContextMenuItem>
-                          ))}
-                        </ContextMenuSubContent>
-                      </ContextMenuSub>
-                      <ContextMenuSub>
-                        <ContextMenuSubTrigger className="text-xs gap-2">
-                          <Wrench size={13} />View harness with…
-                        </ContextMenuSubTrigger>
-                        <ContextMenuSubContent className="w-40 text-xs">
-                          {ENGINES_MENU.map(({ id, label, Icon }) => (
-                            <ContextMenuItem
-                              key={id}
-                              className="text-xs gap-2"
-                              onClick={() => openHarnessForFolder(name, id)}
-                            >
-                              <Icon size={13} />{label}
-                            </ContextMenuItem>
-                          ))}
-                        </ContextMenuSubContent>
-                      </ContextMenuSub>
-                      <ContextMenuSeparator />
-                      <ContextMenuItem
-                        className="text-xs gap-2"
-                        onClick={() => openFolderInExplorer(name)}
-                      >
-                        <FolderOpen size={13} />Open in explorer
-                      </ContextMenuItem>
+                      <ContextMenuGroup>
+                        <ContextMenuLabel>Launch</ContextMenuLabel>
+                        <ContextMenuSub>
+                          <ContextMenuSubTrigger className="text-xs gap-2">
+                            <Plus size={13} />New session with…
+                          </ContextMenuSubTrigger>
+                          <ContextMenuSubContent className="w-40 text-xs">
+                            {ENGINES_MENU.map(({ id, label, Icon }) => (
+                              <ContextMenuItem
+                                key={id}
+                                className="text-xs gap-2"
+                                onClick={() => launchFolder(name, id)}
+                              >
+                                <Icon size={13} />{label}
+                              </ContextMenuItem>
+                            ))}
+                          </ContextMenuSubContent>
+                        </ContextMenuSub>
+                        <ContextMenuSub>
+                          <ContextMenuSubTrigger className="text-xs gap-2">
+                            <Wrench size={13} />View harness with…
+                          </ContextMenuSubTrigger>
+                          <ContextMenuSubContent className="w-40 text-xs">
+                            {ENGINES_MENU.map(({ id, label, Icon }) => (
+                              <ContextMenuItem
+                                key={id}
+                                className="text-xs gap-2"
+                                onClick={() => openHarnessForFolder(name, id)}
+                              >
+                                <Icon size={13} />{label}
+                              </ContextMenuItem>
+                            ))}
+                          </ContextMenuSubContent>
+                        </ContextMenuSub>
+                      </ContextMenuGroup>
+                      <ContextMenuGroup>
+                        <ContextMenuLabel>Folder</ContextMenuLabel>
+                        <ContextMenuItem
+                          className="text-xs gap-2"
+                          onClick={() => openFolderInExplorer(name)}
+                        >
+                          <FolderOpen size={13} />Open in explorer
+                        </ContextMenuItem>
+                      </ContextMenuGroup>
                     </ContextMenuContent>
                   </ContextMenu>
                 </li>

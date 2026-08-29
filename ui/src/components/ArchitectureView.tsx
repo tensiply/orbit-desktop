@@ -859,19 +859,19 @@ export function ArchitectureView({ workspace, tenant }: Props) {
       {ctxMenu && (
         <div
           style={{ position: 'fixed', left: ctxMenu.x, top: ctxMenu.y, zIndex: 50 }}
-          className="min-w-[140px] rounded-md border border-border bg-popover shadow-md py-1 text-xs"
+          className="min-w-[8rem] overflow-hidden rounded-2xl border bg-popover p-1 text-popover-foreground shadow-md"
           onMouseLeave={closeCtxMenu}
         >
-          <button
-            className="w-full flex items-center gap-2 px-3 py-1.5 text-left hover:bg-accent transition-colors"
+          <div
+            className="relative flex cursor-default select-none items-center gap-2 rounded-xl px-2 py-1.5 text-xs outline-none transition-colors hover:bg-accent hover:text-accent-foreground"
             onClick={() => {
               openArchDrawer(ctxMenu.entity, workspace, tenant, allEntities)
               closeCtxMenu()
             }}
           >
-            <Pencil size={12} className="text-muted-foreground" />
+            <Pencil size={12} />
             Edit
-          </button>
+          </div>
         </div>
       )}
     </>

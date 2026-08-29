@@ -16,8 +16,9 @@ import { workspaceFromWorkDir } from '../../domain/scope'
 import {
   ContextMenu,
   ContextMenuContent,
+  ContextMenuGroup,
   ContextMenuItem,
-  ContextMenuSeparator,
+  ContextMenuLabel,
   ContextMenuSub,
   ContextMenuSubContent,
   ContextMenuSubTrigger,
@@ -155,32 +156,33 @@ function SessionItem({
     <li ref={itemRef}>
       <ContextMenu onOpenChange={(open) => { if (open) blurSidebar() }}>
         <ContextMenuContent className="w-56 text-xs">
-          <ContextMenuItem className="text-xs gap-2" onClick={onOpen}>
-            <ExternalLink size={13} />Open session
-          </ContextMenuItem>
-          <ContextMenuItem className="text-xs gap-2" onClick={() => void openHarnessDrawer(session)}>
-            <Wrench size={13} />View harness
-          </ContextMenuItem>
-          <ContextMenuSeparator />
-          <ContextMenuSub>
-            <ContextMenuSubTrigger className="text-xs gap-2">
-              <Plus size={13} />New session with…
-            </ContextMenuSubTrigger>
-            <ContextMenuSubContent className="w-40 text-xs">
-              {ENGINES_MENU.map(({ id, label, Icon }) => (
-                <ContextMenuItem
-                  key={id}
-                  className="text-xs gap-2"
-                  onClick={() => onLaunchWithEngine(id)}
-                >
-                  <Icon size={13} />{label}
-                </ContextMenuItem>
-              ))}
-            </ContextMenuSubContent>
-          </ContextMenuSub>
+          <ContextMenuGroup>
+            <ContextMenuItem className="text-xs gap-2" onClick={onOpen}>
+              <ExternalLink size={13} />Open session
+            </ContextMenuItem>
+            <ContextMenuItem className="text-xs gap-2" onClick={() => void openHarnessDrawer(session)}>
+              <Wrench size={13} />View harness
+            </ContextMenuItem>
+            <ContextMenuSub>
+              <ContextMenuSubTrigger className="text-xs gap-2">
+                <Plus size={13} />New session with…
+              </ContextMenuSubTrigger>
+              <ContextMenuSubContent className="w-40 text-xs">
+                {ENGINES_MENU.map(({ id, label, Icon }) => (
+                  <ContextMenuItem
+                    key={id}
+                    className="text-xs gap-2"
+                    onClick={() => onLaunchWithEngine(id)}
+                  >
+                    <Icon size={13} />{label}
+                  </ContextMenuItem>
+                ))}
+              </ContextMenuSubContent>
+            </ContextMenuSub>
+          </ContextMenuGroup>
           {!isHistory && (
-            <>
-              <ContextMenuSeparator />
+            <ContextMenuGroup>
+              <ContextMenuLabel>Manage</ContextMenuLabel>
               <ContextMenuItem className="text-xs gap-2" onClick={onDuplicate}>
                 <CopyPlus size={13} />Duplicate session
               </ContextMenuItem>
@@ -193,18 +195,20 @@ function SessionItem({
               >
                 <CircleStop size={13} />End session
               </ContextMenuItem>
-            </>
+            </ContextMenuGroup>
           )}
-          <ContextMenuSeparator />
-          <ContextMenuItem className="text-xs gap-2" onClick={() => copyToClipboard(session.id)}>
-            <Copy size={13} />Copy session ID
-          </ContextMenuItem>
-          <ContextMenuItem className="text-xs gap-2" onClick={() => copyToClipboard(session.work_dir)}>
-            <FolderOpen size={13} />Copy working directory
-          </ContextMenuItem>
-          <ContextMenuItem className="text-xs gap-2" onClick={() => copyToClipboard(engine)}>
-            <Cpu size={13} />Copy engine name
-          </ContextMenuItem>
+          <ContextMenuGroup>
+            <ContextMenuLabel>Copy</ContextMenuLabel>
+            <ContextMenuItem className="text-xs gap-2" onClick={() => copyToClipboard(session.id)}>
+              <Copy size={13} />Copy session ID
+            </ContextMenuItem>
+            <ContextMenuItem className="text-xs gap-2" onClick={() => copyToClipboard(session.work_dir)}>
+              <FolderOpen size={13} />Copy working directory
+            </ContextMenuItem>
+            <ContextMenuItem className="text-xs gap-2" onClick={() => copyToClipboard(engine)}>
+              <Cpu size={13} />Copy engine name
+            </ContextMenuItem>
+          </ContextMenuGroup>
         </ContextMenuContent>
 
         <ContextMenuTrigger asChild>

@@ -15,9 +15,9 @@ import { Kbd } from '../ui/kbd'
 import {
   DropdownMenu,
   DropdownMenuContent,
+  DropdownMenuGroup,
   DropdownMenuItem,
   DropdownMenuLabel,
-  DropdownMenuSeparator,
   DropdownMenuTrigger,
   DropdownMenuShortcut,
 } from '../ui/dropdown-menu'
@@ -103,55 +103,56 @@ export function SettingsRailButton() {
         </DropdownMenuTrigger>
 
         <DropdownMenuContent side="right" align="end" className="w-64">
-          <DropdownMenuLabel className="text-[10px] uppercase tracking-wider text-muted-foreground">
-            Settings
-          </DropdownMenuLabel>
-          <DropdownMenuSeparator />
-          <DropdownMenuItem className="text-xs gap-2" onClick={openSettings}>
-            <Settings />
-            Settings
-            <DropdownMenuShortcut className="flex items-center gap-0.5">
-              <Kbd className="text-[9px] px-1 py-px border-foreground/20 text-foreground/50">Ctrl</Kbd>
-              <span className="text-[9px] text-foreground/25">+</span>
-              <Kbd className="text-[9px] px-1 py-px border-foreground/20 text-foreground/50">.</Kbd>
-            </DropdownMenuShortcut>
-          </DropdownMenuItem>
-          <DropdownMenuItem className="text-xs gap-2" onClick={openShortcuts}>
-            <Keyboard />
-            Keyboard Shortcuts
-            <DropdownMenuShortcut className="flex items-center gap-0.5">
-              <Kbd className="text-[9px] px-1 py-px border-foreground/20 text-foreground/50">Ctrl</Kbd>
-              <span className="text-[9px] text-foreground/25">+</span>
-              <Kbd className="text-[9px] px-1 py-px border-foreground/20 text-foreground/50">,</Kbd>
-            </DropdownMenuShortcut>
-          </DropdownMenuItem>
-          <DropdownMenuItem className="text-xs gap-2" onClick={() => setNavView('activity')}>
-            <Activity />
-            Activity
-          </DropdownMenuItem>
+          <DropdownMenuGroup>
+            <DropdownMenuLabel className="pt-1">Settings</DropdownMenuLabel>
+            <DropdownMenuItem className="text-xs gap-2" onClick={openSettings}>
+              <Settings />
+              Settings
+              <DropdownMenuShortcut className="flex items-center gap-0.5">
+                <Kbd className="text-[9px] px-1 py-px border-foreground/20 text-foreground/50">Ctrl</Kbd>
+                <span className="text-[9px] text-foreground/25">+</span>
+                <Kbd className="text-[9px] px-1 py-px border-foreground/20 text-foreground/50">.</Kbd>
+              </DropdownMenuShortcut>
+            </DropdownMenuItem>
+            <DropdownMenuItem className="text-xs gap-2" onClick={openShortcuts}>
+              <Keyboard />
+              Keyboard Shortcuts
+              <DropdownMenuShortcut className="flex items-center gap-0.5">
+                <Kbd className="text-[9px] px-1 py-px border-foreground/20 text-foreground/50">Ctrl</Kbd>
+                <span className="text-[9px] text-foreground/25">+</span>
+                <Kbd className="text-[9px] px-1 py-px border-foreground/20 text-foreground/50">,</Kbd>
+              </DropdownMenuShortcut>
+            </DropdownMenuItem>
+            <DropdownMenuItem className="text-xs gap-2" onClick={() => setNavView('activity')}>
+              <Activity />
+              Activity
+            </DropdownMenuItem>
+          </DropdownMenuGroup>
           {cliNotInstalled && (
-            <>
-              <DropdownMenuSeparator />
+            <DropdownMenuGroup>
+              <DropdownMenuLabel>Install</DropdownMenuLabel>
               <DropdownMenuItem className="text-xs gap-2 text-primary" onClick={openWizard}>
                 <Package />
                 Install Orbit CLI…
               </DropdownMenuItem>
-            </>
+            </DropdownMenuGroup>
           )}
           {updatesAvailable && (
-            <>
-              <DropdownMenuSeparator />
+            <DropdownMenuGroup>
+              <DropdownMenuLabel>Updates</DropdownMenuLabel>
               <DropdownMenuItem className="text-xs gap-2 text-primary" onClick={openSettings}>
                 <Download />
                 Updates available
               </DropdownMenuItem>
-            </>
+            </DropdownMenuGroup>
           )}
-          <DropdownMenuSeparator />
-          <DropdownMenuItem className="text-xs gap-2" onClick={toggleTheme}>
-            {theme === 'dark' ? <Sun /> : <Moon />}
-            {theme === 'dark' ? 'Switch to Light' : 'Switch to Dark'}
-          </DropdownMenuItem>
+          <DropdownMenuGroup>
+            <DropdownMenuLabel>Appearance</DropdownMenuLabel>
+            <DropdownMenuItem className="text-xs gap-2" onClick={toggleTheme}>
+              {theme === 'dark' ? <Sun /> : <Moon />}
+              {theme === 'dark' ? 'Switch to Light' : 'Switch to Dark'}
+            </DropdownMenuItem>
+          </DropdownMenuGroup>
         </DropdownMenuContent>
       </DropdownMenu>
     </SidebarMenuItem>

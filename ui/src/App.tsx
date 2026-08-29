@@ -28,7 +28,6 @@ import {
   ContextMenu,
   ContextMenuContent,
   ContextMenuItem,
-  ContextMenuSeparator,
   ContextMenuTrigger,
 } from './components/ui/context-menu'
 import {
@@ -131,7 +130,6 @@ export default function App() {
           <ContextMenuItem className="text-xs gap-2" onClick={() => void invoke('open_devtools').catch(() => void 0)}>
             <Bug size={13} />Open DevTools
           </ContextMenuItem>
-          <ContextMenuSeparator />
           <ContextMenuItem className="text-xs gap-2" onClick={() => window.location.reload()}>
             <RefreshCw size={13} />Reload UI
           </ContextMenuItem>

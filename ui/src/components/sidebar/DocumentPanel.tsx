@@ -9,8 +9,9 @@ import { tauriService } from '../../services/tauri'
 import {
   ContextMenu,
   ContextMenuContent,
+  ContextMenuGroup,
   ContextMenuItem,
-  ContextMenuSeparator,
+  ContextMenuLabel,
   ContextMenuSub,
   ContextMenuSubContent,
   ContextMenuSubTrigger,
@@ -197,47 +198,52 @@ function DocumentItem({
           </ContextMenuTrigger>
 
           <ContextMenuContent className="w-52 text-xs">
-            <ContextMenuItem className="text-xs gap-2" onClick={copyPath}>
-              <Copy size={13} />Copy path
-            </ContextMenuItem>
-            <ContextMenuItem className="text-xs gap-2" onClick={copyContent}>
-              <Clipboard size={13} />Copy document
-            </ContextMenuItem>
-            <ContextMenuSeparator />
-            <ContextMenuItem className="text-xs gap-2" onClick={reveal}>
-              <FolderOpen size={13} />Reveal in explorer
-            </ContextMenuItem>
-            <ContextMenuSeparator />
-            <ContextMenuItem className="text-xs gap-2" onClick={onArchive}>
-              <Archive size={13} />Archive
-            </ContextMenuItem>
-            <ContextMenuItem
-              className="text-xs gap-2 text-destructive focus:text-destructive"
-              onClick={() => setShowDelete(true)}
-            >
-              <Trash2 size={13} />Delete…
-            </ContextMenuItem>
-            <ContextMenuSeparator />
-            <ContextMenuItem className="text-xs gap-2" onClick={() => setShowInfo(true)}>
-              <Info size={13} />Info
-            </ContextMenuItem>
-            <ContextMenuSeparator />
-            <ContextMenuSub>
-              <ContextMenuSubTrigger className="text-xs gap-2">
-                <Send size={13} />Send to
-              </ContextMenuSubTrigger>
-              <ContextMenuSubContent className="w-40 text-xs">
-                <ContextMenuItem className="text-xs gap-2 opacity-40 pointer-events-none" disabled>
-                  <Mail size={13} />Email
-                </ContextMenuItem>
-                <ContextMenuItem className="text-xs gap-2 opacity-40 pointer-events-none" disabled>
-                  <FileText size={13} />Orbit
-                </ContextMenuItem>
-                <ContextMenuItem className="text-xs gap-2 opacity-40 pointer-events-none" disabled>
-                  <Network size={13} />Teams
-                </ContextMenuItem>
-              </ContextMenuSubContent>
-            </ContextMenuSub>
+            <ContextMenuGroup>
+              <ContextMenuLabel>Clipboard</ContextMenuLabel>
+              <ContextMenuItem className="text-xs gap-2" onClick={copyPath}>
+                <Copy size={13} />Copy path
+              </ContextMenuItem>
+              <ContextMenuItem className="text-xs gap-2" onClick={copyContent}>
+                <Clipboard size={13} />Copy document
+              </ContextMenuItem>
+            </ContextMenuGroup>
+            <ContextMenuGroup>
+              <ContextMenuLabel>File</ContextMenuLabel>
+              <ContextMenuItem className="text-xs gap-2" onClick={reveal}>
+                <FolderOpen size={13} />Reveal in explorer
+              </ContextMenuItem>
+              <ContextMenuItem className="text-xs gap-2" onClick={onArchive}>
+                <Archive size={13} />Archive
+              </ContextMenuItem>
+              <ContextMenuItem
+                className="text-xs gap-2 text-destructive focus:text-destructive"
+                onClick={() => setShowDelete(true)}
+              >
+                <Trash2 size={13} />Delete…
+              </ContextMenuItem>
+            </ContextMenuGroup>
+            <ContextMenuGroup>
+              <ContextMenuLabel>More</ContextMenuLabel>
+              <ContextMenuItem className="text-xs gap-2" onClick={() => setShowInfo(true)}>
+                <Info size={13} />Info
+              </ContextMenuItem>
+              <ContextMenuSub>
+                <ContextMenuSubTrigger className="text-xs gap-2">
+                  <Send size={13} />Send to
+                </ContextMenuSubTrigger>
+                <ContextMenuSubContent className="w-40 text-xs">
+                  <ContextMenuItem className="text-xs gap-2 opacity-40 pointer-events-none" disabled>
+                    <Mail size={13} />Email
+                  </ContextMenuItem>
+                  <ContextMenuItem className="text-xs gap-2 opacity-40 pointer-events-none" disabled>
+                    <FileText size={13} />Orbit
+                  </ContextMenuItem>
+                  <ContextMenuItem className="text-xs gap-2 opacity-40 pointer-events-none" disabled>
+                    <Network size={13} />Teams
+                  </ContextMenuItem>
+                </ContextMenuSubContent>
+              </ContextMenuSub>
+            </ContextMenuGroup>
           </ContextMenuContent>
         </ContextMenu>
       </li>
