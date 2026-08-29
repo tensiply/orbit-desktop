@@ -107,6 +107,14 @@ export function ScopeNavigator({
     void launchScopeSession(fullPath, engine)
   }
 
+  const launchCurrentScope = (engine: string) => {
+    const fullPath = selectedWorkspace
+      ? [selectedWorkspace, ...scopePath]
+      : [...scopePath]
+    blurSidebar()
+    void launchScopeSession(fullPath, engine)
+  }
+
   const openHarnessForFolder = (folderName: string, engine: string) => {
     const fullPath = selectedWorkspace
       ? [selectedWorkspace, ...scopePath, folderName]
@@ -228,6 +236,32 @@ export function ScopeNavigator({
             })}
           </ul>
         </div>
+      )}
+
+      {/* New Session button — launches at current scope level (not shown at root) */}
+      {scopePath.length > 0 && (
+        <ContextMenu onOpenChange={(open) => { if (open) blurSidebar() }}>
+          <ContextMenuTrigger asChild>
+            <button
+              onClick={() => launchCurrentScope('claude')}
+              className="group flex items-center gap-1.5 w-full px-2 py-1.5 rounded-md text-xs text-sidebar-foreground/35 border border-dashed border-sidebar-border/40 hover:border-sidebar-border/70 hover:text-sidebar-foreground/60 transition-colors"
+            >
+              <Plus size={11} className="shrink-0" />
+              <span>New Session</span>
+            </button>
+          </ContextMenuTrigger>
+          <ContextMenuContent className="w-40 text-xs">
+            {ENGINES_MENU.map(({ id, label, Icon }) => (
+              <ContextMenuItem
+                key={id}
+                className="text-xs gap-2"
+                onClick={() => launchCurrentScope(id)}
+              >
+                <Icon size={13} />{label}
+              </ContextMenuItem>
+            ))}
+          </ContextMenuContent>
+        </ContextMenu>
       )}
 
       {scopePath.length > 0 && children.length > 0 && (
