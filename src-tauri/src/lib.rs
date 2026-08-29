@@ -48,6 +48,10 @@ fn open_devtools(window: tauri::WebviewWindow) {
     window.open_devtools();
 }
 
+#[cfg(not(debug_assertions))]
+#[tauri::command]
+fn open_devtools(_window: tauri::WebviewWindow) {}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     #[cfg(all(feature = "dev", target_os = "linux"))]
@@ -127,8 +131,7 @@ pub fn run() {
             updates::cli_check,
             updates::cli_install,
             updates::check_updates,
-            // Dev tools (debug builds only)
-            #[cfg(debug_assertions)]
+            // Dev tools (no-op in release builds)
             open_devtools,
         ])
         .setup(|_app| {
