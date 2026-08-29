@@ -142,6 +142,12 @@ jobs:
             librsvg2-dev \
             patchelf
 
+      - name: Generate TypeScript bindings
+        run: |
+          mkdir -p ui/src/bindings
+          TS_RS_EXPORT_DIR=$(pwd)/ui/src/bindings \
+            cargo test 'export_' --manifest-path src-tauri/Cargo.toml
+
       - name: Install frontend deps
         working-directory: ui
         run: npm ci
