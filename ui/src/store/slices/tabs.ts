@@ -31,6 +31,15 @@ export const createTabsSlice: StateCreator<AppStore, [], [], TabsSlice> = (set, 
   // Sync drawer state whenever the active tab changes.
   const syncActive = (tabId: string | null) => get().syncDrawerToTab(tabId)
 
+  // Persist the current open-session list to localStorage so it can be restored on next launch.
+  const saveOpenSessions = () => {
+    const { tabs, activeTabId } = get()
+    const ids = tabs.filter((t) => t.type === 'terminal' && t.sessionId).map((t) => t.sessionId!)
+    sessionCache.setOpenSessions(ids)
+    const activeSession = tabs.find((t) => t.id === activeTabId)?.sessionId ?? null
+    sessionCache.setActiveSessionId(activeSession)
+  }
+
   // Wire up PTY and tab state after a session has already been launched.
   const attachLaunchedSession = async (
     launched: LaunchedInfo,
@@ -53,6 +62,7 @@ export const createTabsSlice: StateCreator<AppStore, [], [], TabsSlice> = (set, 
       navView: 'terminal',
       ...(opts.focusPanel ? { focusedPanel: 'main' as const } : {}),
     }))
+    saveOpenSessions()
     syncActive(tabId)
     return tabId
   }
@@ -113,6 +123,7 @@ export const createTabsSlice: StateCreator<AppStore, [], [], TabsSlice> = (set, 
       }
       sessionCache.setLastSession(session.id)
       set((state) => ({ tabs: [...state.tabs, tab], activeTabId: tabId, navView: 'terminal', focusedPanel: 'main' }))
+      saveOpenSessions()
       syncActive(tabId)
     },
 
@@ -193,6 +204,7 @@ export const createTabsSlice: StateCreator<AppStore, [], [], TabsSlice> = (set, 
         }
         return { tabs, activeTabId }
       })
+      saveOpenSessions()
       syncActive(get().activeTabId)
     },
 
@@ -200,6 +212,7 @@ export const createTabsSlice: StateCreator<AppStore, [], [], TabsSlice> = (set, 
       const tab = get().tabs.find((t) => t.id === tabId)
       if (tab?.sessionId) {
         sessionCache.setLastSession(tab.sessionId)
+        sessionCache.setActiveSessionId(tab.sessionId)
       }
       const navView =
         tab?.type === 'document'     ? 'documents' as const :
