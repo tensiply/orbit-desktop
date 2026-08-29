@@ -82,10 +82,11 @@ jobs:
             artifact_suffix: linux
             args: ""
 
-          - platform: macos-latest
-            artifact_suffix: macos
-            # Universal binary (Intel + Apple Silicon)
-            args: "--target universal-apple-darwin"
+          # macOS build temporarily disabled — re-enable when code signing is configured (gap #3)
+          # - platform: macos-latest
+          #   artifact_suffix: macos
+          #   # Universal binary (Intel + Apple Silicon)
+          #   args: "--target universal-apple-darwin"
 
     runs-on: ${{ matrix.platform }}
     steps:
