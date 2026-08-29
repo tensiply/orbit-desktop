@@ -142,11 +142,6 @@ jobs:
             librsvg2-dev \
             patchelf
 
-      - name: Install Tauri CLI
-        uses: taiki-e/install-action@v2
-        with:
-          tool: cargo-tauri
-
       - name: Generate TypeScript bindings
         run: |
           mkdir -p ui/src/bindings
@@ -178,7 +173,6 @@ jobs:
           releaseBody: "__Release notes will be updated below.__"
           releaseDraft: true
           prerelease: true
-          tauriScript: cargo tauri
           args: ${{ matrix.args }}
 
   # ── Finalize: add checksums + release notes, publish ─────────────────────────
