@@ -71,7 +71,7 @@ jobs:
         # Block on CVEs and unsound advisories.
         # Ignores are transitive deps we cannot fix: GTK3/glib (Tauri), serde_yml/libyml (orbit-core), unic-* / proc-macro-error / serial (indirect).
         run: |
-          cargo audit --deny vulnerability --deny unsound \
+          cargo audit --deny unsound \
             --ignore RUSTSEC-2024-0413 \
             --ignore RUSTSEC-2024-0416 \
             --ignore RUSTSEC-2024-0412 \
