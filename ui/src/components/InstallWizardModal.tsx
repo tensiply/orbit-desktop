@@ -1,7 +1,7 @@
 import { Fragment, useState, useEffect, useRef } from 'react'
 import { listen } from '@tauri-apps/api/event'
 import {
-  CheckCircle2, Circle, Loader2, Terminal, Package, AlertCircle, PlusCircle,
+  CheckCircle2, Circle, CircleDot, Loader2, Terminal, Package, AlertCircle, PlusCircle,
 } from 'lucide-react'
 import { useAppStore } from '../store'
 import { tauriService } from '../services/tauri'
@@ -46,7 +46,7 @@ function StepDot({ state, label }: { state: 'pending' | 'active' | 'done'; label
   return (
     <div className="flex items-center gap-2">
       {state === 'done'    && <CheckCircle2 size={14} className="text-primary shrink-0" />}
-      {state === 'active'  && <Loader2 size={14} className="text-primary animate-spin shrink-0" />}
+      {state === 'active'  && <CircleDot size={14} className="text-primary shrink-0" />}
       {state === 'pending' && <Circle size={14} className="text-foreground/20 shrink-0" />}
       <span className={`text-xs ${
         state === 'active'  ? 'text-foreground font-medium' :
@@ -130,6 +130,14 @@ export function SetupWizardModal() {
       setPhaseIdx((i) => i + 1)
     } else {
       await checkSetup()
+      close()
+    }
+  }
+
+  const skipPhase = () => {
+    if (phaseIdx + 1 < phases.length) {
+      setPhaseIdx((i) => i + 1)
+    } else {
       close()
     }
   }
@@ -402,7 +410,7 @@ export function SetupWizardModal() {
           {/* Install CLI footer */}
           {currentPhase === 'install-cli' && installState === 'idle' && (
             <>
-              <Button variant="ghost" size="sm" className="text-xs" onClick={close}>
+              <Button variant="ghost" size="sm" className="text-xs" onClick={skipPhase}>
                 Skip for now
               </Button>
               <Button size="sm" className="text-xs" onClick={() => void startInstall()}>
@@ -435,7 +443,7 @@ export function SetupWizardModal() {
           {/* Add workspace footer */}
           {currentPhase === 'add-workspace' && wsState === 'idle' && (
             <>
-              <Button variant="ghost" size="sm" className="text-xs" onClick={close}>
+              <Button variant="ghost" size="sm" className="text-xs" onClick={skipPhase}>
                 Skip for now
               </Button>
               <Button
