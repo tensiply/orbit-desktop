@@ -1,3 +1,4 @@
+import { useState, useEffect } from 'react'
 import {
   ListChecks, Terminal, FileText, LayoutGrid, Server, Activity,
   Network, BookOpen, Settings, Keyboard, User, Sun, Moon,
@@ -35,19 +36,19 @@ export const PANEL_LABELS: Partial<Record<NavView, string>> = {
   docs:         'Documentation',
 }
 
-type RailItem = { label: string; view: NavView; icon: React.ReactNode }
+type RailItem = { label: string; view: NavView; icon: React.ReactNode; shortcut?: string }
 
 export const NAV_ITEMS: RailItem[] = [
-  { label: 'Tasks',        view: 'tasks',        icon: <ListChecks /> },
-  { label: 'Sessions',     view: 'terminal',     icon: <Terminal /> },
-  { label: 'Files',        view: 'documents',    icon: <Files /> },
-  { label: 'Plans',        view: 'plans',        icon: <FileText /> },
-  { label: 'Architecture', view: 'architecture', icon: <Network /> },
+  { label: 'Tasks',        view: 'tasks',        icon: <ListChecks />, shortcut: 'Ctrl+1' },
+  { label: 'Sessions',     view: 'terminal',     icon: <Terminal />,   shortcut: 'Ctrl+2' },
+  { label: 'Files',        view: 'documents',    icon: <Files />,      shortcut: 'Ctrl+3' },
+  { label: 'Plans',        view: 'plans',        icon: <FileText />,   shortcut: 'Ctrl+4' },
+  { label: 'Architecture', view: 'architecture', icon: <Network />,    shortcut: 'Ctrl+5' },
 ]
 
 export const BOTTOM_NAV_ITEMS: RailItem[] = [
-  { label: 'Plugins', view: 'plugins', icon: <LayoutGrid /> },
-  { label: 'MCPs',    view: 'mcps',    icon: <Server /> },
+  { label: 'Plugins', view: 'plugins', icon: <LayoutGrid />, shortcut: 'Ctrl+6' },
+  { label: 'MCPs',    view: 'mcps',    icon: <Server />,     shortcut: 'Ctrl+7' },
 ]
 
 export function RailButton({
@@ -59,11 +60,24 @@ export function RailButton({
   active: boolean
   onClick: () => void
 }) {
+  const tooltip = item.shortcut
+    ? {
+        children: (
+          <span className="flex items-center gap-2">
+            {item.label}
+            <Kbd className="text-[9px] px-1 py-px border-foreground/20 text-foreground/50 bg-transparent">
+              {item.shortcut}
+            </Kbd>
+          </span>
+        ),
+      }
+    : item.label
+
   return (
     <SidebarMenuItem className="w-full flex justify-center">
       <SidebarMenuButton
         isActive={active}
-        tooltip={item.label}
+        tooltip={tooltip}
         onClick={onClick}
         className="!size-8 !p-0 !justify-center"
       >
@@ -89,11 +103,22 @@ export function SettingsRailButton() {
     : false
   const hasBadge = cliNotInstalled || updatesAvailable
 
+  const [open, setOpen] = useState(false)
+
+  useEffect(() => {
+    const handler = () => { blurSidebar(); setOpen(true) }
+    window.addEventListener('orbit:open-settings-menu', handler)
+    return () => window.removeEventListener('orbit:open-settings-menu', handler)
+  }, [blurSidebar])
+
   return (
     <SidebarMenuItem className="w-full flex justify-center">
-      <DropdownMenu onOpenChange={(open) => { if (open) blurSidebar() }}>
+      <DropdownMenu open={open} onOpenChange={(o) => { setOpen(o); if (o) blurSidebar() }}>
         <DropdownMenuTrigger asChild>
-          <SidebarMenuButton tooltip="Settings" className="!size-8 !p-0 !justify-center relative">
+          <SidebarMenuButton
+            tooltip={{ children: <span className="flex items-center gap-2">Settings <Kbd className="text-[9px] px-1 py-px border-foreground/20 text-foreground/50 bg-transparent">Ctrl+9</Kbd></span> }}
+            className="!size-8 !p-0 !justify-center relative"
+          >
             <Settings />
             {hasBadge && (
               <span className="absolute top-0.5 right-0.5 w-1.5 h-1.5 rounded-full bg-primary" />

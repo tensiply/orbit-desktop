@@ -380,11 +380,35 @@ export function useGlobalShortcuts() {
           case 'toggle_theme':
             toggleTheme()
             break
+          case 'nav_tasks':
+            setNavView('tasks')
+            break
           case 'nav_sessions':
             setNavView('terminal')
             break
           case 'nav_documents':
             setNavView('documents')
+            break
+          case 'nav_plans':
+            setNavView('plans')
+            break
+          case 'nav_architecture':
+            setNavView('architecture')
+            break
+          case 'nav_plugins':
+            setNavView('plugins')
+            break
+          case 'nav_mcps':
+            setNavView('mcps')
+            break
+          case 'nav_docs':
+            setNavView('docs')
+            break
+          case 'nav_profile':
+            setNavView('profile')
+            break
+          case 'open_settings_menu':
+            window.dispatchEvent(new CustomEvent('orbit:open-settings-menu'))
             break
           case 'focus_sessions':
             if (sidebarFocused) {

@@ -4,13 +4,24 @@ import type { AppStore } from '../types'
 
 const DEFAULT_SHORTCUTS: Shortcut[] = [
   // navigation
-  { id: 'new-shell',         name: 'New Shell',          description: 'Open a new terminal shell',             keys: '',                action: 'new_shell',        category: 'navigation', builtin: true },
-  { id: 'close-tab',         name: 'Close Tab',           description: 'Close the active tab',                  keys: 'Ctrl+W',          action: 'close_tab',        category: 'navigation', builtin: true },
-  { id: 'next-tab',          name: 'Next Tab',            description: 'Switch to the next tab',                keys: 'Ctrl+Tab',        action: 'next_tab',         category: 'navigation', builtin: true },
-  { id: 'prev-tab',          name: 'Previous Tab',        description: 'Switch to the previous tab',            keys: 'Ctrl+⇧+Tab',      action: 'prev_tab',         category: 'navigation', builtin: true },
-  { id: 'focus-sessions',    name: 'Focus Sidebar List',  description: 'Focus the active sidebar list (sessions or documents)', keys: 'Ctrl+Q', action: 'focus_sessions', category: 'navigation', builtin: true },
-  { id: 'nav-sessions',      name: 'Go to Sessions',      description: 'Switch sidebar to the Sessions panel',  keys: 'Ctrl+S',          action: 'nav_sessions',     category: 'navigation', builtin: true },
-  { id: 'nav-documents',     name: 'Go to Documents',     description: 'Switch sidebar to the Documents panel', keys: 'Ctrl+D',          action: 'nav_documents',    category: 'navigation', builtin: true },
+  { id: 'new-shell',         name: 'New Shell',           description: 'Open a new terminal shell',                         keys: '',           action: 'new_shell',        category: 'navigation', builtin: true },
+  { id: 'close-tab',         name: 'Close Tab',            description: 'Close the active tab',                              keys: 'Ctrl+W',     action: 'close_tab',        category: 'navigation', builtin: true },
+  { id: 'next-tab',          name: 'Next Tab',             description: 'Switch to the next tab',                            keys: 'Ctrl+Tab',   action: 'next_tab',         category: 'navigation', builtin: true },
+  { id: 'prev-tab',          name: 'Previous Tab',         description: 'Switch to the previous tab',                        keys: 'Ctrl+⇧+Tab', action: 'prev_tab',         category: 'navigation', builtin: true },
+  { id: 'focus-sessions',    name: 'Focus Sidebar List',   description: 'Focus the active sidebar list (sessions or files)', keys: 'Ctrl+Q',     action: 'focus_sessions',   category: 'navigation', builtin: true },
+  // rail shortcuts — Ctrl+number
+  { id: 'nav-tasks',         name: 'Go to Tasks',          description: 'Switch sidebar to the Tasks panel',                 keys: 'Ctrl+1',     action: 'nav_tasks',        category: 'navigation', builtin: true },
+  { id: 'nav-sessions',      name: 'Go to Sessions',       description: 'Switch sidebar to the Sessions panel',              keys: 'Ctrl+2',     action: 'nav_sessions',     category: 'navigation', builtin: true },
+  { id: 'nav-sessions-s',    name: 'Go to Sessions (alt)', description: 'Switch sidebar to the Sessions panel',              keys: 'Ctrl+S',     action: 'nav_sessions',     category: 'navigation', builtin: true },
+  { id: 'nav-documents',     name: 'Go to Files',          description: 'Switch sidebar to the Files panel',                 keys: 'Ctrl+3',     action: 'nav_documents',    category: 'navigation', builtin: true },
+  { id: 'nav-documents-f',   name: 'Go to Files (alt)',    description: 'Switch sidebar to the Files panel',                 keys: 'Ctrl+F',     action: 'nav_documents',    category: 'navigation', builtin: true },
+  { id: 'nav-plans',         name: 'Go to Plans',          description: 'Switch sidebar to the Plans panel',                 keys: 'Ctrl+4',     action: 'nav_plans',        category: 'navigation', builtin: true },
+  { id: 'nav-architecture',  name: 'Go to Architecture',   description: 'Switch sidebar to the Architecture panel',          keys: 'Ctrl+5',     action: 'nav_architecture', category: 'navigation', builtin: true },
+  { id: 'nav-plugins',       name: 'Go to Plugins',        description: 'Switch sidebar to the Plugins panel',               keys: 'Ctrl+6',     action: 'nav_plugins',      category: 'navigation', builtin: true },
+  { id: 'nav-mcps',          name: 'Go to MCPs',           description: 'Switch sidebar to the MCPs panel',                  keys: 'Ctrl+7',     action: 'nav_mcps',         category: 'navigation', builtin: true },
+  { id: 'nav-docs',          name: 'Go to Documentation',  description: 'Switch sidebar to the Documentation panel',         keys: 'Ctrl+8',     action: 'nav_docs',         category: 'navigation', builtin: true },
+  { id: 'nav-settings-9',    name: 'Open Settings Menu',   description: 'Open the settings dropdown menu',                  keys: 'Ctrl+9',     action: 'open_settings_menu', category: 'navigation', builtin: true },
+  { id: 'nav-profile',       name: 'Go to Profile',        description: 'Switch sidebar to the Profile panel',               keys: 'Ctrl+0',     action: 'nav_profile',      category: 'navigation', builtin: true },
   // terminal
   { id: 'toggle-drawer',     name: 'Terminal Drawer',     description: 'Open/close the right-side terminal',    keys: 'Ctrl+T',         action: 'toggle_drawer',     category: 'terminal',   builtin: true },
   { id: 'restart-session',   name: 'Restart Session',     description: 'Restart the active session in tmux',    keys: 'Ctrl+⇧+R',       action: 'restart_session',   category: 'terminal',   builtin: true },
@@ -29,7 +40,7 @@ const DEFAULT_SHORTCUTS: Shortcut[] = [
 ]
 
 // Bump this key name whenever defaults change to avoid stale user overrides.
-const STORAGE_KEY = 'orbit-shortcuts-v5'
+const STORAGE_KEY = 'orbit-shortcuts-v7'
 
 function loadShortcuts(): Shortcut[] {
   try {
