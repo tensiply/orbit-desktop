@@ -12,6 +12,7 @@ mod plugins;
 mod pty;
 mod scopes;
 mod sessions;
+mod tasks;
 mod updates;
 mod workspaces;
 
@@ -127,6 +128,12 @@ pub fn run() {
             architecture::architecture_save_layout,
             architecture::architecture_load_routes,
             architecture::architecture_save_routes,
+            // Tasks
+            tasks::task_list,
+            tasks::task_get,
+            tasks::task_create,
+            tasks::task_update,
+            tasks::task_delete,
             // Updates & CLI
             updates::cli_check,
             updates::cli_install,

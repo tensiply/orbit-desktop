@@ -37,12 +37,38 @@ export interface Session extends Omit<SessionDto, 'is_history'> {
 export interface Tab {
   id: string
   title: string
-  type?: 'terminal' | 'shortcuts' | 'uikit' | 'colors' | 'settings' | 'document' | 'architecture' | 'ui-map'
+  type?: 'terminal' | 'shortcuts' | 'uikit' | 'colors' | 'settings' | 'document' | 'architecture' | 'ui-map' | 'task'
   sessionId?: string
   tmuxSession?: string
   docId?: string
   archWorkspace?: string
   archTenant?: string
+  taskId?: string
+}
+
+// ── Task types ─────────────────────────────────────────────────────────────────
+
+export type TaskStatus = 'todo' | 'in_progress' | 'done' | 'blocked' | 'cancelled'
+export type TaskPriority = 'low' | 'medium' | 'high' | 'critical'
+export type TaskSource =
+  | { type: 'manual' }
+  | { type: 'plugin'; name: string; external_id: string; url?: string }
+
+export interface OrbitTask {
+  id: string
+  title: string
+  description?: string
+  status: TaskStatus
+  priority: TaskPriority
+  task_type?: string
+  source: TaskSource
+  workspace: string
+  tenant?: string
+  project?: string
+  repository?: string
+  tags: string[]
+  created_at: number
+  updated_at: number
 }
 
 export type NavView =

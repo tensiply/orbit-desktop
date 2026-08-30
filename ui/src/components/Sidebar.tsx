@@ -24,6 +24,7 @@ import { ViewModeToggle, ScopeNavigator } from './sidebar/ScopePanel'
 import { SessionList } from './sidebar/SessionPanel'
 import { DocumentsPanel, DocsPanel } from './sidebar/DocumentPanel'
 import { ArchItemsList } from './sidebar/ArchPanel'
+import { TasksPanel } from './sidebar/TaskPanel'
 
 const RAIL_W = 52
 
@@ -52,6 +53,11 @@ export function Sidebar({ width, collapsed }: { width: number; collapsed?: boole
   const documentsLoading   = useAppStore((s) => s.documentsLoading)
   const fetchDocuments     = useAppStore((s) => s.fetchDocuments)
   const openDocument       = useAppStore((s) => s.openDocument)
+  const tasks                = useAppStore((s) => s.tasks)
+  const tasksLoading         = useAppStore((s) => s.tasksLoading)
+  const fetchTasks           = useAppStore((s) => s.fetchTasks)
+  const openTask             = useAppStore((s) => s.openTask)
+  const registeredWorkspaces = useAppStore((s) => s.registeredWorkspaces)
   const scopeViewMode      = useAppStore((s) => s.scopeViewMode)
   const scopePath          = useAppStore((s) => s.scopePath)
   const setScopePath       = useAppStore((s) => s.setScopePath)
@@ -64,6 +70,15 @@ export function Sidebar({ width, collapsed }: { width: number; collapsed?: boole
   useEffect(() => {
     if (navView === 'documents') void fetchDocuments()
   }, [navView])
+
+  const taskWorkspace = selectedWorkspace
+    ?? registeredWorkspaces.find((w) => w.is_default)?.name
+    ?? registeredWorkspaces[0]?.name
+    ?? ''
+
+  useEffect(() => {
+    if (navView === 'tasks' && taskWorkspace) void fetchTasks(taskWorkspace)
+  }, [navView, taskWorkspace])
 
   useEffect(() => {
     if (scopeViewMode === 'scope') void loadScopeTree()
@@ -170,6 +185,9 @@ export function Sidebar({ width, collapsed }: { width: number; collapsed?: boole
                 {documentsLoading && navView === 'documents' && (
                   <Loader2 className="h-3 w-3 animate-spin text-sidebar-foreground/30 shrink-0" />
                 )}
+                {tasksLoading && navView === 'tasks' && (
+                  <Loader2 className="h-3 w-3 animate-spin text-sidebar-foreground/30 shrink-0" />
+                )}
               </div>
 
               {/* Panel content */}
@@ -241,7 +259,17 @@ export function Sidebar({ width, collapsed }: { width: number; collapsed?: boole
                     )}
                   </>
                 )}
-                {navView !== 'terminal' && navView !== 'docs' && navView !== 'documents' && navView !== 'architecture' && (
+                {navView === 'tasks' && taskWorkspace && (
+                  <TasksPanel
+                    tasks={tasks}
+                    loading={tasksLoading}
+                    workspace={taskWorkspace}
+                    sidebarFocused={sidebarFocused}
+                    sidebarSelectedIdx={sidebarSelectedIdx}
+                    onOpen={(t) => { blurSidebar(); openTask(t) }}
+                  />
+                )}
+                {navView !== 'terminal' && navView !== 'docs' && navView !== 'documents' && navView !== 'architecture' && navView !== 'tasks' && (
                   <p className="text-[10px] text-sidebar-foreground/25 px-2 pt-1">Coming soon</p>
                 )}
               </div>

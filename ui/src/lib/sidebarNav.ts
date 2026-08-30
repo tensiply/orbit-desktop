@@ -1,4 +1,4 @@
-import type { Session, DocEntry, ScopeTreeWorkspace } from '../types'
+import type { Session, DocEntry, OrbitTask, ScopeTreeWorkspace } from '../types'
 import { workspaceFromWorkDir } from '../domain/scope'
 export { workspaceFromWorkDir } from '../domain/scope'
 
@@ -9,6 +9,7 @@ export type SidebarNavItem =
   | { type: 'scope-folder'; name: string }
   | { type: 'session'; session: Session }
   | { type: 'document'; doc: DocEntry }
+  | { type: 'task'; task: OrbitTask }
   | { type: 'scope-architecture'; workspace: string; tenant: string }
 
 // When selectedWorkspace is set, path is relative (starts at tenant).

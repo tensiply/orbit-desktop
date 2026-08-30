@@ -15,6 +15,7 @@ import { UIKitView } from './components/UIKitView'
 import { ColorsView } from './components/ColorsView'
 import { SettingsView } from './components/SettingsView'
 import { DocumentView } from './components/DocumentView'
+import { TaskView } from './components/TaskView'
 import { ArchitectureView } from './components/ArchitectureView'
 import { DesktopUIView } from './components/DesktopUIView'
 import { SessionHeader } from './components/SessionHeader'
@@ -79,6 +80,7 @@ export default function App() {
   const tabs          = useAppStore((s) => s.tabs)
   const activeTabId   = useAppStore((s) => s.activeTabId)
   const documents     = useAppStore((s) => s.documents)
+  const tasks         = useAppStore((s) => s.tasks)
   const sidebarHidden = useAppStore((s) => s.sidebarHidden)
   const focusedPanel  = useAppStore((s) => s.focusedPanel)
 
@@ -214,6 +216,14 @@ export default function App() {
                     return (
                       <div key={tab.id} className={`absolute inset-0 ${isActive ? '' : 'hidden'}`}>
                         {doc && <DocumentView doc={doc} />}
+                      </div>
+                    )
+                  }
+                  if (tab.type === 'task') {
+                    const task = tasks.find((t) => t.id === tab.taskId)
+                    return (
+                      <div key={tab.id} className={`absolute inset-0 ${isActive ? '' : 'hidden'}`}>
+                        {task && <TaskView task={task} />}
                       </div>
                     )
                   }

@@ -6,6 +6,7 @@ import { createUiSlice, applyTheme } from './store/slices/ui'
 import { createShortcutsSlice } from './store/slices/shortcuts'
 import { createSettingsSlice } from './store/slices/settings'
 import { createDocumentsSlice } from './store/slices/documents'
+import { createTasksSlice } from './store/slices/tasks'
 import { createScopeSlice } from './store/slices/scope'
 import { createArchDrawerSlice } from './store/slices/archDrawer'
 import { createHarnessDrawerSlice } from './store/slices/harnessDrawer'
@@ -21,6 +22,7 @@ export const useAppStore = create<AppStore>()(
       ...createShortcutsSlice(...a),
       ...createSettingsSlice(...a),
       ...createDocumentsSlice(...a),
+      ...createTasksSlice(...a),
       ...createScopeSlice(...a),
       ...createArchDrawerSlice(...a),
       ...createHarnessDrawerSlice(...a),

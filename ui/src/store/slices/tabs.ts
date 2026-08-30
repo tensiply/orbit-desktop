@@ -215,10 +215,11 @@ export const createTabsSlice: StateCreator<AppStore, [], [], TabsSlice> = (set, 
         sessionCache.setActiveSessionId(tab.sessionId)
       }
       const navView =
-        tab?.type === 'document'     ? 'documents' as const :
+        tab?.type === 'document'     ? 'documents'    as const :
         tab?.type === 'architecture' ? 'architecture' as const :
-        tab?.type === 'settings'     ? 'settings' as const :
-                                       'terminal' as const
+        tab?.type === 'settings'     ? 'settings'     as const :
+        tab?.type === 'task'         ? 'tasks'        as const :
+                                       'terminal'     as const
       set({ activeTabId: tabId, navView })
       syncActive(tabId)
     },
