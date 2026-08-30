@@ -7,6 +7,7 @@ import {
   computeSidebarItems,
   filterSessionsByScope,
   filterDocsByScope,
+  filterTasksByScope,
 } from '../lib/sidebarNav'
 import {
   SidebarProvider,
@@ -98,7 +99,8 @@ export function Sidebar({ width, collapsed }: { width: number; collapsed?: boole
   const inScopeMode     = scopeViewMode === 'scope'
   const scopedSessions  = inScopeMode ? filterSessionsByScope(sessions, scopePath, selectedWorkspace) : sessions
   const scopedDocuments = filterDocsByScope(documents, inScopeMode ? scopePath : [], selectedWorkspace)
-  const hasScopeFilter  = navView === 'terminal' || navView === 'documents' || navView === 'architecture'
+  const scopedTasks     = filterTasksByScope(tasks, inScopeMode ? scopePath : [], selectedWorkspace)
+  const hasScopeFilter  = navView === 'terminal' || navView === 'documents' || navView === 'architecture' || navView === 'tasks'
 
   // Compute unified items list to derive per-component selection state
   const sidebarItems = hasScopeFilter
@@ -264,14 +266,22 @@ export function Sidebar({ width, collapsed }: { width: number; collapsed?: boole
                   </>
                 )}
                 {navView === 'tasks' && taskWorkspace && (
-                  <TasksPanel
-                    tasks={tasks}
-                    loading={tasksLoading}
-                    workspace={taskWorkspace}
-                    sidebarFocused={sidebarFocused}
-                    sidebarSelectedIdx={sidebarSelectedIdx}
-                    onOpen={(t) => { blurSidebar(); openTask(t) }}
-                  />
+                  <>
+                    {inScopeMode && (
+                      <ScopeNavigator
+                        backSelected={backSelected}
+                        selectedFolderName={selectedFolderName}
+                      />
+                    )}
+                    <TasksPanel
+                      tasks={scopedTasks}
+                      loading={tasksLoading}
+                      workspace={taskWorkspace}
+                      sidebarFocused={sidebarFocused}
+                      sidebarSelectedIdx={sidebarSelectedIdx}
+                      onOpen={(t) => { blurSidebar(); openTask(t) }}
+                    />
+                  </>
                 )}
                 {navView !== 'terminal' && navView !== 'docs' && navView !== 'documents' && navView !== 'architecture' && navView !== 'tasks' && (
                   <p className="text-[10px] text-sidebar-foreground/25 px-2 pt-1">Coming soon</p>

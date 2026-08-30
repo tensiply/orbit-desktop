@@ -69,6 +69,22 @@ export function filterDocsByScope(
   })
 }
 
+export function filterTasksByScope(
+  tasks: OrbitTask[],
+  path: string[],
+  selectedWorkspace?: string | null,
+): OrbitTask[] {
+  const ep = effectivePath(path, selectedWorkspace)
+  if (ep.length === 0) return tasks
+  return tasks.filter((t) => {
+    if (ep[0] && t.workspace  !== ep[0]) return false
+    if (ep[1] && t.tenant     !== ep[1]) return false
+    if (ep[2] && t.project    !== ep[2]) return false
+    if (ep[3] && t.repository !== ep[3]) return false
+    return true
+  })
+}
+
 const MAX_SIDEBAR_SESSIONS = 10
 
 export function visibleSessionsFromList(sessions: Session[]): Session[] {
