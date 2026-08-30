@@ -3,6 +3,12 @@ import type { CliInfo, SetupStatus, UpdateCheck } from '../../types'
 import { tauriService } from '../../services/tauri'
 import type { AppStore } from '../types'
 
+// When VITE_FORCE_SETUP_WIZARD=true the wizard opens immediately with both
+// phases active and checkSetup becomes a no-op so the real system state
+// never overwrites the forced status. Useful for visual testing in dev.
+const FORCE_WIZARD = import.meta.env.VITE_FORCE_SETUP_WIZARD === 'true'
+const FORCED_STATUS: SetupStatus = { cli_installed: false, has_workspaces: false }
+
 export interface UpdatesSlice {
   cliInfo: CliInfo | null
   setupStatus: SetupStatus | null
@@ -21,10 +27,10 @@ export interface UpdatesSlice {
 
 export const createUpdatesSlice: StateCreator<AppStore, [], [], UpdatesSlice> = (set) => ({
   cliInfo: null,
-  setupStatus: null,
+  setupStatus: FORCE_WIZARD ? FORCED_STATUS : null,
   updateCheck: null,
   updatesChecking: false,
-  setupWizardOpen: false,
+  setupWizardOpen: FORCE_WIZARD,
   setupWizardTriggeredOnce: false,
 
   checkCli: async () => {
@@ -37,6 +43,7 @@ export const createUpdatesSlice: StateCreator<AppStore, [], [], UpdatesSlice> = 
   },
 
   checkSetup: async () => {
+    if (FORCE_WIZARD) return
     try {
       const status = await tauriService.setupCheck()
       set({ setupStatus: status })
@@ -55,7 +62,7 @@ export const createUpdatesSlice: StateCreator<AppStore, [], [], UpdatesSlice> = 
     }
   },
 
-  openSetupWizard:        () => set({ setupWizardOpen: true }),
-  closeSetupWizard:       () => set({ setupWizardOpen: false }),
+  openSetupWizard:          () => set({ setupWizardOpen: true }),
+  closeSetupWizard:         () => set({ setupWizardOpen: false }),
   markSetupWizardTriggered: () => set({ setupWizardTriggeredOnce: true }),
 })
