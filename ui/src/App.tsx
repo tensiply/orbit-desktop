@@ -14,7 +14,7 @@ import { HarnessDrawer } from './components/HarnessDrawer'
 import { UIKitView } from './components/UIKitView'
 import { ColorsView } from './components/ColorsView'
 import { SettingsView } from './components/SettingsView'
-import { DocumentView } from './components/DocumentView'
+import { DocumentView, FileViewer } from './components/DocumentView'
 import { TaskView } from './components/TaskView'
 import { FEATURE_PAGES } from './lib/featurePages'
 import { ArchitectureView } from './components/ArchitectureView'
@@ -217,6 +217,13 @@ export default function App() {
                     return (
                       <div key={tab.id} className={`absolute inset-0 ${isActive ? '' : 'hidden'}`}>
                         {doc && <DocumentView doc={doc} />}
+                      </div>
+                    )
+                  }
+                  if (tab.type === 'file' && tab.filePath) {
+                    return (
+                      <div key={tab.id} className={`absolute inset-0 ${isActive ? '' : 'hidden'}`}>
+                        <FileViewer path={tab.filePath} title={tab.title} format={tab.fileFormat ?? ''} />
                       </div>
                     )
                   }

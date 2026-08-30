@@ -1,10 +1,10 @@
 import { useEffect, useRef, useState } from 'react'
 import {
   Copy, FolderOpen, Archive, Trash2, Info, Mail, Send,
-  FileText, Network, Clipboard,
+  FileText, Network, Clipboard, Image, FileCode,
 } from 'lucide-react'
 import { useAppStore } from '../../store'
-import type { DocEntry } from '../../types'
+import type { AnyFileEntry } from '../../types'
 import { tauriService } from '../../services/tauri'
 import {
   ContextMenu,
@@ -28,28 +28,37 @@ import {
 import { Button } from '../ui/button'
 import { RING_CLASS } from './constants'
 
-function docScope(doc: DocEntry): string {
-  return [doc.tenant, doc.project, doc.repository].filter(Boolean).join(' › ')
+function fileScope(file: AnyFileEntry): string {
+  return [file.tenant, file.project, file.repository].filter(Boolean).join(' › ')
 }
 
-function docFilename(path: string): string {
+function fileFilename(path: string): string {
   return path.split('/').pop() ?? path
 }
-
-const TEXT_FORMATS = new Set(['html', 'csv'])
 
 function fmtTs(secs: number): string {
   return new Date(secs * 1000).toLocaleString()
 }
 
-function DocumentItem({
-  doc,
+function kindIcon(kind: AnyFileEntry['kind']) {
+  if (kind === 'image') return <Image size={11} />
+  if (kind === 'svg')   return <FileCode size={11} />
+  return <FileText size={11} />
+}
+
+function kindLabel(file: AnyFileEntry): string {
+  if (file.kind === 'svg') return 'SVG'
+  return file.format.toUpperCase()
+}
+
+function FileItem({
+  file,
   isKeySelected,
   onOpen,
   onArchive,
   onDelete,
 }: {
-  doc: DocEntry
+  file: AnyFileEntry
   isKeySelected: boolean
   onOpen: () => void
   onArchive: () => void
@@ -67,27 +76,32 @@ function DocumentItem({
     }
   }, [isKeySelected])
 
-  const scope = docScope(doc)
-  const file  = docFilename(doc.output_path)
+  const scope    = fileScope(file)
+  const filename = fileFilename(file.output_path)
+  const label    = kindLabel(file)
 
   async function copyPath() {
-    await navigator.clipboard.writeText(doc.output_path)
+    await navigator.clipboard.writeText(file.output_path)
   }
 
   async function copyContent() {
-    if (TEXT_FORMATS.has(doc.format.toLowerCase())) {
-      try {
-        const b64 = await tauriService.documentReadB64(doc.output_path)
-        const text = atob(b64)
-        await navigator.clipboard.writeText(text)
-        return
-      } catch { /* fall through */ }
+    try {
+      const b64 = await tauriService.documentReadB64(file.output_path)
+      const text = atob(b64)
+      await navigator.clipboard.writeText(text)
+    } catch {
+      await navigator.clipboard.writeText(file.output_path)
     }
-    await navigator.clipboard.writeText(doc.output_path)
   }
 
   async function reveal() {
-    await tauriService.documentReveal(doc.output_path).catch(() => void 0)
+    if (file.kind === 'image') {
+      await tauriService.imageReveal(file.output_path).catch(() => void 0)
+    } else if (file.kind === 'svg') {
+      await tauriService.svgReveal(file.output_path).catch(() => void 0)
+    } else {
+      await tauriService.documentReveal(file.output_path).catch(() => void 0)
+    }
   }
 
   async function confirmDelete() {
@@ -102,32 +116,25 @@ function DocumentItem({
 
   return (
     <>
-      {/* Info dialog */}
       <Dialog open={showInfo} onOpenChange={setShowInfo}>
         <DialogContent className="max-w-sm">
           <DialogHeader>
             <DialogTitle className="text-sm flex items-center gap-2">
-              <span className="text-[10px] uppercase tracking-wider font-medium px-1 py-px rounded bg-muted text-muted-foreground">{doc.format}</span>
-              {doc.title}
+              <span className="text-[10px] uppercase tracking-wider font-medium px-1 py-px rounded bg-muted text-muted-foreground">{label}</span>
+              {file.title}
             </DialogTitle>
-            <DialogDescription className="sr-only">Document details</DialogDescription>
+            <DialogDescription className="sr-only">File details</DialogDescription>
           </DialogHeader>
           <div className="space-y-2 text-xs text-foreground/70">
             <div className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-1.5">
               <span className="text-foreground/40 font-medium">ID</span>
-              <span className="font-mono">{doc.id}</span>
+              <span className="font-mono">{file.id}</span>
               <span className="text-foreground/40 font-medium">Path</span>
-              <span className="font-mono break-all text-[10px] leading-snug">{doc.output_path}</span>
-              {doc.source_path && (
-                <>
-                  <span className="text-foreground/40 font-medium">Source</span>
-                  <span className="font-mono break-all text-[10px] leading-snug">{doc.source_path}</span>
-                </>
-              )}
-              {doc.template && (
+              <span className="font-mono break-all text-[10px] leading-snug">{file.output_path}</span>
+              {'template' in file && file.template && (
                 <>
                   <span className="text-foreground/40 font-medium">Template</span>
-                  <span>{doc.template}</span>
+                  <span>{file.template}</span>
                 </>
               )}
               {scope && (
@@ -136,16 +143,16 @@ function DocumentItem({
                   <span>{scope}</span>
                 </>
               )}
-              {doc.workspace && (
+              {file.workspace && (
                 <>
                   <span className="text-foreground/40 font-medium">Workspace</span>
-                  <span>{doc.workspace}</span>
+                  <span>{file.workspace}</span>
                 </>
               )}
               <span className="text-foreground/40 font-medium">Created</span>
-              <span>{fmtTs(doc.created_at)}</span>
+              <span>{fmtTs(file.created_at)}</span>
               <span className="text-foreground/40 font-medium">Updated</span>
-              <span>{fmtTs(doc.updated_at)}</span>
+              <span>{fmtTs(file.updated_at)}</span>
             </div>
           </div>
           <DialogFooter>
@@ -154,13 +161,12 @@ function DocumentItem({
         </DialogContent>
       </Dialog>
 
-      {/* Delete confirmation dialog */}
       <Dialog open={showDelete} onOpenChange={(o) => { if (!deleting) setShowDelete(o) }}>
         <DialogContent className="max-w-sm">
           <DialogHeader>
-            <DialogTitle className="text-sm">Delete document?</DialogTitle>
+            <DialogTitle className="text-sm">Delete file?</DialogTitle>
             <DialogDescription className="text-xs">
-              This will permanently delete <span className="font-medium text-foreground">{doc.title}</span> and its output file. This cannot be undone.
+              This will permanently delete <span className="font-medium text-foreground">{file.title}</span> and its output file. This cannot be undone.
             </DialogDescription>
           </DialogHeader>
           <DialogFooter className="gap-2">
@@ -182,14 +188,15 @@ function DocumentItem({
             >
               <div className="flex flex-col gap-0.5 min-w-0">
                 <div className="flex items-center gap-1.5 min-w-0">
-                  <span className="text-[10px] uppercase tracking-wider font-medium px-1 py-px rounded bg-sidebar-foreground/8 text-sidebar-foreground/40 shrink-0">
-                    {doc.format}
+                  <span className="text-[10px] uppercase tracking-wider font-medium px-1 py-px rounded bg-sidebar-foreground/8 text-sidebar-foreground/40 shrink-0 flex items-center gap-0.5">
+                    {kindIcon(file.kind)}
+                    {label}
                   </span>
                   <span className="text-xs font-medium leading-snug truncate text-sidebar-foreground/60 group-hover:text-sidebar-accent-foreground">
-                    {doc.title}
+                    {file.title}
                   </span>
                 </div>
-                <span className="text-[10px] leading-tight truncate text-sidebar-foreground/30 pl-0.5">{file}</span>
+                <span className="text-[10px] leading-tight truncate text-sidebar-foreground/30 pl-0.5">{filename}</span>
                 {scope && (
                   <span className="text-[10px] leading-tight truncate text-sidebar-foreground/25 pl-0.5">{scope}</span>
                 )}
@@ -204,7 +211,7 @@ function DocumentItem({
                 <Copy size={13} />Copy path
               </ContextMenuItem>
               <ContextMenuItem className="text-xs gap-2" onClick={copyContent}>
-                <Clipboard size={13} />Copy document
+                <Clipboard size={13} />Copy content
               </ContextMenuItem>
             </ContextMenuGroup>
             <ContextMenuGroup>
@@ -251,43 +258,62 @@ function DocumentItem({
   )
 }
 
-export function DocumentsPanel({
-  documents,
+export function FilesPanel({
+  files,
   loading,
   sidebarFocused,
   sidebarSelectedIdx,
   onOpen,
 }: {
-  documents:          DocEntry[]
+  files:              AnyFileEntry[]
   loading:            boolean
   sidebarFocused:     boolean
   sidebarSelectedIdx: number
-  onOpen: (doc: DocEntry) => void
+  onOpen: (file: AnyFileEntry) => void
 }) {
   const archiveDocument = useAppStore((s) => s.archiveDocument)
   const deleteDocument  = useAppStore((s) => s.deleteDocument)
+  const archiveImage    = useAppStore((s) => s.archiveImage)
+  const deleteImage     = useAppStore((s) => s.deleteImage)
+  const archiveSvg      = useAppStore((s) => s.archiveSvg)
+  const deleteSvg       = useAppStore((s) => s.deleteSvg)
 
-  if (!loading && documents.length === 0) {
+  function archive(file: AnyFileEntry) {
+    if (file.kind === 'doc')   return void archiveDocument(file.id, file.workspace)
+    if (file.kind === 'image') return void archiveImage(file.id, file.workspace)
+    return void archiveSvg(file.id, file.workspace)
+  }
+
+  async function remove(file: AnyFileEntry) {
+    if (file.kind === 'doc')   return deleteDocument(file.id, file.workspace)
+    if (file.kind === 'image') return deleteImage(file.id, file.workspace)
+    return deleteSvg(file.id, file.workspace)
+  }
+
+  if (!loading && files.length === 0) {
     return (
-      <p className="text-[10px] text-sidebar-foreground/30 px-2 pt-1 italic">No documents yet</p>
+      <p className="text-[10px] text-sidebar-foreground/30 px-2 pt-1 italic">No files yet</p>
     )
   }
 
   return (
     <ul className="p-0 w-full space-y-0.5 pt-0.5">
-      {documents.map((doc, idx) => (
-        <DocumentItem
-          key={doc.id}
-          doc={doc}
+      {files.map((file, idx) => (
+        <FileItem
+          key={`${file.kind}-${file.id}`}
+          file={file}
           isKeySelected={sidebarFocused && idx === sidebarSelectedIdx}
-          onOpen={() => onOpen(doc)}
-          onArchive={() => void archiveDocument(doc.id, doc.workspace)}
-          onDelete={() => deleteDocument(doc.id, doc.workspace)}
+          onOpen={() => onOpen(file)}
+          onArchive={() => archive(file)}
+          onDelete={() => remove(file)}
         />
       ))}
     </ul>
   )
 }
+
+// Keep old export for any remaining direct usage
+export { FilesPanel as DocumentsPanel }
 
 export function DocsPanel() {
   const openUIKit  = useAppStore((s) => s.openUIKit)

@@ -4,6 +4,8 @@ export type { LaunchedInfo }    from '../bindings/LaunchedInfo'
 export type { SessionDto }      from '../bindings/SessionDto'
 export type { WorkspaceInfo }   from '../bindings/WorkspaceInfo'
 export type { DocEntry }        from '../bindings/DocEntry'
+export type { ImageEntry }      from '../bindings/ImageEntry'
+export type { SvgEntry }        from '../bindings/SvgEntry'
 export type { ArchEntityDto }   from '../bindings/ArchEntityDto'
 export type { ArchCatalogDto }  from '../bindings/ArchCatalogDto'
 export type { SaveEntityArgs }  from '../bindings/SaveEntityArgs'
@@ -37,7 +39,7 @@ export interface Session extends Omit<SessionDto, 'is_history'> {
 export interface Tab {
   id: string
   title: string
-  type?: 'terminal' | 'shortcuts' | 'uikit' | 'colors' | 'settings' | 'document' | 'architecture' | 'ui-map' | 'task' | 'feature-page'
+  type?: 'terminal' | 'shortcuts' | 'uikit' | 'colors' | 'settings' | 'document' | 'architecture' | 'ui-map' | 'task' | 'feature-page' | 'file'
   sessionId?: string
   tmuxSession?: string
   docId?: string
@@ -46,6 +48,9 @@ export interface Tab {
   taskId?: string
   /** Only on type === 'feature-page': which nav view this page belongs to */
   featureView?: NavView
+  /** Only on type === 'file': path + format for the generic file viewer */
+  filePath?: string
+  fileFormat?: string
 }
 
 // ── Task types ─────────────────────────────────────────────────────────────────
@@ -115,6 +120,17 @@ export interface Shortcut {
   category: ShortcutCategory
   builtin: boolean
 }
+
+// ── Unified file entry (documents + images + SVGs) ────────────────────────────
+
+import type { DocEntry }   from '../bindings/DocEntry'
+import type { ImageEntry } from '../bindings/ImageEntry'
+import type { SvgEntry }   from '../bindings/SvgEntry'
+
+export type AnyFileEntry =
+  | ({ kind: 'doc'   } & DocEntry)
+  | ({ kind: 'image' } & ImageEntry)
+  | ({ kind: 'svg';  format: 'svg' } & SvgEntry)
 
 // ── TS-only type aliases ───────────────────────────────────────────────────────
 export type ArchLayout = Record<string, [number, number]>

@@ -6,6 +6,12 @@ import * as pdfjsLib from 'pdfjs-dist'
 import type { PDFDocumentProxy, PDFDocumentLoadingTask } from 'pdfjs-dist'
 import type { DocEntry } from '../types'
 
+export interface FileViewEntry {
+  title:       string
+  format:      string
+  output_path: string
+}
+
 pdfjsLib.GlobalWorkerOptions.workerSrc = new URL(
   'pdfjs-dist/build/pdf.worker.mjs',
   import.meta.url,
@@ -25,6 +31,7 @@ function mimeForExt(ext: string): string | null {
     case 'jpeg':       return 'image/jpeg'
     case 'webp':       return 'image/webp'
     case 'gif':        return 'image/gif'
+    case 'svg':        return 'image/svg+xml'
     case 'csv':        return 'text/plain'
     default:           return null
   }
@@ -332,25 +339,43 @@ function CsvPreview({ path }: { path: string }) {
   )
 }
 
-function PreviewArea({ doc }: { doc: DocEntry }) {
-  const ext  = fileExt(doc.output_path)
+function SvgPreview({ path }: { path: string }) {
+  const { url, error } = useBlobUrl(path, 'image/svg+xml')
+  if (error) return <NoPreview ext="svg" />
+  if (!url)  return <Loading />
+  return (
+    <div className="flex-1 min-h-0 flex items-center justify-center overflow-auto bg-document-viewer-bg p-6">
+      <img src={url} className="max-w-full max-h-full object-contain" />
+    </div>
+  )
+}
+
+function previewArea(path: string, title: string) {
+  const ext  = fileExt(path)
   const mime = mimeForExt(ext)
 
   if (!mime) return <NoPreview ext={ext} />
 
   if (['png', 'jpg', 'jpeg', 'webp', 'gif'].includes(ext)) {
-    return <ImagePreview path={doc.output_path} mime={mime} />
+    return <ImagePreview path={path} mime={mime} />
+  }
+  if (ext === 'svg') {
+    return <SvgPreview path={path} />
   }
   if (ext === 'pdf') {
-    return <PdfPreview path={doc.output_path} />
+    return <PdfPreview path={path} />
   }
   if (['html', 'htm'].includes(ext)) {
-    return <FramePreview path={doc.output_path} mime={mime!} title={doc.title} />
+    return <FramePreview path={path} mime={mime!} title={title} />
   }
   if (ext === 'csv') {
-    return <CsvPreview path={doc.output_path} />
+    return <CsvPreview path={path} />
   }
   return <NoPreview ext={ext} />
+}
+
+function PreviewArea({ doc }: { doc: DocEntry }) {
+  return previewArea(doc.output_path, doc.title)
 }
 
 // ── Header bar ────────────────────────────────────────────────────────────────
@@ -394,6 +419,33 @@ export function DocumentView({ doc }: { doc: DocEntry }) {
     <div className="flex flex-col h-full overflow-hidden border-x-4 border-card">
       <HeaderBar doc={doc} />
       <PreviewArea doc={doc} />
+    </div>
+  )
+}
+
+export function FileViewer({ path, title, format }: { path: string; title: string; format: string }) {
+  return (
+    <div className="flex flex-col h-full overflow-hidden border-x-4 border-card">
+      <div className="flex items-center gap-2 h-8 px-3 shrink-0 border-b border-sidebar-border/60 bg-card">
+        <FileText size={13} className="text-foreground/30 shrink-0" />
+        <span className="text-xs font-medium text-foreground/70 truncate flex-1" title={title}>
+          {title}
+        </span>
+        <span className="text-[10px] uppercase tracking-wider font-medium px-1.5 py-0.5 rounded bg-foreground/8 text-foreground/40 shrink-0">
+          {format}
+        </span>
+        <span className="text-[10px] text-foreground/25 truncate max-w-[140px] hidden sm:block" title={path.split('/').pop()}>
+          {path.split('/').pop()}
+        </span>
+        <button
+          onClick={() => void open(path)}
+          className="flex items-center gap-1 text-[11px] px-2 py-1 rounded bg-foreground/6 hover:bg-foreground/12 text-foreground/45 hover:text-foreground/80 transition-colors shrink-0"
+        >
+          <ExternalLink size={11} />
+          Open
+        </button>
+      </div>
+      {previewArea(path, title)}
     </div>
   )
 }

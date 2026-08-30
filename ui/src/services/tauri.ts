@@ -3,7 +3,7 @@ import type {
   Session, LaunchScope, LaunchedInfo, WorkspaceInfo, ScopeTreeWorkspace,
   ArchCatalogDto, ArchEntityDto, SaveEntityArgs, ArchLayout, ArchRoutes,
   HarnessReport, PluginInfo,
-  CliInfo, UpdateCheck,
+  CliInfo, UpdateCheck, ImageEntry, SvgEntry,
 } from '../types'
 
 export const tauriService = {
@@ -75,6 +75,30 @@ export const tauriService = {
 
   documentReveal: (path: string): Promise<void> =>
     invoke('document_reveal', { path }),
+
+  imageList: (): Promise<ImageEntry[]> =>
+    invoke('image_list'),
+
+  imageDelete: (id: string, workspace: string): Promise<void> =>
+    invoke('image_delete', { id, workspace }),
+
+  imageArchive: (id: string, workspace: string): Promise<void> =>
+    invoke('image_archive', { id, workspace }),
+
+  imageReveal: (path: string): Promise<void> =>
+    invoke('image_reveal', { path }),
+
+  svgList: (): Promise<SvgEntry[]> =>
+    invoke('svg_list'),
+
+  svgDelete: (id: string, workspace: string): Promise<void> =>
+    invoke('svg_delete', { id, workspace }),
+
+  svgArchive: (id: string, workspace: string): Promise<void> =>
+    invoke('svg_archive', { id, workspace }),
+
+  svgReveal: (path: string): Promise<void> =>
+    invoke('svg_reveal', { path }),
 
   sessionClean: (): Promise<number> =>
     invoke('session_clean'),

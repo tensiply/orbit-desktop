@@ -1,4 +1,4 @@
-import type { Session, DocEntry, OrbitTask, ScopeTreeWorkspace } from '../types'
+import type { Session, DocEntry, AnyFileEntry, OrbitTask, ScopeTreeWorkspace } from '../types'
 import { workspaceFromWorkDir } from '../domain/scope'
 export { workspaceFromWorkDir } from '../domain/scope'
 
@@ -9,6 +9,7 @@ export type SidebarNavItem =
   | { type: 'scope-folder'; name: string }
   | { type: 'session'; session: Session }
   | { type: 'document'; doc: DocEntry }
+  | { type: 'file'; file: AnyFileEntry }
   | { type: 'task'; task: OrbitTask }
   | { type: 'scope-architecture'; workspace: string; tenant: string }
 
@@ -69,6 +70,22 @@ export function filterDocsByScope(
   })
 }
 
+export function filterFilesByScope(
+  files: AnyFileEntry[],
+  path: string[],
+  selectedWorkspace?: string | null,
+): AnyFileEntry[] {
+  const ep = effectivePath(path, selectedWorkspace)
+  if (ep.length === 0) return files
+  return files.filter((f) => {
+    if (ep[0] && f.workspace  !== ep[0]) return false
+    if (ep[1] && f.tenant     !== ep[1]) return false
+    if (ep[2] && f.project    !== ep[2]) return false
+    if (ep[3] && f.repository !== ep[3]) return false
+    return true
+  })
+}
+
 export function filterTasksByScope(
   tasks: OrbitTask[],
   path: string[],
@@ -103,10 +120,11 @@ export function computeSidebarItems(params: {
   scopeTree:         ScopeTreeWorkspace[]
   sessions:          Session[]
   documents:         DocEntry[]
+  files:             AnyFileEntry[]
   selectedWorkspace: string | null
   archHistory:       Array<{ workspace: string; tenant: string }>
 }): SidebarNavItem[] {
-  const { navView, scopeViewMode, scopePath, scopeTree, sessions, documents, selectedWorkspace, archHistory } = params
+  const { navView, scopeViewMode, scopePath, scopeTree, sessions, documents, files, selectedWorkspace, archHistory } = params
 
   const items: SidebarNavItem[] = []
 
@@ -139,7 +157,7 @@ export function computeSidebarItems(params: {
 
   if (navView !== 'terminal' && navView !== 'documents') return []
 
-  // ── Sessions / Documents ───────────────────────────────────────────────────
+  // ── Sessions / Documents / Files ───────────────────────────────────────────
 
   // Scope navigator
   if (scopeViewMode === 'scope') {
@@ -158,8 +176,8 @@ export function computeSidebarItems(params: {
       items.push({ type: 'session', session: s })
     }
   } else {
-    for (const doc of filterDocsByScope(documents, scopedPath, selectedWorkspace)) {
-      items.push({ type: 'document', doc })
+    for (const file of filterFilesByScope(files, scopedPath, selectedWorkspace)) {
+      items.push({ type: 'file', file })
     }
   }
 

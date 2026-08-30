@@ -6,9 +6,10 @@ import { useScopeSession } from '../hooks/useScopeSession'
 import {
   computeSidebarItems,
   filterSessionsByScope,
-  filterDocsByScope,
+  filterFilesByScope,
   filterTasksByScope,
 } from '../lib/sidebarNav'
+import { mergeFiles } from '../store/slices/documents'
 import {
   SidebarProvider,
   SidebarMenu,
@@ -23,7 +24,7 @@ import {
 } from './sidebar/Rail'
 import { ViewModeToggle, ScopeNavigator } from './sidebar/ScopePanel'
 import { SessionList } from './sidebar/SessionPanel'
-import { DocumentsPanel, DocsPanel } from './sidebar/DocumentPanel'
+import { FilesPanel, DocsPanel } from './sidebar/DocumentPanel'
 import { ArchItemsList } from './sidebar/ArchPanel'
 import { TasksPanel } from './sidebar/TaskPanel'
 
@@ -52,8 +53,14 @@ export function Sidebar({ width, collapsed }: { width: number; collapsed?: boole
   const blurSidebar        = useAppStore((s) => s.blurSidebar)
   const documents          = useAppStore((s) => s.documents)
   const documentsLoading   = useAppStore((s) => s.documentsLoading)
-  const fetchDocuments     = useAppStore((s) => s.fetchDocuments)
+  const images             = useAppStore((s) => s.images)
+  const imagesLoading      = useAppStore((s) => s.imagesLoading)
+  const svgs               = useAppStore((s) => s.svgs)
+  const svgsLoading        = useAppStore((s) => s.svgsLoading)
+  const fetchFiles         = useAppStore((s) => s.fetchFiles)
   const openDocument       = useAppStore((s) => s.openDocument)
+  const openImage          = useAppStore((s) => s.openImage)
+  const openSvg            = useAppStore((s) => s.openSvg)
   const tasks                = useAppStore((s) => s.tasks)
   const tasksLoading         = useAppStore((s) => s.tasksLoading)
   const fetchTasks           = useAppStore((s) => s.fetchTasks)
@@ -70,7 +77,7 @@ export function Sidebar({ width, collapsed }: { width: number; collapsed?: boole
   const { launchWithEngine } = useScopeSession()
 
   useEffect(() => {
-    if (navView === 'documents') void fetchDocuments()
+    if (navView === 'documents') void fetchFiles()
   }, [navView])
 
   const taskWorkspace = selectedWorkspace
@@ -94,17 +101,20 @@ export function Sidebar({ width, collapsed }: { width: number; collapsed?: boole
     setScopePath([])
   }, [selectedWorkspace])
 
+  const allFiles        = mergeFiles(documents, images, svgs)
+  const filesLoading    = documentsLoading || imagesLoading || svgsLoading
+
   const activeSessionId = tabs.find((t) => t.id === activeTabId)?.sessionId
   const panelLabel      = PANEL_LABELS[navView] ?? navView
   const inScopeMode     = scopeViewMode === 'scope'
   const scopedSessions  = inScopeMode ? filterSessionsByScope(sessions, scopePath, selectedWorkspace) : sessions
-  const scopedDocuments = filterDocsByScope(documents, inScopeMode ? scopePath : [], selectedWorkspace)
+  const scopedFiles     = filterFilesByScope(allFiles, inScopeMode ? scopePath : [], selectedWorkspace)
   const scopedTasks     = filterTasksByScope(tasks, inScopeMode ? scopePath : [], selectedWorkspace)
   const hasScopeFilter  = navView === 'terminal' || navView === 'documents' || navView === 'architecture' || navView === 'tasks'
 
   // Compute unified items list to derive per-component selection state
   const sidebarItems = hasScopeFilter
-    ? computeSidebarItems({ navView, scopeViewMode, scopePath, scopeTree, sessions, documents, selectedWorkspace: selectedWorkspace ?? null, archHistory })
+    ? computeSidebarItems({ navView, scopeViewMode, scopePath, scopeTree, sessions, documents, files: allFiles, selectedWorkspace: selectedWorkspace ?? null, archHistory })
     : []
   const selectedItem = sidebarFocused ? sidebarItems[sidebarSelectedIdx] : null
 
@@ -112,11 +122,11 @@ export function Sidebar({ width, collapsed }: { width: number; collapsed?: boole
   const backSelected       = selectedItem?.type === 'scope-back'
   const selectedFolderName = selectedItem?.type === 'scope-folder' ? selectedItem.name : null
 
-  // Session/document list: adjust index relative to where sessions/docs start in the flat list
+  // Session/file list: adjust index relative to where sessions/files start in the flat list
   const sessionOffset      = sidebarItems.findIndex((i) => i.type === 'session')
-  const docOffset          = sidebarItems.findIndex((i) => i.type === 'document')
+  const fileOffset         = sidebarItems.findIndex((i) => i.type === 'file')
   const sessionRelativeIdx = sessionOffset >= 0 ? sidebarSelectedIdx - sessionOffset : -1
-  const docRelativeIdx     = docOffset >= 0 ? sidebarSelectedIdx - docOffset : -1
+  const fileRelativeIdx    = fileOffset >= 0 ? sidebarSelectedIdx - fileOffset : -1
   const archOffset         = sidebarItems.findIndex((i) => i.type === 'scope-architecture')
   const archRelativeIdx    = archOffset >= 0 ? sidebarSelectedIdx - archOffset : -1
 
@@ -188,7 +198,7 @@ export function Sidebar({ width, collapsed }: { width: number; collapsed?: boole
                 {sessionsLoading && navView === 'terminal' && (
                   <Loader2 className="h-3 w-3 animate-spin text-sidebar-foreground/30 shrink-0" />
                 )}
-                {documentsLoading && navView === 'documents' && (
+                {filesLoading && navView === 'documents' && (
                   <Loader2 className="h-3 w-3 animate-spin text-sidebar-foreground/30 shrink-0" />
                 )}
                 {tasksLoading && navView === 'tasks' && (
@@ -232,12 +242,17 @@ export function Sidebar({ width, collapsed }: { width: number; collapsed?: boole
                         selectedFolderName={selectedFolderName}
                       />
                     )}
-                    <DocumentsPanel
-                      documents={scopedDocuments}
-                      loading={documentsLoading}
+                    <FilesPanel
+                      files={scopedFiles}
+                      loading={filesLoading}
                       sidebarFocused={sidebarFocused}
-                      sidebarSelectedIdx={docRelativeIdx}
-                      onOpen={openDocument}
+                      sidebarSelectedIdx={fileRelativeIdx}
+                      onOpen={(file) => {
+                        blurSidebar()
+                        if (file.kind === 'doc')   openDocument(file)
+                        else if (file.kind === 'image') openImage(file)
+                        else openSvg(file)
+                      }}
                     />
                   </>
                 )}

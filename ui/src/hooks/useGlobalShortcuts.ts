@@ -5,6 +5,7 @@ import {
   computeSidebarItems,
   workspaceFromWorkDir,
 } from '../lib/sidebarNav'
+import { mergeFiles } from '../store/slices/documents'
 
 type ParsedKeys = {
   ctrl: boolean
@@ -69,6 +70,8 @@ export function useGlobalShortcuts() {
   const drawerTabId           = useAppStore((s) => s.drawerTabId)
   const navView               = useAppStore((s) => s.navView)
   const documents             = useAppStore((s) => s.documents)
+  const images                = useAppStore((s) => s.images)
+  const svgs                  = useAppStore((s) => s.svgs)
   const openDocument          = useAppStore((s) => s.openDocument)
   const registeredWorkspaces  = useAppStore((s) => s.registeredWorkspaces)
   const setSelectedWorkspace  = useAppStore((s) => s.setSelectedWorkspace)
@@ -95,6 +98,8 @@ export function useGlobalShortcuts() {
       allSessions.some((s) => !s.is_history && workspaceFromWorkDir(s.work_dir) === ws.name),
     )
 
+    const allFiles = mergeFiles(documents, images, svgs)
+
     // Unified sidebar items (only meaningful for terminal/documents views)
     const sidebarItems = computeSidebarItems({
       navView,
@@ -103,6 +108,7 @@ export function useGlobalShortcuts() {
       scopeTree,
       sessions,
       documents,
+      files: allFiles,
       selectedWorkspace: selectedWorkspace ?? null,
       archHistory,
     })
@@ -394,6 +400,7 @@ export function useGlobalShortcuts() {
                 scopeTree,
                 sessions,
                 documents,
+                files: mergeFiles(documents, images, svgs),
                 selectedWorkspace: selectedWorkspace ?? null,
                 archHistory,
               })

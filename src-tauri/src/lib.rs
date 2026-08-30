@@ -8,10 +8,12 @@ mod debug_buffer;
 mod debug_layer;
 mod debug_server;
 mod documents;
+mod images;
 mod plugins;
 mod pty;
 mod scopes;
 mod sessions;
+mod svgs;
 mod tasks;
 mod updates;
 mod workspaces;
@@ -115,6 +117,16 @@ pub fn run() {
             documents::document_delete,
             documents::document_archive,
             documents::document_reveal,
+            // Images
+            images::image_list,
+            images::image_delete,
+            images::image_archive,
+            images::image_reveal,
+            // SVGs
+            svgs::svg_list,
+            svgs::svg_delete,
+            svgs::svg_archive,
+            svgs::svg_reveal,
             // Workspaces
             workspaces::workspace_list,
             // Scopes
