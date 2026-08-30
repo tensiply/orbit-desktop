@@ -21,7 +21,7 @@ import { ArchitectureView } from './components/ArchitectureView'
 import { DesktopUIView } from './components/DesktopUIView'
 import { SessionHeader } from './components/SessionHeader'
 import { LaunchPickerModal } from './components/LaunchPickerModal'
-import { InstallWizardModal } from './components/InstallWizardModal'
+import { SetupWizardModal } from './components/InstallWizardModal'
 import { useSidebarResize } from './hooks/useSidebarResize'
 import { useSessionPoller } from './hooks/useSessionPoller'
 import { useGlobalShortcuts } from './hooks/useGlobalShortcuts'
@@ -94,32 +94,36 @@ export default function App() {
     SIDEBAR_MAX,
   )
 
-  const loadWorkspaces          = useAppStore((s) => s.loadWorkspaces)
-  const checkCli                = useAppStore((s) => s.checkCli)
-  const checkUpdates            = useAppStore((s) => s.checkUpdates)
-  const cliInfo                 = useAppStore((s) => s.cliInfo)
-  const openInstallWizard       = useAppStore((s) => s.openInstallWizard)
-  const installWizardTriggered  = useAppStore((s) => s.installWizardTriggeredOnce)
-  const markWizardTriggered     = useAppStore((s) => s.markInstallWizardTriggered)
+  const loadWorkspaces              = useAppStore((s) => s.loadWorkspaces)
+  const checkSetup                  = useAppStore((s) => s.checkSetup)
+  const checkUpdates                = useAppStore((s) => s.checkUpdates)
+  const setupStatus                 = useAppStore((s) => s.setupStatus)
+  const openSetupWizard             = useAppStore((s) => s.openSetupWizard)
+  const setupWizardTriggeredOnce    = useAppStore((s) => s.setupWizardTriggeredOnce)
+  const markSetupWizardTriggered    = useAppStore((s) => s.markSetupWizardTriggered)
 
   useEffect(() => { void loadWorkspaces() }, [])
 
-  // Check CLI and updates once on startup (after a brief delay to let the daemon come up)
+  // Check setup status and updates once on startup (after a brief delay to let the daemon come up)
   useEffect(() => {
     const timer = setTimeout(async () => {
-      await checkCli()
+      await checkSetup()
       void checkUpdates()
     }, 2000)
     return () => clearTimeout(timer)
   }, [])
 
-  // Auto-open install wizard when CLI is not detected (once per session)
+  // Auto-open setup wizard when anything is missing (once per session)
   useEffect(() => {
-    if (cliInfo && !cliInfo.installed && !installWizardTriggered) {
-      markWizardTriggered()
-      openInstallWizard()
+    if (
+      setupStatus &&
+      (!setupStatus.cli_installed || !setupStatus.has_workspaces) &&
+      !setupWizardTriggeredOnce
+    ) {
+      markSetupWizardTriggered()
+      openSetupWizard()
     }
-  }, [cliInfo?.installed])
+  }, [setupStatus])
 
   useSessionPoller(5000)
   useGlobalShortcuts()
@@ -127,7 +131,7 @@ export default function App() {
   return (
     <TooltipProvider delayDuration={600}>
       <LaunchPickerModal />
-      <InstallWizardModal />
+      <SetupWizardModal />
       <ContextMenu>
         <ContextMenuContent className="w-44 text-xs">
           <ContextMenuItem className="text-xs gap-2" onClick={() => void invoke('open_devtools').catch(() => void 0)}>

@@ -128,7 +128,7 @@ export function UpdatesSection() {
   const updatesChecking = useAppStore((s) => s.updatesChecking)
   const checkUpdates    = useAppStore((s) => s.checkUpdates)
   const checkCli        = useAppStore((s) => s.checkCli)
-  const openWizard      = useAppStore((s) => s.openInstallWizard)
+  const openWizard      = useAppStore((s) => s.openSetupWizard)
 
   const [cliUpdating, setCliUpdating]       = useState(false)
   const [cliUpdateLog, setCliUpdateLog]     = useState<string[]>([])

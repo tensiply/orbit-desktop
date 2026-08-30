@@ -150,6 +150,8 @@ pub fn run() {
             updates::cli_check,
             updates::cli_install,
             updates::check_updates,
+            updates::setup_check,
+            updates::orbit_workspace_add,
             // Dev tools (no-op in release builds)
             open_devtools,
         ])

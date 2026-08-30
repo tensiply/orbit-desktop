@@ -144,6 +144,11 @@ export interface CliInfo {
   path: string | null
 }
 
+export interface SetupStatus {
+  cli_installed: boolean
+  has_workspaces: boolean
+}
+
 export interface ComponentUpdate {
   current: string | null
   latest: string | null

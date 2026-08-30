@@ -93,15 +93,15 @@ export function SettingsRailButton() {
   const theme           = useAppStore((s) => s.theme)
   const toggleTheme     = useAppStore((s) => s.toggleTheme)
   const blurSidebar     = useAppStore((s) => s.blurSidebar)
-  const cliInfo         = useAppStore((s) => s.cliInfo)
+  const setupStatus     = useAppStore((s) => s.setupStatus)
   const updateCheck     = useAppStore((s) => s.updateCheck)
-  const openWizard      = useAppStore((s) => s.openInstallWizard)
+  const openWizard      = useAppStore((s) => s.openSetupWizard)
   const setNavView      = useAppStore((s) => s.setNavView)
-  const cliNotInstalled  = cliInfo !== null && !cliInfo.installed
+  const setupIncomplete  = setupStatus !== null && (!setupStatus.cli_installed || !setupStatus.has_workspaces)
   const updatesAvailable = updateCheck
     ? (updateCheck.cli.has_update || updateCheck.desktop.has_update)
     : false
-  const hasBadge = cliNotInstalled || updatesAvailable
+  const hasBadge = setupIncomplete || updatesAvailable
 
   const [open, setOpen] = useState(false)
 
@@ -152,12 +152,12 @@ export function SettingsRailButton() {
               Activity
             </DropdownMenuItem>
           </DropdownMenuGroup>
-          {cliNotInstalled && (
+          {setupIncomplete && (
             <DropdownMenuGroup>
-              <DropdownMenuLabel>Install</DropdownMenuLabel>
+              <DropdownMenuLabel>Setup</DropdownMenuLabel>
               <DropdownMenuItem className="text-xs gap-2 text-primary" onClick={openWizard}>
                 <Package />
-                Install Orbit CLI…
+                {!setupStatus?.cli_installed ? 'Install Orbit CLI…' : 'Add workspace…'}
               </DropdownMenuItem>
             </DropdownMenuGroup>
           )}

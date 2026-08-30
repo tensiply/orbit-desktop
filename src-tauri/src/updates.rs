@@ -1,8 +1,11 @@
 use serde::{Deserialize, Serialize};
 use std::path::PathBuf;
-use tauri::{AppHandle, Emitter};
+use std::sync::Arc;
+use tauri::{AppHandle, Emitter, State};
 use tokio::io::{AsyncBufReadExt, AsyncWriteExt, BufReader};
 use tokio::process::Command;
+
+use crate::domain::ports::workspace_repository::WorkspaceRepository;
 
 // ── Types ──────────────────────────────────────────────────────────────────────
 
@@ -11,6 +14,12 @@ pub struct CliInfo {
     pub installed: bool,
     pub version: Option<String>,
     pub path: Option<String>,
+}
+
+#[derive(Debug, Serialize)]
+pub struct SetupStatus {
+    pub cli_installed: bool,
+    pub has_workspaces: bool,
 }
 
 #[derive(Debug, Serialize)]
@@ -72,6 +81,64 @@ pub async fn cli_install(method: String, app: AppHandle) -> Result<(), String> {
         "brew" => install_via_brew(&app).await,
         _ => Err(format!("unknown install method: {method}")),
     }
+}
+
+/// Return a combined setup status: CLI installed + at least one workspace registered.
+#[tauri::command]
+pub async fn setup_check(
+    workspace_repo: State<'_, Arc<dyn WorkspaceRepository>>,
+) -> Result<SetupStatus, String> {
+    let cli_installed = which_binary("orbit").await.is_some();
+    let has_workspaces = !workspace_repo.list().is_empty();
+    Ok(SetupStatus { cli_installed, has_workspaces })
+}
+
+/// Run `orbit workspace add <path> [--name <name>]` and stream output via the
+/// `setup_output` Tauri event.
+#[tauri::command]
+pub async fn orbit_workspace_add(
+    path: String,
+    name: Option<String>,
+    app: AppHandle,
+) -> Result<(), String> {
+    use std::process::Stdio;
+
+    let mut args: Vec<String> = vec!["workspace".into(), "add".into(), path];
+    if let Some(n) = name {
+        args.push("--name".into());
+        args.push(n);
+    }
+
+    let mut child = Command::new("orbit")
+        .args(&args)
+        .stdout(Stdio::piped())
+        .stderr(Stdio::piped())
+        .spawn()
+        .map_err(|e| format!("failed to start orbit: {e}"))?;
+
+    let stderr = child.stderr.take().expect("stderr piped");
+    let app_err = app.clone();
+    tokio::spawn(async move {
+        let mut reader = BufReader::new(stderr).lines();
+        while let Ok(Some(line)) = reader.next_line().await {
+            let _ = app_err.emit("setup_output", &line);
+        }
+    });
+
+    let stdout = child.stdout.take().expect("stdout piped");
+    let mut reader = BufReader::new(stdout).lines();
+    while let Ok(Some(line)) = reader.next_line().await {
+        let _ = app.emit("setup_output", &line);
+    }
+
+    let status = child.wait().await.map_err(|e| e.to_string())?;
+    if !status.success() {
+        return Err(format!(
+            "orbit workspace add failed (exit {})",
+            status.code().unwrap_or(-1)
+        ));
+    }
+    Ok(())
 }
 
 /// Check for available updates for the CLI and desktop app via GitHub releases.

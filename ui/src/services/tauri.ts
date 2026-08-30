@@ -3,7 +3,7 @@ import type {
   Session, LaunchScope, LaunchedInfo, WorkspaceInfo, ScopeTreeWorkspace,
   ArchCatalogDto, ArchEntityDto, SaveEntityArgs, ArchLayout, ArchRoutes,
   HarnessReport, PluginInfo,
-  CliInfo, UpdateCheck, ImageEntry, SvgEntry,
+  CliInfo, SetupStatus, UpdateCheck, ImageEntry, SvgEntry,
 } from '../types'
 
 export const tauriService = {
@@ -117,6 +117,12 @@ export const tauriService = {
 
   cliInstall: (method: string): Promise<void> =>
     invoke('cli_install', { method }),
+
+  setupCheck: (): Promise<SetupStatus> =>
+    invoke('setup_check'),
+
+  orbitWorkspaceAdd: (path: string, name?: string): Promise<void> =>
+    invoke('orbit_workspace_add', { path, name: name ?? null }),
 
   checkUpdates: (): Promise<UpdateCheck> =>
     invoke('check_updates'),
