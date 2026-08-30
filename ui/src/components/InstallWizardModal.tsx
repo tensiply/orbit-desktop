@@ -1,7 +1,8 @@
 import { Fragment, useState, useEffect, useRef } from 'react'
 import { listen } from '@tauri-apps/api/event'
+import { open as openFolder } from '@tauri-apps/plugin-dialog'
 import {
-  CheckCircle2, Circle, CircleDot, Loader2, Terminal, Package, AlertCircle, PlusCircle,
+  CheckCircle2, Circle, CircleDot, Loader2, Terminal, Package, AlertCircle, PlusCircle, FolderOpen,
 } from 'lucide-react'
 import { useAppStore } from '../store'
 import { tauriService } from '../services/tauri'
@@ -11,7 +12,7 @@ import { Button } from './ui/button'
 // ── Types ──────────────────────────────────────────────────────────────────────
 
 type Phase = 'install-cli' | 'add-workspace'
-type RunState = 'idle' | 'running' | 'done' | 'error'
+type RunState = 'idle' | 'running' | 'error'
 type InstallMethod = 'github' | 'cargo' | 'brew'
 
 const PHASE_LABELS: Record<Phase, string> = {
@@ -80,11 +81,13 @@ function OutputConsole({ lines, running }: { lines: string[]; running: boolean }
 // ── Main wizard ────────────────────────────────────────────────────────────────
 
 export function SetupWizardModal() {
-  const open         = useAppStore((s) => s.setupWizardOpen)
-  const close        = useAppStore((s) => s.closeSetupWizard)
-  const setupStatus  = useAppStore((s) => s.setupStatus)
-  const checkSetup   = useAppStore((s) => s.checkSetup)
-  const loadScopeTree = useAppStore((s) => s.loadScopeTree)
+  const open              = useAppStore((s) => s.setupWizardOpen)
+  const close             = useAppStore((s) => s.closeSetupWizard)
+  const setupStatus       = useAppStore((s) => s.setupStatus)
+  const checkSetup        = useAppStore((s) => s.checkSetup)
+  const loadScopeTree     = useAppStore((s) => s.loadScopeTree)
+  const loadWorkspaces    = useAppStore((s) => s.loadWorkspaces)
+  const registeredWorkspaces = useAppStore((s) => s.registeredWorkspaces)
 
   // Which phases are needed
   const phases: Phase[] = []
@@ -99,6 +102,7 @@ export function SetupWizardModal() {
   const [installState, setInstallState]   = useState<RunState>('idle')
   const [installLines, setInstallLines]   = useState<string[]>([])
   const [installError, setInstallError]   = useState<string | null>(null)
+  const [installDone, setInstallDone]     = useState(false)
 
   // Add workspace phase state
   const [wsPath,  setWsPath]  = useState('')
@@ -117,6 +121,7 @@ export function SetupWizardModal() {
       setInstallState('idle')
       setInstallLines([])
       setInstallError(null)
+      setInstallDone(false)
       setWsPath('')
       setWsName('')
       setWsState('idle')
@@ -155,7 +160,8 @@ export function SetupWizardModal() {
 
     try {
       await tauriService.cliInstall(installMethod)
-      setInstallState('done')
+      setInstallDone(true)
+      setInstallState('idle')
       await checkSetup()
     } catch (e) {
       setInstallError(String(e))
@@ -166,6 +172,13 @@ export function SetupWizardModal() {
   }
 
   // ── Add workspace ─────────────────────────────────────────────────────────────
+
+  const pickFolder = async () => {
+    const selected = await openFolder({ directory: true, multiple: false, recursive: false })
+    if (typeof selected === 'string' && selected) {
+      setWsPath(selected)
+    }
+  }
 
   const startWorkspaceAdd = async () => {
     setWsState('running')
@@ -178,8 +191,10 @@ export function SetupWizardModal() {
 
     try {
       await tauriService.orbitWorkspaceAdd(wsPath.trim(), wsName.trim() || undefined)
-      setWsState('done')
-      await Promise.all([checkSetup(), loadScopeTree()])
+      setWsPath('')
+      setWsName('')
+      setWsState('idle')
+      await Promise.all([checkSetup(), loadWorkspaces(), loadScopeTree()])
     } catch (e) {
       setWsError(String(e))
       setWsState('error')
@@ -206,6 +221,7 @@ export function SetupWizardModal() {
   // ── Current phase sub-state ───────────────────────────────────────────────────
 
   const installSelected = INSTALL_OPTIONS.find((o) => o.method === installMethod)!
+  const hasWorkspaces   = registeredWorkspaces.length > 0
 
   return (
     <Dialog open={open} onOpenChange={(v) => { if (!v && !isRunning) close() }}>
@@ -243,7 +259,7 @@ export function SetupWizardModal() {
 
           {/* ── Install CLI phase ─────────────────────────────────────────────── */}
 
-          {currentPhase === 'install-cli' && installState === 'idle' && (
+          {currentPhase === 'install-cli' && installState === 'idle' && !installDone && (
             <>
               <p className="text-xs text-foreground/60 leading-relaxed">
                 Choose how to install the Orbit CLI. It is required to launch and manage AI sessions.
@@ -282,6 +298,16 @@ export function SetupWizardModal() {
             </>
           )}
 
+          {currentPhase === 'install-cli' && installState === 'idle' && installDone && (
+            <div className="flex flex-col items-center justify-center gap-3 py-6">
+              <CheckCircle2 size={36} className="text-primary" />
+              <div className="text-center">
+                <p className="text-sm font-medium text-foreground">Orbit CLI installed</p>
+                <p className="text-xs text-foreground/50 mt-0.5">The CLI is ready to use.</p>
+              </div>
+            </div>
+          )}
+
           {currentPhase === 'install-cli' && (installState === 'running' || installState === 'error') && (
             <>
               <div className="flex items-center gap-2">
@@ -306,16 +332,6 @@ export function SetupWizardModal() {
             </>
           )}
 
-          {currentPhase === 'install-cli' && installState === 'done' && (
-            <div className="flex flex-col items-center justify-center gap-3 py-6">
-              <CheckCircle2 size={36} className="text-primary" />
-              <div className="text-center">
-                <p className="text-sm font-medium text-foreground">Orbit CLI installed</p>
-                <p className="text-xs text-foreground/50 mt-0.5">The CLI is ready to use.</p>
-              </div>
-            </div>
-          )}
-
           {/* ── Add workspace phase ───────────────────────────────────────────── */}
 
           {currentPhase === 'add-workspace' && wsState === 'idle' && (
@@ -324,21 +340,64 @@ export function SetupWizardModal() {
                 Register a workspace so Orbit can track your projects and load the right context for AI sessions.
               </p>
 
-              <div className="flex flex-col gap-2.5 mt-1">
+              {/* Registered workspaces list */}
+              {hasWorkspaces && (
+                <div className="flex flex-col gap-1">
+                  <p className="text-[11px] text-foreground/40 font-medium uppercase tracking-wide">
+                    Registered workspaces
+                  </p>
+                  <div className="flex flex-col gap-1">
+                    {registeredWorkspaces.map((ws) => (
+                      <div
+                        key={ws.slug}
+                        className="flex items-center gap-2.5 px-2.5 py-1.5 rounded-md bg-foreground/4 border border-border/40"
+                      >
+                        <CheckCircle2 size={12} className="text-primary shrink-0" />
+                        <span className="text-xs font-medium text-foreground">{ws.name}</span>
+                        {ws.slug !== ws.name && (
+                          <span className="text-[11px] text-foreground/35 font-mono">{ws.slug}</span>
+                        )}
+                        {ws.is_default && (
+                          <span className="ml-auto text-[10px] text-primary/60 bg-primary/8 px-1.5 py-0.5 rounded">
+                            default
+                          </span>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Add form */}
+              <div className="flex flex-col gap-2.5">
+                <p className="text-[11px] text-foreground/40 font-medium uppercase tracking-wide">
+                  {hasWorkspaces ? 'Add another' : 'Add workspace'}
+                </p>
                 <div>
                   <label className="text-[11px] text-foreground/50 mb-1 block">
-                    Workspace path <span className="text-destructive">*</span>
+                    Workspace path {!hasWorkspaces && <span className="text-destructive">*</span>}
                   </label>
-                  <input
-                    type="text"
-                    value={wsPath}
-                    onChange={(e) => setWsPath(e.target.value)}
-                    placeholder="~/projects  or  /home/user/work"
-                    className="w-full h-7 px-2.5 rounded-md bg-foreground/5 border border-border text-xs font-mono placeholder:text-foreground/25 focus:outline-none focus:ring-1 focus:ring-primary/50"
-                  />
-                  <p className="text-[10px] text-foreground/35 mt-1">
-                    Must be an existing directory. Tilde (~) is expanded automatically.
-                  </p>
+                  <div className="flex gap-1.5">
+                    <input
+                      type="text"
+                      value={wsPath}
+                      onChange={(e) => setWsPath(e.target.value)}
+                      placeholder="~/projects  or  /home/user/work"
+                      className="flex-1 h-7 px-2.5 rounded-md bg-foreground/5 border border-border text-xs font-mono placeholder:text-foreground/25 focus:outline-none focus:ring-1 focus:ring-primary/50"
+                    />
+                    <button
+                      onClick={() => void pickFolder()}
+                      title="Browse folder"
+                      className="h-7 px-2 rounded-md border border-border bg-foreground/5 hover:bg-foreground/10 transition-colors flex items-center gap-1 text-foreground/50 hover:text-foreground/80"
+                    >
+                      <FolderOpen size={13} />
+                    </button>
+                  </div>
+                  {!hasWorkspaces && (
+                    <p className="text-[10px] text-foreground/35 mt-1">
+                      Must be an existing directory. Tilde (~) is expanded automatically.
+                    </p>
+                  )}
                 </div>
 
                 <div>
@@ -356,7 +415,7 @@ export function SetupWizardModal() {
               </div>
 
               {wsPath.trim() && (
-                <div className="mt-1 p-2.5 rounded-lg bg-foreground/4 flex items-start gap-2">
+                <div className="p-2.5 rounded-lg bg-foreground/4 flex items-start gap-2">
                   <Terminal size={12} className="text-foreground/35 mt-0.5 shrink-0" />
                   <code className="text-[11px] font-mono text-foreground/50 break-all">
                     orbit workspace add {wsPath.trim()}
@@ -390,25 +449,13 @@ export function SetupWizardModal() {
               )}
             </>
           )}
-
-          {currentPhase === 'add-workspace' && wsState === 'done' && (
-            <div className="flex flex-col items-center justify-center gap-3 py-6">
-              <CheckCircle2 size={36} className="text-primary" />
-              <div className="text-center">
-                <p className="text-sm font-medium text-foreground">Workspace registered</p>
-                <p className="text-xs text-foreground/50 mt-0.5">
-                  Orbit is ready to manage your projects.
-                </p>
-              </div>
-            </div>
-          )}
         </div>
 
         {/* Footer */}
         <div className="flex items-center justify-end gap-2 px-5 py-3 border-t border-border/30">
 
           {/* Install CLI footer */}
-          {currentPhase === 'install-cli' && installState === 'idle' && (
+          {currentPhase === 'install-cli' && installState === 'idle' && !installDone && (
             <>
               <Button variant="ghost" size="sm" className="text-xs" onClick={skipPhase}>
                 Skip for now
@@ -417,6 +464,11 @@ export function SetupWizardModal() {
                 Install
               </Button>
             </>
+          )}
+          {currentPhase === 'install-cli' && installState === 'idle' && installDone && (
+            <Button size="sm" className="text-xs" onClick={() => void advance()}>
+              {phaseIdx + 1 < phases.length ? 'Continue' : 'Done'}
+            </Button>
           )}
           {currentPhase === 'install-cli' && installState === 'running' && (
             <Button size="sm" variant="ghost" className="text-xs" disabled>
@@ -434,14 +486,9 @@ export function SetupWizardModal() {
               </Button>
             </>
           )}
-          {currentPhase === 'install-cli' && installState === 'done' && (
-            <Button size="sm" className="text-xs" onClick={() => void advance()}>
-              {phaseIdx + 1 < phases.length ? 'Continue' : 'Done'}
-            </Button>
-          )}
 
           {/* Add workspace footer */}
-          {currentPhase === 'add-workspace' && wsState === 'idle' && (
+          {currentPhase === 'add-workspace' && wsState === 'idle' && !hasWorkspaces && (
             <>
               <Button variant="ghost" size="sm" className="text-xs" onClick={skipPhase}>
                 Skip for now
@@ -454,6 +501,23 @@ export function SetupWizardModal() {
               >
                 <PlusCircle size={12} className="mr-1.5" />
                 Add workspace
+              </Button>
+            </>
+          )}
+          {currentPhase === 'add-workspace' && wsState === 'idle' && hasWorkspaces && (
+            <>
+              <Button
+                size="sm"
+                variant="outline"
+                className="text-xs"
+                disabled={!wsPath.trim()}
+                onClick={() => void startWorkspaceAdd()}
+              >
+                <PlusCircle size={12} className="mr-1.5" />
+                Add
+              </Button>
+              <Button size="sm" className="text-xs" onClick={() => void advance()}>
+                {phaseIdx + 1 < phases.length ? 'Continue' : 'Done'}
               </Button>
             </>
           )}
@@ -472,11 +536,6 @@ export function SetupWizardModal() {
                 Retry
               </Button>
             </>
-          )}
-          {currentPhase === 'add-workspace' && wsState === 'done' && (
-            <Button size="sm" className="text-xs" onClick={() => void advance()}>
-              {phaseIdx + 1 < phases.length ? 'Continue' : 'Done'}
-            </Button>
           )}
         </div>
       </DialogContent>
