@@ -208,18 +208,23 @@ function persistSettings(settings: Setting[]) {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(map))
 }
 
+export type ActiveSettingsCategory = SettingCategory | 'updates'
+
 export interface SettingsSlice {
   settings: Setting[]
+  activeSettingsCategory: ActiveSettingsCategory
 
   getSetting: (id: string) => Setting | undefined
   getSettingValue: (key: string) => Setting['value'] | undefined
   updateSetting: (id: string, value: Setting['value']) => void
   resetSetting: (id: string) => void
   resetAllSettings: () => void
+  setSettingsCategory: (cat: ActiveSettingsCategory) => void
 }
 
 export const createSettingsSlice: StateCreator<AppStore, [], [], SettingsSlice> = (set, get) => ({
   settings: loadSettings(),
+  activeSettingsCategory: 'general',
 
   getSetting: (id) => get().settings.find((s) => s.id === id),
 
@@ -245,6 +250,8 @@ export const createSettingsSlice: StateCreator<AppStore, [], [], SettingsSlice> 
     localStorage.removeItem(STORAGE_KEY)
     set({ settings })
   },
+
+  setSettingsCategory: (cat) => set({ activeSettingsCategory: cat }),
 })
 
 export type { SettingCategory }

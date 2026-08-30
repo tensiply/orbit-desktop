@@ -408,7 +408,7 @@ export function useGlobalShortcuts() {
             setNavView('profile')
             break
           case 'open_settings_menu':
-            window.dispatchEvent(new CustomEvent('orbit:open-settings-menu'))
+            openSettings()
             break
           case 'focus_sessions':
             if (sidebarFocused) {

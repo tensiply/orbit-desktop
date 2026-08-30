@@ -84,6 +84,7 @@ export default function App() {
   const tasks         = useAppStore((s) => s.tasks)
   const sidebarHidden = useAppStore((s) => s.sidebarHidden)
   const focusedPanel  = useAppStore((s) => s.focusedPanel)
+  const navView       = useAppStore((s) => s.navView)
 
   const everActiveRef = useRef<Set<string>>(new Set())
   if (activeTabId) everActiveRef.current.add(activeTabId)
@@ -161,6 +162,12 @@ export default function App() {
           <div className="flex-1 min-h-0 flex gap-2 pr-2 pb-2">
             {/* Main card */}
             <div data-orbit-zone="orbit.desktop.principal.card" className="flex-1 flex flex-col overflow-hidden rounded-2xl ring-sidebar">
+              {navView === 'settings' ? (
+                <div className="flex-1 overflow-hidden bg-card">
+                  <SettingsView />
+                </div>
+              ) : (
+              <>
               <TabBar />
               <SessionHeader />
               <div data-orbit-zone="orbit.desktop.principal.card.content" className="relative flex-1 overflow-hidden bg-card">
@@ -271,6 +278,8 @@ export default function App() {
                   )
                 })}
               </div>
+              </>
+              )}
             </div>
 
             {/* Drawer cards — siblings, same height, gap from parent */}

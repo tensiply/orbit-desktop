@@ -1,5 +1,5 @@
 import { useEffect } from 'react'
-import { Loader2, BookOpen, User } from 'lucide-react'
+import { Loader2, BookOpen, User, Settings2, Monitor, Terminal as TerminalIcon, Cpu, ShieldCheck, Download, Package } from 'lucide-react'
 import { useAppStore } from '../store'
 import { workspaceFromWorkDir } from '../domain/scope'
 import { useScopeSession } from '../hooks/useScopeSession'
@@ -27,8 +27,107 @@ import { SessionList } from './sidebar/SessionPanel'
 import { FilesPanel, DocsPanel } from './sidebar/DocumentPanel'
 import { ArchItemsList } from './sidebar/ArchPanel'
 import { TasksPanel } from './sidebar/TaskPanel'
+import type { ActiveSettingsCategory } from '../store/slices/settings'
+import type { UpdateCheck, SetupStatus } from '../types'
 
 const RAIL_W = 52
+
+// ── Settings category groups ───────────────────────────────────────────────────
+
+type SettingsCatItem = {
+  id: ActiveSettingsCategory
+  label: string
+  icon: React.ReactNode
+}
+
+const SETTINGS_GROUPS: { items: SettingsCatItem[] }[] = [
+  {
+    items: [
+      { id: 'general',    label: 'General',    icon: <Settings2 size={13} /> },
+      { id: 'appearance', label: 'Appearance', icon: <Monitor size={13} />   },
+      { id: 'terminal',   label: 'Terminal',   icon: <TerminalIcon size={13} /> },
+    ],
+  },
+  {
+    items: [
+      { id: 'engine',  label: 'Engine',  icon: <Cpu size={13} /> },
+    ],
+  },
+  {
+    items: [
+      { id: 'privacy', label: 'Privacy', icon: <ShieldCheck size={13} /> },
+      { id: 'updates', label: 'Updates', icon: <Download size={13} />    },
+    ],
+  },
+]
+
+function SettingsCategoryPanel({
+  active,
+  onSelect,
+  updateCheck,
+  setupStatus,
+  onOpenWizard,
+}: {
+  active: ActiveSettingsCategory
+  onSelect: (cat: ActiveSettingsCategory) => void
+  updateCheck: UpdateCheck | null
+  setupStatus: SetupStatus | null
+  onOpenWizard: () => void
+}) {
+  const updatesAvailable = updateCheck
+    ? (updateCheck.cli.has_update || updateCheck.desktop.has_update)
+    : false
+  const setupIncomplete = setupStatus !== null && (!setupStatus.cli_installed || !setupStatus.has_workspaces)
+
+  return (
+    <div className="flex flex-col pt-1">
+      {setupIncomplete && (
+        <div className="pb-4">
+          <button
+            onClick={onOpenWizard}
+            className="w-full flex items-center gap-2 px-2 py-1.5 rounded-md text-xs transition-colors text-left text-primary hover:bg-primary/10"
+          >
+            <span className="text-primary/60">
+              <Package size={13} />
+            </span>
+            <span className="flex-1">
+              {!setupStatus?.cli_installed ? 'Install Orbit CLI…' : 'Add workspace…'}
+            </span>
+            <span className="w-1.5 h-1.5 rounded-full bg-primary shrink-0" />
+          </button>
+        </div>
+      )}
+
+      {SETTINGS_GROUPS.map((group, gi) => (
+        <div key={gi}>
+          {group.items.map((cat) => {
+            const showDot = cat.id === 'updates' && updatesAvailable
+            const isActive = cat.id === active
+            return (
+              <button
+                key={cat.id}
+                onClick={() => onSelect(cat.id)}
+                className={`w-full flex items-center gap-2 px-2 py-1.5 rounded-md text-xs transition-colors text-left ${
+                  isActive
+                    ? 'bg-sidebar-accent text-sidebar-accent-foreground font-medium'
+                    : 'text-sidebar-foreground/60 hover:text-sidebar-foreground hover:bg-sidebar-accent/50'
+                }`}
+              >
+                <span className={isActive ? 'text-sidebar-accent-foreground/70' : 'text-sidebar-foreground/35'}>
+                  {cat.icon}
+                </span>
+                <span className="flex-1">{cat.label}</span>
+                {showDot && (
+                  <span className="w-1.5 h-1.5 rounded-full bg-primary shrink-0" />
+                )}
+              </button>
+            )
+          })}
+        </div>
+      ))}
+    </div>
+  )
+}
 
 export function Sidebar({ width, collapsed }: { width: number; collapsed?: boolean }) {
   const allSessions       = useAppStore((s) => s.sessions)
@@ -67,12 +166,17 @@ export function Sidebar({ width, collapsed }: { width: number; collapsed?: boole
   const openTask             = useAppStore((s) => s.openTask)
   const openFeaturePage      = useAppStore((s) => s.openFeaturePage)
   const registeredWorkspaces = useAppStore((s) => s.registeredWorkspaces)
-  const scopeViewMode      = useAppStore((s) => s.scopeViewMode)
-  const scopePath          = useAppStore((s) => s.scopePath)
-  const setScopePath       = useAppStore((s) => s.setScopePath)
-  const scopeTree          = useAppStore((s) => s.scopeTree)
-  const loadScopeTree      = useAppStore((s) => s.loadScopeTree)
-  const archHistory        = useAppStore((s) => s.archHistory)
+  const scopeViewMode          = useAppStore((s) => s.scopeViewMode)
+  const scopePath              = useAppStore((s) => s.scopePath)
+  const setScopePath           = useAppStore((s) => s.setScopePath)
+  const scopeTree              = useAppStore((s) => s.scopeTree)
+  const loadScopeTree          = useAppStore((s) => s.loadScopeTree)
+  const archHistory            = useAppStore((s) => s.archHistory)
+  const activeSettingsCategory = useAppStore((s) => s.activeSettingsCategory)
+  const setSettingsCategory    = useAppStore((s) => s.setSettingsCategory)
+  const updateCheck            = useAppStore((s) => s.updateCheck)
+  const setupStatus            = useAppStore((s) => s.setupStatus)
+  const openSetupWizard        = useAppStore((s) => s.openSetupWizard)
 
   const { launchWithEngine } = useScopeSession()
 
@@ -298,7 +402,16 @@ export function Sidebar({ width, collapsed }: { width: number; collapsed?: boole
                     />
                   </>
                 )}
-                {navView !== 'terminal' && navView !== 'docs' && navView !== 'documents' && navView !== 'architecture' && navView !== 'tasks' && (
+                {navView === 'settings' && (
+                  <SettingsCategoryPanel
+                    active={activeSettingsCategory}
+                    onSelect={setSettingsCategory}
+                    updateCheck={updateCheck}
+                    setupStatus={setupStatus}
+                    onOpenWizard={openSetupWizard}
+                  />
+                )}
+                {navView !== 'terminal' && navView !== 'docs' && navView !== 'documents' && navView !== 'architecture' && navView !== 'tasks' && navView !== 'settings' && (
                   <p className="text-[10px] text-sidebar-foreground/25 px-2 pt-1">Coming soon</p>
                 )}
               </div>

@@ -173,11 +173,7 @@ export const createTabsSlice: StateCreator<AppStore, [], [], TabsSlice> = (set, 
     },
 
     openSettings: () => {
-      const existing = get().tabs.find((t) => t.type === 'settings')
-      if (existing) { set({ activeTabId: existing.id }); syncActive(existing.id); return }
-      const tab: Tab = { id: 'settings', title: 'Settings', type: 'settings' }
-      set((state) => ({ tabs: [...state.tabs, tab], activeTabId: 'settings' }))
-      syncActive('settings')
+      get().setNavView('settings')
     },
 
     openArchitecture: (workspace: string, tenant: string) => {

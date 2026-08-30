@@ -1,9 +1,7 @@
-import { useState, useCallback } from 'react'
-import {
-  Settings2, Monitor, Terminal, Cpu, ShieldCheck, RotateCcw, Search, Download,
-} from 'lucide-react'
+import { useCallback } from 'react'
+import { RotateCcw } from 'lucide-react'
 import { useAppStore } from '../store'
-import type { Setting, SettingCategory } from '../types'
+import type { Setting } from '../types'
 import {
   Select,
   SelectContent,
@@ -12,21 +10,7 @@ import {
   SelectValue,
 } from './ui/select'
 import { Input } from './ui/input'
-import { Button } from './ui/button'
 import { UpdatesSection } from './UpdatesSection'
-
-// ── Category config ────────────────────────────────────────────────────────────
-
-type ExtendedCategory = SettingCategory | 'updates'
-
-const CATEGORIES: { id: ExtendedCategory; label: string; icon: React.ReactNode }[] = [
-  { id: 'general',    label: 'General',    icon: <Settings2 size={14} /> },
-  { id: 'appearance', label: 'Appearance', icon: <Monitor size={14} />   },
-  { id: 'terminal',   label: 'Terminal',   icon: <Terminal size={14} />  },
-  { id: 'engine',     label: 'Engine',     icon: <Cpu size={14} />       },
-  { id: 'privacy',    label: 'Privacy',    icon: <ShieldCheck size={14} /> },
-  { id: 'updates',    label: 'Updates',    icon: <Download size={14} />  },
-]
 
 // ── Controls ───────────────────────────────────────────────────────────────────
 
@@ -180,15 +164,10 @@ function SettingRow({
 // ── SettingsView ───────────────────────────────────────────────────────────────
 
 export function SettingsView() {
-  const settings      = useAppStore((s) => s.settings)
-  const updateSetting = useAppStore((s) => s.updateSetting)
-  const resetSetting  = useAppStore((s) => s.resetSetting)
-  const resetAll      = useAppStore((s) => s.resetAllSettings)
-  const updateCheck   = useAppStore((s) => s.updateCheck)
-
-  const [activeCategory, setActiveCategory] = useState<ExtendedCategory>('general')
-  const [search, setSearch]                 = useState('')
-  const [showResetAll, setShowResetAll]     = useState(false)
+  const settings            = useAppStore((s) => s.settings)
+  const updateSetting       = useAppStore((s) => s.updateSetting)
+  const resetSetting        = useAppStore((s) => s.resetSetting)
+  const activeCategory      = useAppStore((s) => s.activeSettingsCategory)
 
   const handleUpdate = useCallback(
     (id: string, value: Setting['value']) => updateSetting(id, value),
@@ -196,156 +175,31 @@ export function SettingsView() {
   )
   const handleReset = useCallback((id: string) => resetSetting(id), [resetSetting])
 
-  const q = search.toLowerCase().trim()
-  const isSearching = q.length > 0
-
   const isUpdatesCategory = activeCategory === 'updates'
 
-  const filtered = isSearching
-    ? settings.filter(
-        (s) =>
-          s.name.toLowerCase().includes(q) ||
-          s.description.toLowerCase().includes(q) ||
-          s.key.toLowerCase().includes(q),
-      )
-    : isUpdatesCategory
+  const filtered = isUpdatesCategory
     ? []
     : settings.filter((s) => s.category === activeCategory)
 
-  const modifiedCount = settings.filter((s) => s.value !== s.default).length
-  const updatesAvailable = updateCheck
-    ? (updateCheck.cli.has_update || updateCheck.desktop.has_update)
-    : false
-
   return (
-    <div className="flex h-full overflow-hidden">
-      {/* ── Left nav ───────────────────────────────────────────────────────────── */}
-      <nav className="w-44 shrink-0 border-r border-foreground/8 flex flex-col py-2 overflow-y-auto">
-        {CATEGORIES.map((cat) => {
-          const catModified = cat.id !== 'updates'
-            ? settings.filter((s) => s.category === cat.id && s.value !== s.default).length
-            : 0
-          const showUpdateDot = cat.id === 'updates' && updatesAvailable
-          return (
-            <button
-              key={cat.id}
-              onClick={() => { setActiveCategory(cat.id); setSearch('') }}
-              className={`flex items-center gap-2.5 px-4 py-2 text-xs transition-colors text-left ${
-                activeCategory === cat.id && !isSearching
-                  ? 'bg-foreground/8 text-foreground font-medium'
-                  : 'text-foreground/50 hover:text-foreground/80 hover:bg-foreground/4'
-              }`}
-            >
-              <span className="shrink-0 text-foreground/40">{cat.icon}</span>
-              <span className="flex-1">{cat.label}</span>
-              {catModified > 0 && (
-                <span className="text-[9px] w-4 h-4 flex items-center justify-center rounded-full bg-primary/20 text-primary/70 font-semibold shrink-0">
-                  {catModified}
-                </span>
-              )}
-              {showUpdateDot && (
-                <span className="w-1.5 h-1.5 rounded-full bg-primary shrink-0" />
-              )}
-            </button>
-          )
-        })}
-      </nav>
-
-      {/* ── Right content ──────────────────────────────────────────────────────── */}
-      <div className="flex flex-col flex-1 min-w-0 overflow-hidden">
-        {/* Header */}
-        <div className="flex items-center gap-3 px-6 py-3 border-b border-foreground/8 shrink-0">
-          <div className="flex flex-col">
-            <h1 className="text-sm font-semibold text-foreground leading-tight">Settings</h1>
-            {modifiedCount > 0 && (
-              <p className="text-[10px] text-foreground/35 leading-tight">
-                {modifiedCount} modified
-              </p>
-            )}
+    <div className="flex flex-col h-full overflow-hidden">
+      <div className="flex-1 overflow-y-auto min-h-0">
+        {isUpdatesCategory ? (
+          <UpdatesSection />
+        ) : filtered.length === 0 ? (
+          <div className="flex items-center justify-center h-40 text-xs text-foreground/30">
+            No settings in this category
           </div>
-
-          <div className="flex-1" />
-
-          {modifiedCount > 0 && (
-            showResetAll ? (
-              <div className="flex items-center gap-1.5">
-                <span className="text-[10px] text-foreground/50">Reset all to defaults?</span>
-                <Button
-                  variant="destructive"
-                  size="xs"
-                  onClick={() => { resetAll(); setShowResetAll(false) }}
-                >
-                  Reset
-                </Button>
-                <Button variant="ghost" size="xs" onClick={() => setShowResetAll(false)}>
-                  Cancel
-                </Button>
-              </div>
-            ) : (
-              <Button
-                variant="ghost"
-                size="xs"
-                className="gap-1.5 text-[10px] text-foreground/40 hover:text-foreground/70"
-                onClick={() => setShowResetAll(true)}
-              >
-                <RotateCcw size={12} /> Reset all
-              </Button>
-            )
-          )}
-        </div>
-
-        {/* Search */}
-        <div className="px-6 py-2.5 border-b border-foreground/5 shrink-0">
-          <label className="flex items-center gap-2 px-3 py-1.5 rounded-lg border border-foreground/10 bg-foreground/3 hover:border-foreground/20 focus-within:border-primary/50 transition-colors">
-            <Search size={13} className="text-foreground/30 shrink-0" />
-            <input
-              type="text"
-              className="flex-1 bg-transparent text-xs outline-none placeholder:text-foreground/25"
-              placeholder="Search settings…"
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
+        ) : (
+          filtered.map((s) => (
+            <SettingRow
+              key={s.id}
+              setting={s}
+              onUpdate={handleUpdate}
+              onReset={handleReset}
             />
-            {search && (
-              <button
-                className="text-[10px] text-foreground/30 hover:text-foreground/60 transition-colors"
-                onClick={() => setSearch('')}
-              >
-                ✕
-              </button>
-            )}
-          </label>
-        </div>
-
-        {/* Category heading when not searching */}
-        {!isSearching && (
-          <div className="px-6 pt-5 pb-2 shrink-0">
-            <h2 className="text-[10px] font-semibold text-muted-foreground uppercase tracking-widest">
-              {CATEGORIES.find((c) => c.id === activeCategory)?.label}
-            </h2>
-          </div>
+          ))
         )}
-
-        {/* Settings list */}
-        <div className="flex-1 overflow-y-auto min-h-0">
-          {isUpdatesCategory && !isSearching ? (
-            <UpdatesSection />
-          ) : filtered.length === 0 ? (
-            <div className="flex items-center justify-center h-40 text-xs text-foreground/30">
-              {isSearching ? `No settings match "${search}"` : 'No settings in this category'}
-            </div>
-          ) : (
-            <>
-              {filtered.map((s) => (
-                <SettingRow
-                  key={s.id}
-                  setting={s}
-                  onUpdate={handleUpdate}
-                  onReset={handleReset}
-                />
-              ))}
-            </>
-          )}
-        </div>
       </div>
     </div>
   )
