@@ -274,14 +274,28 @@ export function useGlobalShortcuts() {
 
       for (const s of parsed) {
         if (!matchesEvent(e, s.parsed)) continue
+        const termFocused = !!(document.activeElement?.closest('.xterm'))
+        if (s.action === 'close_tab' && termFocused) {
+          const drawerTermFocused = !!(document.activeElement?.closest('[data-orbit-zone="orbit.desktop.drawer.terminal"]'))
+          if (drawerTermFocused && drawerOpen) {
+            // Ctrl+W in drawer terminal → hide drawer, return focus to main session
+            e.preventDefault()
+            e.stopPropagation()
+            closeDrawer()
+            if (activeTabId) sendTerminalCmd(activeTabId, 'focus')
+            return
+          }
+          // Main terminal: fall through to close the active tab
+        }
         e.preventDefault()
+        e.stopPropagation()
         switch (s.action) {
           case 'new_shell':
             void openShell()
             break
           case 'close_tab':
-            if (focusedPanel === 'drawer' && drawerOpen) closeDrawer()
-            else if (activeTabId) void closeTab(activeTabId)
+            if (drawerOpen) closeDrawer()
+            if (activeTabId) void closeTab(activeTabId)
             break
           case 'next_tab': {
             if (tabs.length > 1) {
@@ -299,9 +313,22 @@ export function useGlobalShortcuts() {
             }
             break
           }
-          case 'toggle_drawer':
-            void toggleDrawer()
+          case 'toggle_drawer': {
+            const focusInDrawer = !!(document.activeElement?.closest('[data-orbit-zone="orbit.desktop.drawer.terminal"]'))
+            if (focusInDrawer) {
+              // Terminal has focus → return focus to main session (drawer stays open)
+              setFocusedPanel('main')
+              if (activeTabId) sendTerminalCmd(activeTabId, 'focus')
+            } else if (drawerOpen && drawerTabId) {
+              // Drawer open but not focused → give focus to drawer terminal
+              setFocusedPanel('drawer')
+              sendTerminalCmd(drawerTabId, 'focus')
+            } else {
+              // Drawer closed → open it (creates PTY on first use)
+              void toggleDrawer()
+            }
             break
+          }
           case 'restart_session': {
             const activeTab = tabs.find((t) => t.id === activeTabId)
             const session   = allSessions.find((s) => s.id === activeTab?.sessionId)

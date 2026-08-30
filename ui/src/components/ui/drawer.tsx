@@ -19,6 +19,12 @@ interface DrawerProps {
    * Pass 210 for xterm so ResizeObserver never sees intermediate widths.
    */
   contentDelayMs?: number
+  /**
+   * When true, children stay mounted after the first open — the drawer shrinks
+   * to width 0 instead of unmounting. Use for xterm instances that must
+   * preserve scrollback across open/close cycles.
+   */
+  persistContent?: boolean
   /** ReactNode, or a render prop that receives contentReady. */
   children: React.ReactNode | ((contentReady: boolean) => React.ReactNode)
 }
@@ -33,6 +39,7 @@ export function Drawer({
   className,
   zone,
   contentDelayMs = 0,
+  persistContent = false,
   children,
 }: DrawerProps) {
   const [mounted,      setMounted]      = useState(false)
@@ -57,10 +64,14 @@ export function Drawer({
     } else {
       setVisible(false)
       setContentReady(false)
-      const t = setTimeout(() => setMounted(false), 210)
-      return () => clearTimeout(t)
+      if (persistContent) {
+        // Keep children mounted — drawer shrinks to width 0 instead of unmounting.
+      } else {
+        const t = setTimeout(() => setMounted(false), 210)
+        return () => clearTimeout(t)
+      }
     }
-  }, [open, width, contentDelayMs])
+  }, [open, width, contentDelayMs, persistContent])
 
   const onResizeStart = useCallback((e: React.MouseEvent) => {
     e.preventDefault()

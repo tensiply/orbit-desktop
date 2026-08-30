@@ -19,6 +19,7 @@ pub async fn pty_open(
     app: AppHandle,
     registry: State<'_, PtyRegistry>,
     tmux_session: Option<String>,
+    cwd: Option<String>,
 ) -> Result<String, String> {
     let tab_id = Uuid::new_v4().to_string();
     let tid = tab_id.clone();
@@ -45,7 +46,16 @@ pub async fn pty_open(
             c
         } else {
             let shell = std::env::var("SHELL").unwrap_or_else(|_| "/bin/bash".into());
-            CommandBuilder::new(shell)
+            let mut c = CommandBuilder::new(shell);
+            // Suppress oh-my-zsh themes and p10k instant-prompt so the shell
+            // starts clean inside orbit without uninstalling anything.
+            c.env("ZSH_THEME", "");
+            c.env("POWERLEVEL9K_INSTANT_PROMPT", "off");
+            c.env("ORBIT_TERMINAL", "1");
+            if let Some(ref dir) = cwd {
+                c.cwd(dir);
+            }
+            c
         };
 
         let child = pair

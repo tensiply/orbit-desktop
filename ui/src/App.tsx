@@ -234,7 +234,7 @@ export default function App() {
                     )
                   }
                   return (
-                    <div key={tab.id} className={`absolute inset-0 ${isActive ? '' : 'hidden'}`}>
+                    <div key={tab.id} className={`absolute inset-0 ${isActive ? '' : 'invisible pointer-events-none'}`}>
                       {everSeen && <TerminalPane tabId={tab.id} active={isActive} panelFocused={focusedPanel === 'main'} />}
                     </div>
                   )

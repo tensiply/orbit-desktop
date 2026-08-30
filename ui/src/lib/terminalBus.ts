@@ -1,4 +1,4 @@
-export type TerminalCmd = 'clear' | 'scroll_up' | 'scroll_down' | 'focus'
+export type TerminalCmd = 'clear' | 'scroll_up' | 'scroll_down' | 'focus' | 'fit'
 
 export function sendTerminalCmd(tabId: string, cmd: TerminalCmd) {
   document.dispatchEvent(

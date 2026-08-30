@@ -9,16 +9,18 @@ import type { TerminalCmd } from '../lib/terminalBus'
 import { TERMINAL_THEME_DARK, TERMINAL_THEME_LIGHT, cssVarToHex } from '../theme'
 
 interface Props {
-  tabId:        string
-  active:       boolean
+  tabId:         string
+  active:        boolean
   panelFocused?: boolean
+  onCwdChange?:  (cwd: string) => void
 }
 
-export function TerminalPane({ tabId, active, panelFocused }: Props) {
+export function TerminalPane({ tabId, active, panelFocused, onCwdChange }: Props) {
   const containerRef = useRef<HTMLDivElement>(null)
   const termRef      = useRef<Terminal | null>(null)
   const fitRef       = useRef<FitAddon | null>(null)
   const theme        = useAppStore((s) => s.theme)
+  const scrollback   = useAppStore((s) => s.getSettingValue('terminal.scrollback') as number ?? 5000)
 
   useEffect(() => {
     const el = containerRef.current
@@ -34,7 +36,7 @@ export function TerminalPane({ tabId, active, panelFocused }: Props) {
         background: cssVarToHex('--card'),
       },
       allowTransparency: false,
-      scrollback: 0,
+      scrollback,
     })
 
     const fit = new FitAddon()
@@ -45,11 +47,30 @@ export function TerminalPane({ tabId, active, panelFocused }: Props) {
     termRef.current = term
     fitRef.current  = fit
 
+    // OSC 7: shell reports current directory as file://hostname/path
+    term.parser.registerOscHandler(7, (data) => {
+      const match = data.match(/^file:\/\/[^/]*(\/.*)?$/)
+      if (match) onCwdChange?.(match[1] ?? '/')
+      return true
+    })
+
+    // xterm's Viewport computes scrollBarWidth as (viewport.offsetWidth - scrollArea.offsetWidth) || 15.
+    // When CSS hides the scrollbar (display:none), the difference becomes 0 and the || 15 fallback fires,
+    // making FitAddon subtract 15px from the available width. Patch it to 0 since we have no visible scrollbar.
+    const core = (term as any)._core
+    if (core?.viewport) {
+      Object.defineProperty(core.viewport, 'scrollBarWidth', { get: () => 0, configurable: true })
+    }
+
+    const safeFit = () => {
+      try { fit.fit() } catch { /* renderer not yet ready */ }
+    }
+
     let fitTimer: ReturnType<typeof setTimeout> | null = null
     const ro = new ResizeObserver(() => {
       if (el.offsetWidth > 0 && el.offsetHeight > 0) {
         if (fitTimer !== null) clearTimeout(fitTimer)
-        fitTimer = setTimeout(() => { fit.fit(); fitTimer = null }, 30)
+        fitTimer = setTimeout(() => { safeFit(); fitTimer = null }, 30)
       }
     })
     ro.observe(el)
@@ -74,7 +95,7 @@ export function TerminalPane({ tabId, active, panelFocused }: Props) {
       // the PTY always receives the correct post-fit size.
       requestAnimationFrame(() => {
         requestAnimationFrame(() => {
-          fit.fit()
+          safeFit()
           term.focus()
           const { cols, rows } = term
           tauriService.ptyResize(tabId, cols + 1, rows)
@@ -103,11 +124,15 @@ export function TerminalPane({ tabId, active, panelFocused }: Props) {
   }, [theme])
 
   useEffect(() => {
+    if (termRef.current) termRef.current.options.scrollback = scrollback
+  }, [scrollback])
+
+  useEffect(() => {
     if (active) {
-      requestAnimationFrame(() => {
-        fitRef.current?.fit()
+      requestAnimationFrame(() => requestAnimationFrame(() => {
+        try { fitRef.current?.fit() } catch { /* renderer not yet ready */ }
         termRef.current?.focus()
-      })
+      }))
     }
   }, [active])
 
@@ -127,6 +152,7 @@ export function TerminalPane({ tabId, active, panelFocused }: Props) {
       else if (cmd === 'scroll_up')   termRef.current.scrollLines(-termRef.current.rows)
       else if (cmd === 'scroll_down') termRef.current.scrollLines(termRef.current.rows)
       else if (cmd === 'focus')       termRef.current.focus()
+      else if (cmd === 'fit')         { try { fitRef.current?.fit() } catch { /* renderer not ready */ } }
     }
     document.addEventListener('orbit:terminal-cmd', handler)
     return () => document.removeEventListener('orbit:terminal-cmd', handler)
@@ -135,12 +161,11 @@ export function TerminalPane({ tabId, active, panelFocused }: Props) {
   const handleClick = () => termRef.current?.focus()
 
   return (
-    <div className="w-full h-full p-2.5 bg-card">
-      <div
-        ref={containerRef}
-        className="w-full h-full bg-"
-        onClick={handleClick}
-      />
+    <div
+      className="w-full h-full p-4 rounded-2xl overflow-hidden"
+      onClick={handleClick}
+    >
+      <div ref={containerRef} className="w-full h-full bg-card" />
     </div>
   )
 }

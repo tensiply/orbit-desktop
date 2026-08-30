@@ -94,7 +94,9 @@ export const createUiSlice: StateCreator<AppStore, [], [], UiSlice> = (set, get)
 
     let ptyId = existing?.ptyId
     if (!ptyId) {
-      ptyId = await tauriService.ptyOpen(null)
+      const activeTab = get().tabs.find((t) => t.id === activeTabId)
+      const session   = activeTab?.sessionId ? get().sessions.find((s) => s.id === activeTab.sessionId) : null
+      ptyId = await tauriService.ptyOpen(null, session?.work_dir ?? null)
     }
     set((s) => ({
       drawerOpen: true,
