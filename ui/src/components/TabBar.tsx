@@ -1,4 +1,4 @@
-import { SquareTerminal, Settings, Keyboard, Layers, FileText, Network, Map, X } from 'lucide-react'
+import { SquareTerminal, Settings, Keyboard, Layers, FileText, Network, Map, ListChecks, X } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useAppStore } from '../store'
 import type { Tab } from '../store'
@@ -13,15 +13,22 @@ function tabIcon(type: Tab['type']) {
     case 'document':     return FileText
     case 'architecture': return Network
     case 'ui-map':       return Map
+    case 'task':         return ListChecks
+    case 'feature-page': return ListChecks
     default:             return SquareTerminal
   }
 }
 
 export function TabBar() {
-  const tabs        = useAppStore((s) => s.tabs)
-  const activeTabId = useAppStore((s) => s.activeTabId)
+  const tabs         = useAppStore((s) => s.tabs)
+  const activeTabId  = useAppStore((s) => s.activeTabId)
+  const navView      = useAppStore((s) => s.navView)
   const setActiveTab = useAppStore((s) => s.setActiveTab)
-  const closeTab    = useAppStore((s) => s.closeTab)
+  const closeTab     = useAppStore((s) => s.closeTab)
+
+  const featureTab  = tabs.find((t) => t.type === 'feature-page' && t.featureView === navView)
+  const regularTabs = tabs.filter((t) => t.type !== 'feature-page')
+  const showFeature = !!featureTab
 
   return (
     <div data-orbit-zone="orbit.desktop.principal.card.tabs" className="flex shrink-0 select-none bg-card h-[36px] border-b border-sidebar-border/60">
@@ -30,12 +37,12 @@ export function TabBar() {
         role="tablist"
         className="flex items-stretch flex-1 min-w-0 overflow-x-auto no-scrollbar"
       >
-        {tabs.length === 0 && (
+        {regularTabs.length === 0 && !showFeature && (
           <span className="flex items-end pb-2 px-3 text-xs text-foreground/20 pointer-events-none">
             No tabs open
           </span>
         )}
-        {tabs.map((tab) => (
+        {regularTabs.map((tab) => (
           <TabItem
             key={tab.id}
             tab={tab}
@@ -46,6 +53,17 @@ export function TabBar() {
         ))}
       </div>
 
+      {/* Feature page tab — pinned right, no close button, visible only for the active nav view */}
+      {showFeature && (
+        <div className="flex items-stretch shrink-0 border-l border-sidebar-border/40">
+          <TabItem
+            tab={featureTab}
+            active={featureTab.id === activeTabId}
+            onActivate={() => setActiveTab(featureTab.id)}
+            pinned
+          />
+        </div>
+      )}
     </div>
   )
 }
@@ -55,11 +73,13 @@ function TabItem({
   active,
   onActivate,
   onClose,
+  pinned = false,
 }: {
-  tab: Tab
-  active: boolean
+  tab:        Tab
+  active:     boolean
   onActivate: () => void
-  onClose: () => void
+  onClose?:   () => void
+  pinned?:    boolean
 }) {
   const Icon = tabIcon(tab.type)
 
@@ -85,25 +105,28 @@ function TabItem({
             )}
           />
           <span className="max-w-[108px] truncate leading-none">{tab.title}</span>
-          <Button
-            variant="ghost"
-            className={cn(
-              'size-4 p-0 rounded shrink-0 transition-all',
-              active
-                ? 'text-foreground/30 hover:text-destructive hover:bg-destructive/10'
-                : 'text-transparent group-hover:text-foreground/28 hover:!text-destructive hover:!bg-destructive/10',
-            )}
-            onClick={(e) => {
-              e.stopPropagation()
-              onClose()
-            }}
-            title="Close"
-          >
-            <X size={10} />
-          </Button>
+
+          {!pinned && onClose && (
+            <Button
+              variant="ghost"
+              className={cn(
+                'size-4 p-0 rounded shrink-0 transition-all',
+                active
+                  ? 'text-foreground/30 hover:text-destructive hover:bg-destructive/10'
+                  : 'text-transparent group-hover:text-foreground/28 hover:!text-destructive hover:!bg-destructive/10',
+              )}
+              onClick={(e) => {
+                e.stopPropagation()
+                onClose()
+              }}
+              title="Close"
+            >
+              <X size={10} />
+            </Button>
+          )}
 
           {/* Separator — right edge, hidden for active and its right neighbour */}
-          {!active && (
+          {!active && !pinned && (
             <span className="absolute right-0 top-1/4 h-1/2 w-px bg-border/40 pointer-events-none" />
           )}
         </div>

@@ -1,9 +1,10 @@
 import type { StateCreator } from 'zustand'
-import type { Tab, Session, LaunchedInfo } from '../../types'
+import type { Tab, Session, LaunchedInfo, NavView } from '../../types'
 import { tauriService } from '../../services/tauri'
 import { sendTerminalCmd } from '../../lib/terminalBus'
 import { workspaceFromWorkDir } from '../../domain/scope'
 import { sessionCache } from '../../infrastructure/storage/sessionCache'
+import { FEATURE_PAGES, featurePageId } from '../../lib/featurePages'
 import type { AppStore } from '../types'
 
 export interface TabsSlice {
@@ -18,6 +19,7 @@ export interface TabsSlice {
   openColors: () => void
   openUIMap: () => void
   openSettings: () => void
+  openFeaturePage: (view: NavView) => void
   openArchitecture: (workspace: string, tenant: string) => void
   closeTab: (tabId: string) => Promise<void>
   setActiveTab: (tabId: string) => void
@@ -151,6 +153,17 @@ export const createTabsSlice: StateCreator<AppStore, [], [], TabsSlice> = (set, 
       syncActive('colors')
     },
 
+    openFeaturePage: (view: NavView) => {
+      const def = FEATURE_PAGES[view]
+      if (!def) return
+      const id = featurePageId(view)
+      const existing = get().tabs.find((t) => t.id === id)
+      if (existing) { set({ activeTabId: id }); syncActive(id); return }
+      const tab: Tab = { id, title: def.title, type: 'feature-page', featureView: view }
+      set((state) => ({ tabs: [...state.tabs, tab], activeTabId: id }))
+      syncActive(id)
+    },
+
     openUIMap: () => {
       const existing = get().tabs.find((t) => t.type === 'ui-map')
       if (existing) { set({ activeTabId: existing.id }); syncActive(existing.id); return }
@@ -214,12 +227,13 @@ export const createTabsSlice: StateCreator<AppStore, [], [], TabsSlice> = (set, 
         sessionCache.setLastSession(tab.sessionId)
         sessionCache.setActiveSessionId(tab.sessionId)
       }
-      const navView =
-        tab?.type === 'document'     ? 'documents'    as const :
-        tab?.type === 'architecture' ? 'architecture' as const :
-        tab?.type === 'settings'     ? 'settings'     as const :
-        tab?.type === 'task'         ? 'tasks'        as const :
-                                       'terminal'     as const
+      const navView: NavView =
+        tab?.type === 'document'     ? 'documents'    :
+        tab?.type === 'architecture' ? 'architecture' :
+        tab?.type === 'settings'     ? 'settings'     :
+        tab?.type === 'task'         ? 'tasks'        :
+        tab?.type === 'feature-page' ? (tab.featureView ?? 'tasks') :
+                                       'terminal'
       set({ activeTabId: tabId, navView })
       syncActive(tabId)
     },

@@ -57,6 +57,7 @@ export function Sidebar({ width, collapsed }: { width: number; collapsed?: boole
   const tasksLoading         = useAppStore((s) => s.tasksLoading)
   const fetchTasks           = useAppStore((s) => s.fetchTasks)
   const openTask             = useAppStore((s) => s.openTask)
+  const openFeaturePage      = useAppStore((s) => s.openFeaturePage)
   const registeredWorkspaces = useAppStore((s) => s.registeredWorkspaces)
   const scopeViewMode      = useAppStore((s) => s.scopeViewMode)
   const scopePath          = useAppStore((s) => s.scopePath)
@@ -77,7 +78,10 @@ export function Sidebar({ width, collapsed }: { width: number; collapsed?: boole
     ?? ''
 
   useEffect(() => {
-    if (navView === 'tasks' && taskWorkspace) void fetchTasks(taskWorkspace)
+    if (navView === 'tasks' && taskWorkspace) {
+      void fetchTasks(taskWorkspace)
+      openFeaturePage('tasks')
+    }
   }, [navView, taskWorkspace])
 
   useEffect(() => {

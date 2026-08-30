@@ -37,13 +37,15 @@ export interface Session extends Omit<SessionDto, 'is_history'> {
 export interface Tab {
   id: string
   title: string
-  type?: 'terminal' | 'shortcuts' | 'uikit' | 'colors' | 'settings' | 'document' | 'architecture' | 'ui-map' | 'task'
+  type?: 'terminal' | 'shortcuts' | 'uikit' | 'colors' | 'settings' | 'document' | 'architecture' | 'ui-map' | 'task' | 'feature-page'
   sessionId?: string
   tmuxSession?: string
   docId?: string
   archWorkspace?: string
   archTenant?: string
   taskId?: string
+  /** Only on type === 'feature-page': which nav view this page belongs to */
+  featureView?: NavView
 }
 
 // ── Task types ─────────────────────────────────────────────────────────────────
