@@ -24,7 +24,7 @@ import {
   TableRow,
 } from './ui/table'
 import { Pencil, Trash2, Plus, RotateCcw, Search } from 'lucide-react'
-import { Kbd } from './ui/kbd'
+import { Kbd, KeyBadge } from './ui/kbd'
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 
@@ -35,23 +35,6 @@ const CATEGORY_LABELS: Record<ShortcutCategory, string> = {
 }
 
 const CATEGORY_ORDER: ShortcutCategory[] = ['navigation', 'terminal', 'app']
-
-// ── KeyBadge ──────────────────────────────────────────────────────────────────
-
-export function KeyBadge({ keys }: { keys: string }) {
-  if (!keys) return <span className="text-[10px] text-foreground/25">—</span>
-  const parts = keys.split('+').filter(Boolean)
-  return (
-    <span className="flex items-center gap-1 flex-nowrap">
-      {parts.map((k, i) => (
-        <span key={i} className="flex items-center gap-1">
-          {i > 0 && <span className="text-[9px] text-foreground/25 select-none">+</span>}
-          <Kbd>{k}</Kbd>
-        </span>
-      ))}
-    </span>
-  )
-}
 
 // ── KeyCapture ────────────────────────────────────────────────────────────────
 

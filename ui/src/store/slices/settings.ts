@@ -208,7 +208,7 @@ function persistSettings(settings: Setting[]) {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(map))
 }
 
-export type ActiveSettingsCategory = SettingCategory | 'updates'
+export type ActiveSettingsCategory = SettingCategory | 'updates' | 'shortcuts'
 
 export interface SettingsSlice {
   settings: Setting[]

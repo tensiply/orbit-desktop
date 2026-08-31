@@ -1,5 +1,5 @@
 import { useEffect } from 'react'
-import { Loader2, BookOpen, User, Settings2, Monitor, Terminal as TerminalIcon, Cpu, ShieldCheck, Download, Package } from 'lucide-react'
+import { Loader2, BookOpen, User, Settings2, Monitor, Terminal as TerminalIcon, Cpu, ShieldCheck, Download, Package, Keyboard } from 'lucide-react'
 import { useAppStore } from '../store'
 import { workspaceFromWorkDir } from '../domain/scope'
 import { useScopeSession } from '../hooks/useScopeSession'
@@ -55,8 +55,9 @@ const SETTINGS_GROUPS: { items: SettingsCatItem[] }[] = [
   },
   {
     items: [
-      { id: 'privacy', label: 'Privacy', icon: <ShieldCheck size={13} /> },
-      { id: 'updates', label: 'Updates', icon: <Download size={13} />    },
+      { id: 'privacy',   label: 'Privacy',   icon: <ShieldCheck size={13} /> },
+      { id: 'shortcuts', label: 'Shortcuts', icon: <Keyboard size={13} />   },
+      { id: 'updates',   label: 'Updates',   icon: <Download size={13} />   },
     ],
   },
 ]

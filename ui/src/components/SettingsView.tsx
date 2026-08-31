@@ -11,6 +11,7 @@ import {
 } from './ui/select'
 import { Input } from './ui/input'
 import { UpdatesSection } from './UpdatesSection'
+import { ShortcutsView } from './ShortcutsView'
 
 // ── Controls ───────────────────────────────────────────────────────────────────
 
@@ -175,9 +176,10 @@ export function SettingsView() {
   )
   const handleReset = useCallback((id: string) => resetSetting(id), [resetSetting])
 
-  const isUpdatesCategory = activeCategory === 'updates'
+  const isUpdatesCategory   = activeCategory === 'updates'
+  const isShortcutsCategory = activeCategory === 'shortcuts'
 
-  const filtered = isUpdatesCategory
+  const filtered = (isUpdatesCategory || isShortcutsCategory)
     ? []
     : settings.filter((s) => s.category === activeCategory)
 
@@ -186,6 +188,8 @@ export function SettingsView() {
       <div className="flex-1 overflow-y-auto min-h-0">
         {isUpdatesCategory ? (
           <UpdatesSection />
+        ) : isShortcutsCategory ? (
+          <ShortcutsView />
         ) : filtered.length === 0 ? (
           <div className="flex items-center justify-center h-40 text-xs text-foreground/30">
             No settings in this category
