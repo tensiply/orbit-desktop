@@ -65,7 +65,22 @@ export const createUiSlice: StateCreator<AppStore, [], [], UiSlice> = (set, get)
   launchPickerScopePath: null,
 
   setNavView: (navView: NavView) => {
-    set({ navView, sidebarFocused: false })
+    const { tabs, activeTabId } = get()
+    let newActiveTabId = activeTabId
+
+    if (navView !== 'tasks' && activeTabId) {
+      const activeTab = tabs.find((t) => t.id === activeTabId)
+      const isTasksTab =
+        activeTab?.type === 'task' ||
+        (activeTab?.type === 'feature-page' && activeTab.featureView === 'tasks')
+      if (isTasksTab) {
+        const fallback = tabs.find((t) => t.type === 'terminal')
+        newActiveTabId = fallback?.id ?? null
+      }
+    }
+
+    set({ navView, sidebarFocused: false, activeTabId: newActiveTabId })
+    if (newActiveTabId !== activeTabId) get().syncDrawerToTab(newActiveTabId)
   },
 
   toggleTheme: () => {

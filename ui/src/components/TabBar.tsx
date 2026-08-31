@@ -27,7 +27,7 @@ export function TabBar() {
   const closeTab     = useAppStore((s) => s.closeTab)
 
   const featureTab  = tabs.find((t) => t.type === 'feature-page' && t.featureView === navView)
-  const regularTabs = tabs.filter((t) => t.type !== 'feature-page')
+  const regularTabs = tabs.filter((t) => t.type !== 'feature-page' && !(t.type === 'task' && navView !== 'tasks'))
   const showFeature = !!featureTab
 
   return (
