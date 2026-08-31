@@ -67,13 +67,13 @@ function SettingsCategoryPanel({
   onSelect,
   updateCheck,
   setupStatus,
-  onOpenWizard,
+  onOpenSetup,
 }: {
   active: ActiveSettingsCategory
   onSelect: (cat: ActiveSettingsCategory) => void
   updateCheck: UpdateCheck | null
   setupStatus: SetupStatus | null
-  onOpenWizard: () => void
+  onOpenSetup: () => void
 }) {
   const updatesAvailable = updateCheck
     ? (updateCheck.cli.has_update || updateCheck.desktop.has_update)
@@ -82,23 +82,6 @@ function SettingsCategoryPanel({
 
   return (
     <div className="flex flex-col pt-1">
-      {setupIncomplete && (
-        <div className="pb-4">
-          <button
-            onClick={onOpenWizard}
-            className="w-full flex items-center gap-2 px-2 py-1.5 rounded-md text-xs transition-colors text-left text-primary hover:bg-primary/10"
-          >
-            <span className="text-primary/60">
-              <Package size={13} />
-            </span>
-            <span className="flex-1">
-              {!setupStatus?.cli_installed ? 'Install Orbit CLI…' : 'Add workspace…'}
-            </span>
-            <span className="w-1.5 h-1.5 rounded-full bg-primary shrink-0" />
-          </button>
-        </div>
-      )}
-
       {SETTINGS_GROUPS.map((group, gi) => (
         <div key={gi}>
           {group.items.map((cat) => {
@@ -126,6 +109,21 @@ function SettingsCategoryPanel({
           })}
         </div>
       ))}
+
+      <div className="mt-2 pt-2 border-t border-sidebar-border/40">
+        <button
+          onClick={onOpenSetup}
+          className="w-full flex items-center gap-2 px-2 py-1.5 rounded-md text-xs transition-colors text-left text-sidebar-foreground/60 hover:text-sidebar-foreground hover:bg-sidebar-accent/50"
+        >
+          <span className="text-sidebar-foreground/35">
+            <Package size={13} />
+          </span>
+          <span className="flex-1">Setup Orbit</span>
+          {setupIncomplete && (
+            <span className="w-1.5 h-1.5 rounded-full bg-primary shrink-0" />
+          )}
+        </button>
+      </div>
     </div>
   )
 }
@@ -423,7 +421,7 @@ export function Sidebar({ width, collapsed }: { width: number; collapsed?: boole
                     onSelect={setSettingsCategory}
                     updateCheck={updateCheck}
                     setupStatus={setupStatus}
-                    onOpenWizard={openSetupWizard}
+                    onOpenSetup={openSetupWizard}
                   />
                 )}
                 {navView !== 'terminal' && navView !== 'docs' && navView !== 'documents' && navView !== 'architecture' && navView !== 'tasks' && navView !== 'settings' && (
