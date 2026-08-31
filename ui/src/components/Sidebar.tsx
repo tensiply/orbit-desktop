@@ -168,6 +168,7 @@ export function Sidebar({ width, collapsed }: { width: number; collapsed?: boole
   const openFeaturePage      = useAppStore((s) => s.openFeaturePage)
   const registeredWorkspaces = useAppStore((s) => s.registeredWorkspaces)
   const scopeViewMode          = useAppStore((s) => s.scopeViewMode)
+  const setScopeViewMode       = useAppStore((s) => s.setScopeViewMode)
   const scopePath              = useAppStore((s) => s.scopePath)
   const setScopePath           = useAppStore((s) => s.setScopePath)
   const scopeTree              = useAppStore((s) => s.scopeTree)
@@ -201,6 +202,13 @@ export function Sidebar({ width, collapsed }: { width: number; collapsed?: boole
     if (scopeViewMode === 'scope') void loadScopeTree()
   }, [scopeViewMode])
 
+  // Reset history mode when leaving terminal view
+  useEffect(() => {
+    if (navView !== 'terminal' && scopeViewMode === 'history') {
+      setScopeViewMode('all')
+    }
+  }, [navView])
+
   // Reset drill-down path when workspace selection changes
   useEffect(() => {
     setScopePath([])
@@ -212,14 +220,20 @@ export function Sidebar({ width, collapsed }: { width: number; collapsed?: boole
   const activeSessionId = tabs.find((t) => t.id === activeTabId)?.sessionId
   const panelLabel      = PANEL_LABELS[navView] ?? navView
   const inScopeMode     = scopeViewMode === 'scope'
-  const scopedSessions  = inScopeMode ? filterSessionsByScope(sessions, scopePath, selectedWorkspace) : sessions
+  const inHistoryMode   = scopeViewMode === 'history'
+
+  // In history mode: only history sessions. In all/scope mode: only active sessions.
+  const visibleSessions = inHistoryMode
+    ? sessions.filter((s) => !!s.is_history)
+    : sessions.filter((s) => !s.is_history)
+  const scopedSessions  = inScopeMode ? filterSessionsByScope(visibleSessions, scopePath, selectedWorkspace) : visibleSessions
   const scopedFiles     = filterFilesByScope(allFiles, inScopeMode ? scopePath : [], selectedWorkspace)
   const scopedTasks     = filterTasksByScope(tasks, inScopeMode ? scopePath : [], selectedWorkspace)
   const hasScopeFilter  = navView === 'terminal' || navView === 'documents' || navView === 'architecture' || navView === 'tasks'
 
   // Compute unified items list to derive per-component selection state
   const sidebarItems = hasScopeFilter
-    ? computeSidebarItems({ navView, scopeViewMode, scopePath, scopeTree, sessions, documents, files: allFiles, selectedWorkspace: selectedWorkspace ?? null, archHistory })
+    ? computeSidebarItems({ navView, scopeViewMode, scopePath, scopeTree, sessions: visibleSessions, documents, files: allFiles, selectedWorkspace: selectedWorkspace ?? null, archHistory })
     : []
   const selectedItem = sidebarFocused ? sidebarItems[sidebarSelectedIdx] : null
 

@@ -135,12 +135,17 @@ export function useGlobalShortcuts() {
         return
       }
 
-      // Alt+S — toggle All/Scope view mode and focus first item
+      // Alt+S — cycle All/Scope/Hist view mode and focus first item
       if (e.altKey && !e.ctrlKey && !e.metaKey && e.key.toLowerCase() === 's') {
         const hasScopeFilter = navView === 'terminal' || navView === 'documents' || navView === 'architecture'
         if (hasScopeFilter) {
           e.preventDefault()
-          const next: 'all' | 'scope' = scopeViewMode === 'all' ? 'scope' : 'all'
+          let next: 'all' | 'scope' | 'history'
+          if (navView === 'terminal') {
+            next = scopeViewMode === 'all' ? 'scope' : scopeViewMode === 'scope' ? 'history' : 'all'
+          } else {
+            next = scopeViewMode === 'all' ? 'scope' : 'all'
+          }
           setScopeViewMode(next)
           if (next === 'scope') void loadScopeTree()
           setSidebarSelectedIdx(0)

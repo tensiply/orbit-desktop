@@ -7,12 +7,12 @@ export interface ScopeSlice {
   scopeTree:        ScopeTreeWorkspace[]
   scopeTreeLoading: boolean
   scopePath:        string[]
-  scopeViewMode:    'all' | 'scope'
+  scopeViewMode:    'all' | 'scope' | 'history'
 
   loadScopeTree:   () => Promise<void>
   navigateScopeIn: (name: string) => void
   navigateScopeOut: () => void
-  setScopeViewMode: (mode: 'all' | 'scope') => void
+  setScopeViewMode: (mode: 'all' | 'scope' | 'history') => void
   setScopePath:    (path: string[]) => void
 }
 

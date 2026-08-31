@@ -25,6 +25,9 @@ export function ViewModeToggle() {
   const scopeViewMode    = useAppStore((s) => s.scopeViewMode)
   const setScopeViewMode = useAppStore((s) => s.setScopeViewMode)
   const loadScopeTree    = useAppStore((s) => s.loadScopeTree)
+  const navView          = useAppStore((s) => s.navView)
+
+  const showHistory = navView === 'terminal'
 
   return (
     <div className="shrink-0 rounded border border-sidebar-border/50 overflow-hidden">
@@ -34,7 +37,7 @@ export function ViewModeToggle() {
         onValueChange={(v) => {
           if (!v) return
           if (v === 'scope') void loadScopeTree()
-          setScopeViewMode(v as 'all' | 'scope')
+          setScopeViewMode(v as 'all' | 'scope' | 'history')
         }}
         className="gap-0"
       >
@@ -53,6 +56,7 @@ export function ViewModeToggle() {
           value="scope"
           className={cn(
             'text-[9px] h-[18px] px-1.5 rounded-none',
+            showHistory ? 'border-r border-sidebar-border/50' : '',
             scopeViewMode === 'scope'
               ? 'bg-sidebar-accent text-sidebar-accent-foreground'
               : 'bg-transparent text-sidebar-foreground/30 hover:text-sidebar-foreground/60 hover:bg-sidebar-accent/20',
@@ -60,6 +64,19 @@ export function ViewModeToggle() {
         >
           Scope
         </ToggleGroupItem>
+        {showHistory && (
+          <ToggleGroupItem
+            value="history"
+            className={cn(
+              'text-[9px] h-[18px] px-1.5 rounded-none',
+              scopeViewMode === 'history'
+                ? 'bg-sidebar-accent text-sidebar-accent-foreground'
+                : 'bg-transparent text-sidebar-foreground/30 hover:text-sidebar-foreground/60 hover:bg-sidebar-accent/20',
+            )}
+          >
+            Hist
+          </ToggleGroupItem>
+        )}
       </ToggleGroup>
     </div>
   )

@@ -115,7 +115,7 @@ export function visibleSessionsFromList(sessions: Session[]): Session[] {
 
 export function computeSidebarItems(params: {
   navView:           string
-  scopeViewMode:     'all' | 'scope'
+  scopeViewMode:     'all' | 'scope' | 'history'
   scopePath:         string[]
   scopeTree:         ScopeTreeWorkspace[]
   sessions:          Session[]

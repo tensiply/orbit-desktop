@@ -294,8 +294,7 @@ export function SessionList({
   const history      = sessions.filter((s) => !!s.is_history).slice(0, historySlots)
   const flat         = [...nonHistory, ...history]
 
-  const isEmpty    = nonHistory.length === 0 && history.length === 0
-  const showLabels = nonHistory.length > 0 && history.length > 0
+  const isEmpty = nonHistory.length === 0 && history.length === 0
 
   return (
     <ul data-orbit-zone="orbit.desktop.sidebar.panel.session-list" className="p-0 w-full space-y-0.5">
@@ -304,7 +303,7 @@ export function SessionList({
       )}
       {nonHistory.length > 0 && (
         <>
-          {showLabels && <SectionLabel label="Current" />}
+          <SectionLabel label="Current" />
           {nonHistory.map((s) => {
             const flatIdx = flat.indexOf(s)
             return (
@@ -329,7 +328,7 @@ export function SessionList({
       )}
       {history.length > 0 && (
         <>
-          {showLabels && <SectionLabel label="History" />}
+          <SectionLabel label="History" />
           {history.map((s) => {
             const flatIdx = flat.indexOf(s)
             return (
