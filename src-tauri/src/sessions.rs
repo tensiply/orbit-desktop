@@ -58,12 +58,11 @@ pub async fn session_clean(client: State<'_, OrbitIpcClient>) -> Result<usize, S
 #[tauri::command]
 pub async fn get_session_title(
     work_dir: String,
-    started_at: u64,
+    session_id: String,
     reader: State<'_, Arc<dyn SessionTitleReader>>,
 ) -> Result<Option<String>, String> {
-    let _ = started_at;
     let reader = Arc::clone(&*reader);
-    tokio::task::spawn_blocking(move || reader.read_title(&work_dir))
+    tokio::task::spawn_blocking(move || reader.read_title(&work_dir, &session_id))
         .await
         .map_err(|e| e.to_string())
 }

@@ -34,8 +34,8 @@ export const tauriService = {
   sessionKill: (id: string): Promise<void> =>
     invoke('session_kill', { id }),
 
-  getSessionTitle: (workDir: string, startedAt: number): Promise<string | null> =>
-    invoke('get_session_title', { workDir, startedAt }),
+  getSessionTitle: (workDir: string, sessionId: string): Promise<string | null> =>
+    invoke('get_session_title', { workDir, sessionId }),
 
   sessionLaunch: (scope: LaunchScope): Promise<LaunchedInfo> =>
     invoke('session_launch', { scope }),

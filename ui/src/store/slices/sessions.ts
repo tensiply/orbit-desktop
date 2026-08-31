@@ -65,7 +65,7 @@ export const createSessionsSlice: StateCreator<AppStore, [], [], SessionsSlice> 
       const entries = await Promise.all(
         needTitle.map(async (s) => {
           try {
-            const title = await tauriService.getSessionTitle(s.work_dir, s.started_at)
+            const title = await tauriService.getSessionTitle(s.work_dir, s.id)
             return title ? ([s.id, title] as [string, string]) : null
           } catch {
             return null
