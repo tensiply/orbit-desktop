@@ -79,7 +79,7 @@ function sessionScopeCrumb(session: Session): string | null {
 
 function SectionLabel({ label }: { label: string }) {
   return (
-    <li className="px-2 pt-3 pb-0.5">
+    <li className="px-2 pt-1 pb-0.5">
       <span className="text-[9px] font-medium uppercase tracking-wider text-sidebar-foreground/30">{label}</span>
     </li>
   )

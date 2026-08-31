@@ -307,7 +307,7 @@ export function Sidebar({ width, collapsed }: { width: number; collapsed?: boole
 
           {/* Panel */}
           {!collapsed && (
-            <div data-orbit-zone="orbit.desktop.sidebar.panel" className="flex flex-col flex-1 min-h-0 min-w-0 pl-2">
+            <div data-orbit-zone="orbit.desktop.sidebar.panel" className="flex flex-col flex-1 min-h-0 min-w-0">
               {/* Panel header */}
               <div data-orbit-zone="orbit.desktop.sidebar.panel.header" className="flex items-center pt-3 pb-1 px-3 shrink-0 gap-2">
                 <span className="text-[10px] font-medium text-sidebar-foreground/40 uppercase tracking-wider flex-1">
@@ -326,7 +326,7 @@ export function Sidebar({ width, collapsed }: { width: number; collapsed?: boole
               </div>
 
               {/* Panel content */}
-              <div data-orbit-zone="orbit.desktop.sidebar.panel.content" className="flex-1 overflow-y-auto overflow-x-hidden min-h-0 px-1.5">
+              <div data-orbit-zone="orbit.desktop.sidebar.panel.content" className="flex-1 overflow-y-auto overflow-x-hidden min-h-0 pl-4 pr-3 no-scrollbar">
                 {navView === 'terminal' && (
                   <>
                     {inScopeMode && (

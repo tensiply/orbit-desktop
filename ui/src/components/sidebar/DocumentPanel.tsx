@@ -297,7 +297,10 @@ export function FilesPanel({
   }
 
   return (
-    <ul className="p-0 w-full space-y-0.5 pt-0.5">
+    <ul className="p-0 w-full space-y-0.5">
+      <li className="px-2 pt-1 pb-0.5">
+        <span className="text-[9px] font-medium uppercase tracking-wider text-sidebar-foreground/30">History</span>
+      </li>
       {files.map((file, idx) => (
         <FileItem
           key={`${file.kind}-${file.id}`}
