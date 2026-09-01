@@ -236,8 +236,9 @@ export function Sidebar({ width, collapsed }: { width: number; collapsed?: boole
   const selectedItem = sidebarFocused ? sidebarItems[sidebarSelectedIdx] : null
 
   // Scope navigator selection
-  const backSelected       = selectedItem?.type === 'scope-back'
-  const selectedFolderName = selectedItem?.type === 'scope-folder' ? selectedItem.name : null
+  const backSelected         = selectedItem?.type === 'scope-back'
+  const selectedFolderName   = selectedItem?.type === 'scope-folder' ? selectedItem.name : null
+  const newSessionSelected   = selectedItem?.type === 'scope-new-session'
 
   // Session/file list: adjust index relative to where sessions/files start in the flat list
   const sessionOffset      = sidebarItems.findIndex((i) => i.type === 'session')
@@ -331,6 +332,7 @@ export function Sidebar({ width, collapsed }: { width: number; collapsed?: boole
                       <ScopeNavigator
                         backSelected={backSelected}
                         selectedFolderName={selectedFolderName}
+                        newSessionSelected={newSessionSelected}
                       />
                     )}
                     <SessionList
@@ -357,6 +359,7 @@ export function Sidebar({ width, collapsed }: { width: number; collapsed?: boole
                       <ScopeNavigator
                         backSelected={backSelected}
                         selectedFolderName={selectedFolderName}
+                        newSessionSelected={newSessionSelected}
                       />
                     )}
                     <FilesPanel
@@ -379,6 +382,7 @@ export function Sidebar({ width, collapsed }: { width: number; collapsed?: boole
                       <ScopeNavigator
                         backSelected={backSelected}
                         selectedFolderName={selectedFolderName}
+                        newSessionSelected={newSessionSelected}
                       />
                     )}
                     {!inScopeMode && (
@@ -403,6 +407,7 @@ export function Sidebar({ width, collapsed }: { width: number; collapsed?: boole
                       <ScopeNavigator
                         backSelected={backSelected}
                         selectedFolderName={selectedFolderName}
+                        newSessionSelected={newSessionSelected}
                       />
                     )}
                     <TasksPanel

@@ -85,9 +85,11 @@ export function ViewModeToggle() {
 export function ScopeNavigator({
   backSelected,
   selectedFolderName,
+  newSessionSelected,
 }: {
-  backSelected:       boolean
-  selectedFolderName: string | null
+  backSelected:        boolean
+  selectedFolderName:  string | null
+  newSessionSelected:  boolean
 }) {
   const scopeTree          = useAppStore((s) => s.scopeTree)
   const scopeTreeLoading   = useAppStore((s) => s.scopeTreeLoading)
@@ -184,10 +186,32 @@ export function ScopeNavigator({
       {children.length > 0 && (
         <div className="mb-1">
           {scopePath.length > 0 && (
-            <div className="px-2 pt-0.5 pb-0.5">
+            <div className="px-2 pt-0.5 pb-0.5 flex items-center justify-between">
               <span className="text-[9px] text-sidebar-foreground/20 uppercase tracking-wider">
                 {levelLabel}
               </span>
+              <ContextMenu onOpenChange={(open) => { if (open) blurSidebar() }}>
+                <ContextMenuTrigger asChild>
+                  <button
+                    onClick={() => launchCurrentScope('claude')}
+                    className={`flex items-center justify-center h-[14px] w-[14px] rounded text-sidebar-foreground/25 hover:text-sidebar-foreground/60 hover:bg-sidebar-accent/40 transition-colors ${newSessionSelected ? RING_CLASS : ''}`}
+                    title="New Session"
+                  >
+                    <Plus size={10} />
+                  </button>
+                </ContextMenuTrigger>
+                <ContextMenuContent className="w-40 text-xs">
+                  {ENGINES_MENU.map(({ id, label, Icon }) => (
+                    <ContextMenuItem
+                      key={id}
+                      className="text-xs gap-2"
+                      onClick={() => launchCurrentScope(id)}
+                    >
+                      <Icon size={13} />{label}
+                    </ContextMenuItem>
+                  ))}
+                </ContextMenuContent>
+              </ContextMenu>
             </div>
           )}
           <ul className="space-y-0.5">
@@ -259,32 +283,6 @@ export function ScopeNavigator({
             })}
           </ul>
         </div>
-      )}
-
-      {/* New Session button — launches at current scope level (not shown at root) */}
-      {scopePath.length > 0 && (
-        <ContextMenu onOpenChange={(open) => { if (open) blurSidebar() }}>
-          <ContextMenuTrigger asChild>
-            <button
-              onClick={() => launchCurrentScope('claude')}
-              className="group flex items-center gap-1.5 w-full px-2 py-1.5 rounded-md text-xs text-sidebar-foreground/35 border border-dashed border-sidebar-border/40 hover:border-sidebar-border/70 hover:text-sidebar-foreground/60 transition-colors"
-            >
-              <Plus size={11} className="shrink-0" />
-              <span>New Session</span>
-            </button>
-          </ContextMenuTrigger>
-          <ContextMenuContent className="w-40 text-xs">
-            {ENGINES_MENU.map(({ id, label, Icon }) => (
-              <ContextMenuItem
-                key={id}
-                className="text-xs gap-2"
-                onClick={() => launchCurrentScope(id)}
-              >
-                <Icon size={13} />{label}
-              </ContextMenuItem>
-            ))}
-          </ContextMenuContent>
-        </ContextMenu>
       )}
 
       {scopePath.length > 0 && children.length > 0 && (
