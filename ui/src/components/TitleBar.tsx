@@ -15,31 +15,6 @@ import { cn } from '@/lib/utils'
 
 const win = getCurrentWindow()
 
-function TitleBtn({
-  onClick,
-  title,
-  danger,
-  children,
-}: {
-  onClick: () => void
-  title: string
-  danger?: boolean
-  children: React.ReactNode
-}) {
-  return (
-    <button
-      onClick={onClick}
-      title={title}
-      className={`h-full w-11 flex items-center justify-center text-foreground/40 transition-colors ${
-        danger
-          ? 'hover:bg-destructive hover:text-destructive-foreground'
-          : 'hover:bg-foreground/10 hover:text-foreground'
-      }`}
-    >
-      {children}
-    </button>
-  )
-}
 
 function workspaceFromWorkDir(workDir: string): string | null {
   const parts = workDir.split('/').filter(Boolean)
@@ -155,18 +130,36 @@ export function TitleBar() {
       {/* Separator before window controls */}
       <div className="h-4 w-px bg-foreground/10 mx-1 shrink-0" />
 
-      <div data-orbit-zone="orbit.desktop.principal.titlebar.controls" className="flex items-center h-full">
-        <TitleBtn onClick={() => win.minimize()} title="Minimize">
-          <Minus size={11} />
-        </TitleBtn>
+      <div data-orbit-zone="orbit.desktop.principal.titlebar.controls" className="flex items-center gap-0.5 px-2">
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={() => win.minimize()}
+          title="Minimize"
+          className="h-6 w-6 text-foreground/40 hover:text-foreground hover:bg-foreground/10 [&_svg]:size-[10px]"
+        >
+          <Minus />
+        </Button>
 
-        <TitleBtn onClick={() => win.toggleMaximize()} title="Maximize">
-          <Square size={10} />
-        </TitleBtn>
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={() => win.toggleMaximize()}
+          title="Maximize"
+          className="h-6 w-6 text-foreground/40 hover:text-foreground hover:bg-foreground/10 [&_svg]:size-[10px]"
+        >
+          <Square />
+        </Button>
 
-        <TitleBtn onClick={() => win.close()} title="Close" danger>
-          <X size={11} />
-        </TitleBtn>
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={() => win.close()}
+          title="Close"
+          className="h-6 w-6 text-foreground/40 hover:bg-destructive hover:text-destructive-foreground [&_svg]:size-[10px]"
+        >
+          <X />
+        </Button>
       </div>
     </div>
   )

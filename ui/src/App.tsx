@@ -143,7 +143,7 @@ export default function App() {
           </ContextMenuItem>
         </ContextMenuContent>
         <ContextMenuTrigger asChild>
-          <div className={`flex h-screen w-screen text-foreground overflow-hidden bg-sidebar rounded-2xl ${sidebarHidden ? 'gap-2' : ''}`}>
+          <div className={`flex h-screen w-screen text-foreground overflow-hidden bg-sidebar ${sidebarHidden ? 'gap-2' : ''}`}>
         <ResizeHandles />
 
         <Sidebar width={sidebarWidth} collapsed={sidebarHidden} />
