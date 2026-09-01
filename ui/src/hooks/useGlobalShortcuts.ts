@@ -135,6 +135,28 @@ export function useGlobalShortcuts() {
         return
       }
 
+      // Ctrl+M — open make target select
+      if (e.ctrlKey && !e.metaKey && !e.altKey && !e.shiftKey && e.key.toLowerCase() === 'm') {
+        const activeTab = tabs.find((t) => t.id === activeTabId)
+        if (activeTab?.type === 'terminal' && activeTab.sessionId) {
+          e.preventDefault()
+          e.stopPropagation()
+          window.dispatchEvent(new CustomEvent('orbit:make-open'))
+          return
+        }
+      }
+
+      // Ctrl+P — run selected make target
+      if (e.ctrlKey && !e.metaKey && !e.altKey && !e.shiftKey && e.key.toLowerCase() === 'p') {
+        const activeTab = tabs.find((t) => t.id === activeTabId)
+        if (activeTab?.type === 'terminal' && activeTab.sessionId) {
+          e.preventDefault()
+          e.stopPropagation()
+          window.dispatchEvent(new CustomEvent('orbit:make-run'))
+          return
+        }
+      }
+
       // Alt+S — cycle All/Scope/Hist view mode and focus first item
       if (e.altKey && !e.ctrlKey && !e.metaKey && e.key.toLowerCase() === 's') {
         const hasScopeFilter = navView === 'terminal' || navView === 'documents' || navView === 'architecture'

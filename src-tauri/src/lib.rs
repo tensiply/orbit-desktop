@@ -9,6 +9,7 @@ mod debug_layer;
 mod debug_server;
 mod documents;
 mod images;
+mod makefile;
 mod plugins;
 mod pty;
 mod scopes;
@@ -147,6 +148,8 @@ pub fn run() {
             tasks::task_create,
             tasks::task_update,
             tasks::task_delete,
+            // Makefile
+            makefile::makefile_targets,
             // Updates & CLI
             updates::cli_check,
             updates::cli_install,

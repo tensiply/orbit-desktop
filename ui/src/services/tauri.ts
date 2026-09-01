@@ -126,4 +126,7 @@ export const tauriService = {
 
   checkUpdates: (): Promise<UpdateCheck> =>
     invoke('check_updates'),
+
+  makefileTargets: (path: string): Promise<string[]> =>
+    invoke('makefile_targets', { path }),
 }

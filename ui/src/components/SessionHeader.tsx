@@ -6,6 +6,7 @@ import {
   OpenCodeEngineIcon,
   DefaultEngineIcon,
 } from '../icons'
+import { MakeRunner } from './MakeRunner'
 
 function workspaceFromWorkDir(workDir: string): string | null {
   const parts = workDir.split('/').filter(Boolean)
@@ -76,6 +77,8 @@ export function SessionHeader() {
         )}
       </div>
 
+      {/* Make runner — only visible when a Makefile is found in the session scope */}
+      <MakeRunner session={session} tabId={activeTab.id} />
     </div>
   )
 }
