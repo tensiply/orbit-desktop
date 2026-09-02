@@ -1,5 +1,5 @@
 import { useEffect } from 'react'
-import { Loader2, BookOpen, User, Settings2, Monitor, Terminal as TerminalIcon, Cpu, ShieldCheck, Download, Package, Keyboard, Network as NetworkIcon } from 'lucide-react'
+import { Loader2, BookOpen, User, Settings2, Monitor, Terminal as TerminalIcon, Cpu, ShieldCheck, Download, Package, Keyboard } from 'lucide-react'
 import { useAppStore } from '../store'
 import { workspaceFromWorkDir } from '../domain/scope'
 import { useScopeSession } from '../hooks/useScopeSession'
@@ -181,7 +181,10 @@ export function Sidebar({ width, collapsed }: { width: number; collapsed?: boole
   const { launchWithEngine } = useScopeSession()
 
   useEffect(() => {
-    if (navView === 'documents') void fetchFiles()
+    if (navView === 'documents') {
+      void fetchFiles()
+      void loadScopeTree()
+    }
   }, [navView])
 
   const taskWorkspace = selectedWorkspace
@@ -200,9 +203,9 @@ export function Sidebar({ width, collapsed }: { width: number; collapsed?: boole
     if (scopeViewMode === 'scope') void loadScopeTree()
   }, [scopeViewMode])
 
-  // Reset history mode when leaving terminal view
+  // Reset history mode when leaving terminal or documents view
   useEffect(() => {
-    if (navView !== 'terminal' && scopeViewMode === 'history') {
+    if (navView !== 'terminal' && navView !== 'documents' && scopeViewMode === 'history') {
       setScopeViewMode('all')
     }
   }, [navView])
@@ -212,17 +215,30 @@ export function Sidebar({ width, collapsed }: { width: number; collapsed?: boole
     setScopePath([])
   }, [selectedWorkspace])
 
-  // Derive arch diagrams from history and merge with other files
-  const archDiagrams = archHistory.map((h) => ({
-    kind:         'diagram' as const,
-    id:           `arch-${h.workspace}-${h.tenant}`,
-    title:        `${h.tenant} architecture`,
-    diagram_type: 'arch'  as const,
-    workspace:    h.workspace,
-    tenant:       h.tenant,
-    created_at:   0,
-    updated_at:   0,
-  }))
+  // Derive arch diagrams for all known tenants (from scope tree + history fallback)
+  const archSeenIds  = new Set<string>()
+  const archDiagrams = [
+    ...scopeTree.flatMap((w) =>
+      w.tenants.map((t) => ({ workspace: w.name, tenant: t.name }))
+    ),
+    ...archHistory,
+  ]
+    .filter(({ workspace, tenant }) => {
+      const id = `arch-${workspace}-${tenant}`
+      if (archSeenIds.has(id)) return false
+      archSeenIds.add(id)
+      return true
+    })
+    .map(({ workspace, tenant }) => ({
+      kind:         'diagram' as const,
+      id:           `arch-${workspace}-${tenant}`,
+      title:        `${tenant} architecture`,
+      diagram_type: 'arch' as const,
+      workspace,
+      tenant,
+      created_at:   0,
+      updated_at:   0,
+    }))
   const allFiles     = mergeFiles(documents, images, svgs, archDiagrams)
   const filesLoading = documentsLoading || imagesLoading || svgsLoading
 
@@ -236,7 +252,14 @@ export function Sidebar({ width, collapsed }: { width: number; collapsed?: boole
     ? sessions.filter((s) => !!s.is_history)
     : sessions.filter((s) => !s.is_history)
   const scopedSessions  = inScopeMode ? filterSessionsByScope(visibleSessions, scopePath, selectedWorkspace) : visibleSessions
-  const scopedFiles     = filterFilesByScope(allFiles, inScopeMode ? scopePath : [], selectedWorkspace)
+  // In scope mode: only show files once the user has navigated into a scope
+  const filesScopePath  = (navView === 'documents' && inScopeMode && scopePath.length === 0) ? null : scopePath
+  const unsortedFiles   = filesScopePath === null ? [] : filterFilesByScope(allFiles, filesScopePath, selectedWorkspace)
+  const scopedFiles     = [...unsortedFiles].sort((a, b) => {
+    if (a.updated_at === 0 && b.updated_at !== 0) return 1
+    if (a.updated_at !== 0 && b.updated_at === 0) return -1
+    return b.updated_at - a.updated_at
+  })
   const scopedTasks     = filterTasksByScope(tasks, inScopeMode ? scopePath : [], selectedWorkspace)
   const hasScopeFilter  = navView === 'terminal' || navView === 'documents' || navView === 'tasks'
 
@@ -371,21 +394,6 @@ export function Sidebar({ width, collapsed }: { width: number; collapsed?: boole
                         newSessionSelected={newSessionSelected}
                       />
                     )}
-                    {/* Arch diagram shortcuts when drilled to tenant level */}
-                    {inScopeMode && sidebarItems.filter((i) => i.type === 'scope-architecture').map((i) => {
-                      if (i.type !== 'scope-architecture') return null
-                      const entry = { kind: 'diagram' as const, id: `arch-${i.workspace}-${i.tenant}`, title: `${i.tenant} architecture`, diagram_type: 'arch' as const, workspace: i.workspace, tenant: i.tenant, created_at: 0, updated_at: 0 }
-                      return (
-                        <button
-                          key={`${i.workspace}:${i.tenant}`}
-                          onClick={() => { blurSidebar(); openDiagram(entry) }}
-                          className="flex items-center gap-1.5 w-full px-2 py-1.5 rounded-md text-xs text-sidebar-foreground/55 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground transition-colors"
-                        >
-                          <NetworkIcon size={11} className="shrink-0 text-sidebar-foreground/30" />
-                          <span className="truncate font-medium">Architecture</span>
-                        </button>
-                      )
-                    })}
                     <FilesPanel
                       files={scopedFiles}
                       loading={filesLoading}

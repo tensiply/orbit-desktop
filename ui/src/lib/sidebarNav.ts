@@ -12,7 +12,6 @@ export type SidebarNavItem =
   | { type: 'document'; doc: DocEntry }
   | { type: 'file'; file: AnyFileEntry }
   | { type: 'task'; task: OrbitTask }
-  | { type: 'scope-architecture'; workspace: string; tenant: string }
 
 // When selectedWorkspace is set, path is relative (starts at tenant).
 // Compute the full [workspace, tenant, project, repo] path for lookups.
@@ -140,13 +139,6 @@ export function computeSidebarItems(params: {
     const children = getScopeChildren(scopeTree, scopePath, selectedWorkspace)
     if (navView === 'terminal' && scopePath.length > 0 && children.length > 0) {
       items.push({ type: 'scope-new-session' })
-    }
-    // In documents scope mode at tenant level, offer arch diagram entry
-    if (navView === 'documents') {
-      const ep = effectivePath(scopePath, selectedWorkspace)
-      if (ep.length >= 2) {
-        items.push({ type: 'scope-architecture', workspace: ep[0], tenant: ep[1] })
-      }
     }
     for (const name of children) {
       items.push({ type: 'scope-folder', name })

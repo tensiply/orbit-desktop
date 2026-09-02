@@ -303,12 +303,6 @@ export function useGlobalShortcuts() {
               openDocument(item.doc)
               blurSidebar()
               break
-            case 'scope-architecture': {
-              const entry = { kind: 'diagram' as const, id: `arch-${item.workspace}-${item.tenant}`, title: `${item.tenant} architecture`, diagram_type: 'arch' as const, workspace: item.workspace, tenant: item.tenant, created_at: 0, updated_at: 0 }
-              openDiagram(entry)
-              blurSidebar()
-              break
-            }
           }
           return
         }
