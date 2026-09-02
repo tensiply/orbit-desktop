@@ -34,7 +34,7 @@ export function SidebarPanel({
         data-orbit-zone="orbit.desktop.sidebar.panel.header"
         className="flex items-center pt-3 pl-3 pr-2 shrink-0 gap-4"
       >
-        <span className="text-[10px] font-medium text-sidebar-foreground/40 uppercase tracking-wider flex-1 min-w-0 truncate">
+        <span className="pl-1 text-[10px] font-medium text-sidebar-foreground/40 uppercase tracking-wider flex-1 min-w-0 truncate">
           {label}
         </span>
         {actions}
