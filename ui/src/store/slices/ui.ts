@@ -133,9 +133,10 @@ export const createUiSlice: StateCreator<AppStore, [], [], UiSlice> = (set, get)
   },
 
   syncDrawerToTab: (tabId: string | null) => {
-    const { tabDrawers, focusedPanel } = get()
+    const { tabDrawers, focusedPanel, harnessDrawerOpen } = get()
     if (!tabId) {
       set({ drawerOpen: false, drawerTabId: null, focusedPanel: 'main' })
+      if (harnessDrawerOpen) get().closeHarnessDrawer()
       return
     }
     const d = tabDrawers[tabId]
@@ -144,6 +145,15 @@ export const createUiSlice: StateCreator<AppStore, [], [], UiSlice> = (set, get)
       drawerTabId: d?.ptyId ?? null,
       ...(!d?.open && focusedPanel === 'drawer' ? { focusedPanel: 'main' } : {}),
     })
+    if (harnessDrawerOpen) {
+      const tab = get().tabs.find((t) => t.id === tabId)
+      const session = tab?.sessionId ? get().sessions.find((s) => s.id === tab.sessionId) : null
+      if (session) {
+        get().openHarnessDrawer(session)
+      } else {
+        get().closeHarnessDrawer()
+      }
+    }
   },
 
   closeTabDrawer: async (tabId: string) => {
