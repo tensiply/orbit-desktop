@@ -124,10 +124,14 @@ export function useGlobalShortcuts() {
     })
 
     const onKeyDown = (e: KeyboardEvent) => {
+      // Never intercept when a text input or textarea has DOM focus (e.g. search bar)
+      const targetIsInput = document.activeElement instanceof HTMLInputElement
+        || document.activeElement instanceof HTMLTextAreaElement
+
       // Space — escape sidebar navigation and return to terminal.
       // Only intercepts when the sidebar has virtual keyboard focus so normal
       // terminal typing (where DOM focus may briefly land on body) is never blocked.
-      if (!e.ctrlKey && !e.metaKey && !e.altKey && !e.shiftKey && e.key === ' ' && sidebarFocused) {
+      if (!targetIsInput && !e.ctrlKey && !e.metaKey && !e.altKey && !e.shiftKey && e.key === ' ' && sidebarFocused) {
         e.preventDefault()
         e.stopPropagation()
         ;(document.activeElement as HTMLElement)?.blur()
@@ -200,7 +204,7 @@ export function useGlobalShortcuts() {
       }
 
       // Ctrl+Enter in sidebar — open context menu for the focused item
-      if (sidebarFocused && e.ctrlKey && !e.metaKey && !e.altKey && e.key === 'Enter') {
+      if (!targetIsInput && sidebarFocused && e.ctrlKey && !e.metaKey && !e.altKey && e.key === 'Enter') {
         const hasScopeFilter = navView === 'terminal' || navView === 'documents'
         if (hasScopeFilter) {
           e.preventDefault()
@@ -220,7 +224,7 @@ export function useGlobalShortcuts() {
 
       // ArrowDown activates sidebar focus when not already focused (documents, terminal).
       // Skip when xterm has DOM focus — the terminal must receive the key (history navigation, etc.)
-      if (!radixMenuOpen && !sidebarFocused && !e.ctrlKey && !e.metaKey && !e.altKey && !e.shiftKey && e.key === 'ArrowDown') {
+      if (!targetIsInput && !radixMenuOpen && !sidebarFocused && !e.ctrlKey && !e.metaKey && !e.altKey && !e.shiftKey && e.key === 'ArrowDown') {
         const terminalHasFocus = !!(document.activeElement?.closest('.xterm'))
         if (!terminalHasFocus) {
           const hasScopeFilter = navView === 'terminal' || navView === 'documents'
@@ -235,7 +239,7 @@ export function useGlobalShortcuts() {
       }
 
       // Sidebar navigation — active when sidebar has keyboard focus
-      if (!radixMenuOpen && sidebarFocused && !e.ctrlKey && !e.metaKey && !e.altKey && !e.shiftKey) {
+      if (!targetIsInput && !radixMenuOpen && sidebarFocused && !e.ctrlKey && !e.metaKey && !e.altKey && !e.shiftKey) {
         const len = sidebarItems.length
 
         if (e.key === 'ArrowDown') {

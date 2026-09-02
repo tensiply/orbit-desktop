@@ -1,5 +1,5 @@
-import { useEffect } from 'react'
-import { Loader2, BookOpen, User, Settings2, Monitor, Terminal as TerminalIcon, Cpu, ShieldCheck, Download, Package, Keyboard } from 'lucide-react'
+import { useEffect, useState } from 'react'
+import { Loader2, BookOpen, User, Settings2, Monitor, Terminal as TerminalIcon, Cpu, ShieldCheck, Download, Package, Keyboard, SlidersHorizontal, FileText, Image, FileCode, Network, ChevronDown } from 'lucide-react'
 import { useAppStore } from '../store'
 import { workspaceFromWorkDir } from '../domain/scope'
 import { useScopeSession } from '../hooks/useScopeSession'
@@ -22,12 +22,19 @@ import {
   RailButton,
   SettingsRailButton,
 } from './sidebar/Rail'
+import { Button } from './ui/button'
 import { ViewModeToggle, ScopeNavigator } from './sidebar/ScopePanel'
 import { SessionList } from './sidebar/SessionPanel'
 import { FilesPanel, DocsPanel } from './sidebar/DocumentPanel'
 import { TasksPanel } from './sidebar/TaskPanel'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from './ui/dropdown-menu'
 import type { ActiveSettingsCategory } from '../store/slices/settings'
-import type { UpdateCheck, SetupStatus } from '../types'
+import type { UpdateCheck, SetupStatus, AnyFileEntry } from '../types'
 
 const RAIL_W = 52
 
@@ -178,6 +185,9 @@ export function Sidebar({ width, collapsed }: { width: number; collapsed?: boole
   const setupStatus            = useAppStore((s) => s.setupStatus)
   const openSetupWizard        = useAppStore((s) => s.openSetupWizard)
 
+  const [fileSearch,     setFileSearch]     = useState('')
+  const [fileKindFilter, setFileKindFilter] = useState<AnyFileEntry['kind'] | null>(null)
+
   const { launchWithEngine } = useScopeSession()
 
   useEffect(() => {
@@ -214,6 +224,11 @@ export function Sidebar({ width, collapsed }: { width: number; collapsed?: boole
   useEffect(() => {
     setScopePath([])
   }, [selectedWorkspace])
+
+  useEffect(() => {
+    setFileSearch('')
+    setFileKindFilter(null)
+  }, [scopePath, scopeViewMode, navView])
 
   // Derive arch diagrams for all known tenants (from scope tree + history fallback)
   const archSeenIds  = new Set<string>()
@@ -255,11 +270,15 @@ export function Sidebar({ width, collapsed }: { width: number; collapsed?: boole
   // In scope mode: only show files once the user has navigated into a scope
   const filesScopePath  = (navView === 'documents' && inScopeMode && scopePath.length === 0) ? null : scopePath
   const unsortedFiles   = filesScopePath === null ? [] : filterFilesByScope(allFiles, filesScopePath, selectedWorkspace)
-  const scopedFiles     = [...unsortedFiles].sort((a, b) => {
+  const sortedFiles = [...unsortedFiles].sort((a, b) => {
     if (a.updated_at === 0 && b.updated_at !== 0) return 1
     if (a.updated_at !== 0 && b.updated_at === 0) return -1
     return b.updated_at - a.updated_at
   })
+  const fileSearchLower = fileSearch.toLowerCase()
+  const scopedFiles = sortedFiles
+    .filter((f) => !fileKindFilter || f.kind === fileKindFilter)
+    .filter((f) => !fileSearchLower || f.title.toLowerCase().includes(fileSearchLower))
   const scopedTasks     = filterTasksByScope(tasks, inScopeMode ? scopePath : [], selectedWorkspace)
   const hasScopeFilter  = navView === 'terminal' || navView === 'documents' || navView === 'tasks'
 
@@ -394,6 +413,51 @@ export function Sidebar({ width, collapsed }: { width: number; collapsed?: boole
                         newSessionSelected={newSessionSelected}
                       />
                     )}
+                    <div className="mb-3 mt-0.5 space-y-1">
+                      <div className="flex items-center gap-1">
+                        <input
+                          type="text"
+                          value={fileSearch}
+                          onChange={(e) => setFileSearch(e.target.value)}
+                          placeholder="Filter files…"
+                          className="flex-1 min-w-0 bg-sidebar-accent/40 text-xs text-sidebar-foreground placeholder:text-sidebar-foreground/30 px-2 py-1 rounded-md border-0 outline-none focus:bg-sidebar-accent/70 transition-colors"
+                        />
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button
+                              variant={fileKindFilter ? 'secondary' : 'ghost'}
+                              size="sm"
+                              className="shrink-0 h-auto px-1.5 py-1 gap-0.5"
+                            >
+                              <SlidersHorizontal size={11} />
+                              <ChevronDown size={9} />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end" className="w-36 text-xs">
+                            <DropdownMenuItem className="text-xs gap-2" onClick={() => setFileKindFilter(null)}>
+                              <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${!fileKindFilter ? 'bg-primary' : 'bg-transparent'}`} />
+                              All types
+                            </DropdownMenuItem>
+                            <DropdownMenuItem className="text-xs gap-2" onClick={() => setFileKindFilter('doc')}>
+                              <FileText size={12} className={fileKindFilter === 'doc' ? 'text-primary' : ''} />
+                              Document
+                            </DropdownMenuItem>
+                            <DropdownMenuItem className="text-xs gap-2" onClick={() => setFileKindFilter('image')}>
+                              <Image size={12} className={fileKindFilter === 'image' ? 'text-primary' : ''} />
+                              Image
+                            </DropdownMenuItem>
+                            <DropdownMenuItem className="text-xs gap-2" onClick={() => setFileKindFilter('svg')}>
+                              <FileCode size={12} className={fileKindFilter === 'svg' ? 'text-primary' : ''} />
+                              SVG
+                            </DropdownMenuItem>
+                            <DropdownMenuItem className="text-xs gap-2" onClick={() => setFileKindFilter('diagram')}>
+                              <Network size={12} className={fileKindFilter === 'diagram' ? 'text-primary' : ''} />
+                              Diagram
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </div>
+                    </div>
                     <FilesPanel
                       files={scopedFiles}
                       loading={filesLoading}
