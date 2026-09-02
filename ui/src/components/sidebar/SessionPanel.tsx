@@ -24,6 +24,7 @@ import {
   ContextMenuSubTrigger,
   ContextMenuTrigger,
 } from '../ui/context-menu'
+import { MarkerSeparator } from '../ui/marker-separator'
 import { RING_CLASS, ENGINES_MENU } from './constants'
 
 const MAX_SESSIONS = 10
@@ -79,8 +80,8 @@ function sessionScopeCrumb(session: Session): string | null {
 
 function SectionLabel({ label }: { label: string }) {
   return (
-    <li className="pr-2 pt-1 pb-0.5">
-      <span className="text-[9px] font-medium uppercase tracking-wider text-sidebar-foreground/30">{label}</span>
+    <li className="pr-2 pt-1 pb-2">
+      <MarkerSeparator label={label} />
     </li>
   )
 }

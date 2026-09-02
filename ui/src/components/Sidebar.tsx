@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Loader2, BookOpen, User, Settings2, Monitor, Terminal as TerminalIcon, Cpu, ShieldCheck, Download, Package, Keyboard, SlidersHorizontal, FileText, Image, FileCode, Network, ChevronDown } from 'lucide-react'
+import { Loader2, BookOpen, User, Settings2, Monitor, Terminal as TerminalIcon, Cpu, ShieldCheck, Download, Package, Keyboard, FileText, Image, FileCode, Network } from 'lucide-react'
 import { useAppStore } from '../store'
 import { workspaceFromWorkDir } from '../domain/scope'
 import { useScopeSession } from '../hooks/useScopeSession'
@@ -22,17 +22,13 @@ import {
   RailButton,
   SettingsRailButton,
 } from './sidebar/Rail'
-import { Button } from './ui/button'
+import { SidebarPanel } from './sidebar/SidebarPanel'
+import { ScopeSearch } from './sidebar/ScopeSearch'
 import { ViewModeToggle, ScopeNavigator } from './sidebar/ScopePanel'
 import { SessionList } from './sidebar/SessionPanel'
 import { FilesPanel, DocsPanel } from './sidebar/DocumentPanel'
 import { TasksPanel } from './sidebar/TaskPanel'
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from './ui/dropdown-menu'
+import { DropdownMenuItem } from './ui/dropdown-menu'
 import type { ActiveSettingsCategory } from '../store/slices/settings'
 import type { UpdateCheck, SetupStatus, AnyFileEntry } from '../types'
 
@@ -185,7 +181,8 @@ export function Sidebar({ width, collapsed }: { width: number; collapsed?: boole
   const setupStatus            = useAppStore((s) => s.setupStatus)
   const openSetupWizard        = useAppStore((s) => s.openSetupWizard)
 
-  const [fileSearch,     setFileSearch]     = useState('')
+  const [searchOpen,     setSearchOpen]     = useState(false)
+  const [searchTerm,     setSearchTerm]     = useState('')
   const [fileKindFilter, setFileKindFilter] = useState<AnyFileEntry['kind'] | null>(null)
 
   const { launchWithEngine } = useScopeSession()
@@ -226,9 +223,21 @@ export function Sidebar({ width, collapsed }: { width: number; collapsed?: boole
   }, [selectedWorkspace])
 
   useEffect(() => {
-    setFileSearch('')
+    setSearchOpen(false)
     setFileKindFilter(null)
   }, [scopePath, scopeViewMode, navView])
+
+  // Clearing the term whenever the search closes keeps the list unfiltered.
+  useEffect(() => {
+    if (!searchOpen) setSearchTerm('')
+  }, [searchOpen])
+
+  // Ctrl+F (from useGlobalShortcuts) toggles the panel search.
+  useEffect(() => {
+    const handler = () => setSearchOpen((v) => !v)
+    window.addEventListener('orbit:toggle-search', handler)
+    return () => window.removeEventListener('orbit:toggle-search', handler)
+  }, [])
 
   // Derive arch diagrams for all known tenants (from scope tree + history fallback)
   const archSeenIds  = new Set<string>()
@@ -266,7 +275,11 @@ export function Sidebar({ width, collapsed }: { width: number; collapsed?: boole
   const visibleSessions = inHistoryMode
     ? sessions.filter((s) => !!s.is_history)
     : sessions.filter((s) => !s.is_history)
-  const scopedSessions  = inScopeMode ? filterSessionsByScope(visibleSessions, scopePath, selectedWorkspace) : visibleSessions
+  const searchLower     = searchTerm.trim().toLowerCase()
+  const scopedSessions  = (inScopeMode ? filterSessionsByScope(visibleSessions, scopePath, selectedWorkspace) : visibleSessions)
+    .filter((s) => !searchLower
+      || (sessionTitles[s.id] ?? '').toLowerCase().includes(searchLower)
+      || s.work_dir.toLowerCase().includes(searchLower))
   // In scope mode: only show files once the user has navigated into a scope
   const filesScopePath  = (navView === 'documents' && inScopeMode && scopePath.length === 0) ? null : scopePath
   const unsortedFiles   = filesScopePath === null ? [] : filterFilesByScope(allFiles, filesScopePath, selectedWorkspace)
@@ -275,12 +288,15 @@ export function Sidebar({ width, collapsed }: { width: number; collapsed?: boole
     if (a.updated_at !== 0 && b.updated_at === 0) return -1
     return b.updated_at - a.updated_at
   })
-  const fileSearchLower = fileSearch.toLowerCase()
   const scopedFiles = sortedFiles
     .filter((f) => !fileKindFilter || f.kind === fileKindFilter)
-    .filter((f) => !fileSearchLower || f.title.toLowerCase().includes(fileSearchLower))
+    .filter((f) => !searchLower || f.title.toLowerCase().includes(searchLower))
   const scopedTasks     = filterTasksByScope(tasks, inScopeMode ? scopePath : [], selectedWorkspace)
+    .filter((t) => !searchLower || t.title.toLowerCase().includes(searchLower))
   const hasScopeFilter  = navView === 'terminal' || navView === 'documents' || navView === 'tasks'
+  const panelLoading    = (sessionsLoading && navView === 'terminal')
+    || (filesLoading && navView === 'documents')
+    || (tasksLoading && navView === 'tasks')
 
   // Compute unified items list to derive per-component selection state
   const sidebarItems = hasScopeFilter
@@ -298,6 +314,41 @@ export function Sidebar({ width, collapsed }: { width: number; collapsed?: boole
   const fileOffset         = sidebarItems.findIndex((i) => i.type === 'file')
   const sessionRelativeIdx = sessionOffset >= 0 ? sidebarSelectedIdx - sessionOffset : -1
   const fileRelativeIdx    = fileOffset >= 0 ? sidebarSelectedIdx - fileOffset : -1
+
+  // Header search box — third header element (title · scope · search). Only Files
+  // ships a filter button (kind); terminal/tasks get a plain search input.
+  const searchNode = searchOpen && hasScopeFilter && (
+    <ScopeSearch
+      value={searchTerm}
+      onChange={setSearchTerm}
+      onClose={() => setSearchOpen(false)}
+      filterActive={navView === 'documents' && !!fileKindFilter}
+      filters={navView === 'documents' ? (
+        <>
+          <DropdownMenuItem className="text-xs gap-2" onClick={() => setFileKindFilter(null)}>
+            <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${!fileKindFilter ? 'bg-primary' : 'bg-transparent'}`} />
+            All types
+          </DropdownMenuItem>
+          <DropdownMenuItem className="text-xs gap-2" onClick={() => setFileKindFilter('doc')}>
+            <FileText size={12} className={fileKindFilter === 'doc' ? 'text-primary' : ''} />
+            Document
+          </DropdownMenuItem>
+          <DropdownMenuItem className="text-xs gap-2" onClick={() => setFileKindFilter('image')}>
+            <Image size={12} className={fileKindFilter === 'image' ? 'text-primary' : ''} />
+            Image
+          </DropdownMenuItem>
+          <DropdownMenuItem className="text-xs gap-2" onClick={() => setFileKindFilter('svg')}>
+            <FileCode size={12} className={fileKindFilter === 'svg' ? 'text-primary' : ''} />
+            SVG
+          </DropdownMenuItem>
+          <DropdownMenuItem className="text-xs gap-2" onClick={() => setFileKindFilter('diagram')}>
+            <Network size={12} className={fileKindFilter === 'diagram' ? 'text-primary' : ''} />
+            Diagram
+          </DropdownMenuItem>
+        </>
+      ) : undefined}
+    />
+  )
 
   return (
     <SidebarProvider open={false} onOpenChange={() => {}} className="contents">
@@ -357,160 +408,106 @@ export function Sidebar({ width, collapsed }: { width: number; collapsed?: boole
 
           {/* Panel */}
           {!collapsed && (
-            <div data-orbit-zone="orbit.desktop.sidebar.panel" className="flex flex-col flex-1 min-h-0 min-w-0">
-              {/* Panel header */}
-              <div data-orbit-zone="orbit.desktop.sidebar.panel.header" className="flex items-center pt-3 pb-1 pl-3 pr-2 shrink-0 gap-2">
-                <span className="text-[10px] font-medium text-sidebar-foreground/40 uppercase tracking-wider flex-1">
-                  {panelLabel}
-                </span>
-                {hasScopeFilter && <ViewModeToggle />}
-                {sessionsLoading && navView === 'terminal' && (
+            <SidebarPanel
+              label={panelLabel}
+              actions={
+                panelLoading && (
                   <Loader2 className="h-3 w-3 animate-spin text-sidebar-foreground/30 shrink-0" />
-                )}
-                {filesLoading && navView === 'documents' && (
-                  <Loader2 className="h-3 w-3 animate-spin text-sidebar-foreground/30 shrink-0" />
-                )}
-                {tasksLoading && navView === 'tasks' && (
-                  <Loader2 className="h-3 w-3 animate-spin text-sidebar-foreground/30 shrink-0" />
-                )}
-              </div>
-
-              {/* Panel content */}
-              <div data-orbit-zone="orbit.desktop.sidebar.panel.content" className="flex-1 overflow-y-auto overflow-x-hidden min-h-0 pl-3 pr-2 no-scrollbar">
-                {navView === 'terminal' && (
-                  <>
-                    {inScopeMode && (
-                      <ScopeNavigator
-                        backSelected={backSelected}
-                        selectedFolderName={selectedFolderName}
-                        newSessionSelected={newSessionSelected}
-                      />
-                    )}
-                    <SessionList
-                      sessions={scopedSessions}
-                      sessionsLoading={sessionsLoading}
-                      activeSessionId={activeSessionId}
-                      sessionTitles={sessionTitles}
-                      blankSessions={blankSessions}
-                      sidebarFocused={sidebarFocused}
-                      sidebarSelectedIdx={sessionRelativeIdx}
-                      onOpen={(s) => { blurSidebar(); void openSession(s) }}
-                      onKill={(s) => void killSession(s)}
-                      onDuplicate={(s) => void duplicateSession(s)}
-                      onRestart={(s) => void restartSession(s)}
-                      onLaunchWithEngine={launchWithEngine}
+                )
+              }
+              filters={hasScopeFilter && <ViewModeToggle />}
+            >
+              {navView === 'terminal' && (
+                <>
+                  {inScopeMode && (
+                    <ScopeNavigator
+                      backSelected={backSelected}
+                      selectedFolderName={selectedFolderName}
+                      newSessionSelected={newSessionSelected}
                     />
-                  </>
-                )}
-
-                {navView === 'docs' && <DocsPanel />}
-                {navView === 'documents' && (
-                  <>
-                    {inScopeMode && (
-                      <ScopeNavigator
-                        backSelected={backSelected}
-                        selectedFolderName={selectedFolderName}
-                        newSessionSelected={newSessionSelected}
-                      />
-                    )}
-                    <div className="mb-3 mt-0.5 space-y-1">
-                      <div className="flex items-center gap-1">
-                        <input
-                          type="text"
-                          value={fileSearch}
-                          onChange={(e) => setFileSearch(e.target.value)}
-                          placeholder="Filter files…"
-                          className="flex-1 min-w-0 bg-sidebar-accent/40 text-xs text-sidebar-foreground placeholder:text-sidebar-foreground/30 px-2 py-1 rounded-md border-0 outline-none focus:bg-sidebar-accent/70 transition-colors"
-                        />
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button
-                              variant={fileKindFilter ? 'secondary' : 'ghost'}
-                              size="sm"
-                              className="shrink-0 h-auto px-1.5 py-1 gap-0.5"
-                            >
-                              <SlidersHorizontal size={11} />
-                              <ChevronDown size={9} />
-                            </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end" className="w-36 text-xs">
-                            <DropdownMenuItem className="text-xs gap-2" onClick={() => setFileKindFilter(null)}>
-                              <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${!fileKindFilter ? 'bg-primary' : 'bg-transparent'}`} />
-                              All types
-                            </DropdownMenuItem>
-                            <DropdownMenuItem className="text-xs gap-2" onClick={() => setFileKindFilter('doc')}>
-                              <FileText size={12} className={fileKindFilter === 'doc' ? 'text-primary' : ''} />
-                              Document
-                            </DropdownMenuItem>
-                            <DropdownMenuItem className="text-xs gap-2" onClick={() => setFileKindFilter('image')}>
-                              <Image size={12} className={fileKindFilter === 'image' ? 'text-primary' : ''} />
-                              Image
-                            </DropdownMenuItem>
-                            <DropdownMenuItem className="text-xs gap-2" onClick={() => setFileKindFilter('svg')}>
-                              <FileCode size={12} className={fileKindFilter === 'svg' ? 'text-primary' : ''} />
-                              SVG
-                            </DropdownMenuItem>
-                            <DropdownMenuItem className="text-xs gap-2" onClick={() => setFileKindFilter('diagram')}>
-                              <Network size={12} className={fileKindFilter === 'diagram' ? 'text-primary' : ''} />
-                              Diagram
-                            </DropdownMenuItem>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
-                      </div>
-                    </div>
-                    <FilesPanel
-                      files={scopedFiles}
-                      loading={filesLoading}
-                      sidebarFocused={sidebarFocused}
-                      sidebarSelectedIdx={fileRelativeIdx}
-                      onOpen={(file) => {
-                        blurSidebar()
-                        if (file.kind === 'diagram') {
-                          openDiagram(file)
-                        } else if (file.kind === 'doc') {
-                          openDocument(file)
-                        } else if (file.kind === 'image') {
-                          openImage(file)
-                        } else {
-                          openSvg(file)
-                        }
-                      }}
-                    />
-                  </>
-                )}
-                {navView === 'tasks' && taskWorkspace && (
-                  <>
-                    {inScopeMode && (
-                      <ScopeNavigator
-                        backSelected={backSelected}
-                        selectedFolderName={selectedFolderName}
-                        newSessionSelected={newSessionSelected}
-                      />
-                    )}
-                    <TasksPanel
-                      tasks={scopedTasks}
-                      loading={tasksLoading}
-                      workspace={taskWorkspace}
-                      sidebarFocused={sidebarFocused}
-                      sidebarSelectedIdx={sidebarSelectedIdx}
-                      onOpen={(t) => { blurSidebar(); openTask(t) }}
-                    />
-                  </>
-                )}
-                {navView === 'settings' && (
-                  <SettingsCategoryPanel
-                    active={activeSettingsCategory}
-                    onSelect={setSettingsCategory}
-                    updateCheck={updateCheck}
-                    setupStatus={setupStatus}
-                    onOpenSetup={openSetupWizard}
+                  )}
+                  {searchNode}
+                  <SessionList
+                    sessions={scopedSessions}
+                    sessionsLoading={sessionsLoading}
+                    activeSessionId={activeSessionId}
+                    sessionTitles={sessionTitles}
+                    blankSessions={blankSessions}
+                    sidebarFocused={sidebarFocused}
+                    sidebarSelectedIdx={sessionRelativeIdx}
+                    onOpen={(s) => { blurSidebar(); void openSession(s) }}
+                    onKill={(s) => void killSession(s)}
+                    onDuplicate={(s) => void duplicateSession(s)}
+                    onRestart={(s) => void restartSession(s)}
+                    onLaunchWithEngine={launchWithEngine}
                   />
-                )}
-                {navView !== 'terminal' && navView !== 'docs' && navView !== 'documents' && navView !== 'tasks' && navView !== 'settings' && (
-                  <p className="text-[10px] text-sidebar-foreground/25 px-2 pt-1">Coming soon</p>
-                )}
-              </div>
-            </div>
+                </>
+              )}
+
+              {navView === 'docs' && <DocsPanel />}
+              {navView === 'documents' && (
+                <>
+                  {inScopeMode && (
+                    <ScopeNavigator
+                      backSelected={backSelected}
+                      selectedFolderName={selectedFolderName}
+                      newSessionSelected={newSessionSelected}
+                    />
+                  )}
+                  {searchNode}
+                  <FilesPanel
+                    files={scopedFiles}
+                    loading={filesLoading}
+                    sidebarFocused={sidebarFocused}
+                    sidebarSelectedIdx={fileRelativeIdx}
+                    onOpen={(file) => {
+                      blurSidebar()
+                      if (file.kind === 'diagram') {
+                        openDiagram(file)
+                      } else if (file.kind === 'doc') {
+                        openDocument(file)
+                      } else if (file.kind === 'image') {
+                        openImage(file)
+                      } else {
+                        openSvg(file)
+                      }
+                    }}
+                  />
+                </>
+              )}
+              {navView === 'tasks' && taskWorkspace && (
+                <>
+                  {inScopeMode && (
+                    <ScopeNavigator
+                      backSelected={backSelected}
+                      selectedFolderName={selectedFolderName}
+                      newSessionSelected={newSessionSelected}
+                    />
+                  )}
+                  {searchNode}
+                  <TasksPanel
+                    tasks={scopedTasks}
+                    loading={tasksLoading}
+                    workspace={taskWorkspace}
+                    sidebarFocused={sidebarFocused}
+                    sidebarSelectedIdx={sidebarSelectedIdx}
+                    onOpen={(t) => { blurSidebar(); openTask(t) }}
+                  />
+                </>
+              )}
+              {navView === 'settings' && (
+                <SettingsCategoryPanel
+                  active={activeSettingsCategory}
+                  onSelect={setSettingsCategory}
+                  updateCheck={updateCheck}
+                  setupStatus={setupStatus}
+                  onOpenSetup={openSetupWizard}
+                />
+              )}
+              {navView !== 'terminal' && navView !== 'docs' && navView !== 'documents' && navView !== 'tasks' && navView !== 'settings' && (
+                <p className="text-[10px] text-sidebar-foreground/25 px-2 pt-1">Coming soon</p>
+              )}
+            </SidebarPanel>
           )}
         </div>
       </aside>

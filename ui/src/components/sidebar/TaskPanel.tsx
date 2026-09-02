@@ -13,6 +13,7 @@ import {
   ContextMenuSubTrigger,
   ContextMenuTrigger,
 } from '../ui/context-menu'
+import { MarkerSeparator } from '../ui/marker-separator'
 import { RING_CLASS } from './constants'
 
 // ── helpers ───────────────────────────────────────────────────────────────────
@@ -228,7 +229,7 @@ function NewTaskInput({
         onBlur={() => { if (!loading) onCancel() }}
         placeholder="Task title…"
         disabled={loading}
-        className="w-full text-xs bg-sidebar-accent/60 text-sidebar-accent-foreground placeholder:text-sidebar-foreground/30 rounded px-2 py-1 outline-none ring-1 ring-inset ring-sidebar-border/60 focus:ring-sidebar-foreground/30"
+        className="w-full text-xs bg-sidebar-accent/60 text-sidebar-accent-foreground placeholder:text-sidebar-foreground/30 rounded px-2 py-1 outline-none ring-1 ring-inset ring-sidebar-border/60 focus:ring-ring"
       />
     </li>
   )
@@ -323,6 +324,11 @@ export function TasksPanel({
           <p className="text-[10px] text-sidebar-foreground/25 px-3 pt-1 italic">
             {filterStatus === 'all' ? 'No tasks yet' : `No ${STATUS_LABELS[filterStatus as TaskStatus]?.toLowerCase()} tasks`}
           </p>
+        )}
+        {filtered.length > 0 && (
+          <div className="pr-2 pt-1 pb-2 px-1">
+            <MarkerSeparator label={FILTER_OPTIONS.find((o) => o.value === filterStatus)?.label ?? 'Tasks'} />
+          </div>
         )}
         <ul className="list-none p-0 m-0 space-y-px px-1">
           {filtered.map((task, idx) => (

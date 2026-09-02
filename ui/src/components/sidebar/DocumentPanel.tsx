@@ -26,6 +26,7 @@ import {
   DialogDescription,
 } from '../ui/dialog'
 import { Button } from '../ui/button'
+import { MarkerSeparator } from '../ui/marker-separator'
 import { RING_CLASS } from './constants'
 
 function fileScope(file: AnyFileEntry): string {
@@ -336,6 +337,9 @@ export function FilesPanel({
 
   return (
     <ul className="p-0 w-full space-y-0.5">
+      <li className="pr-2 pt-1 pb-2">
+        <MarkerSeparator label="Files" />
+      </li>
       {files.map((file, idx) => (
         <FileItem
           key={`${file.kind}-${file.id}`}

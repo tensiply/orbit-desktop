@@ -160,6 +160,17 @@ export function useGlobalShortcuts() {
         }
       }
 
+      // Ctrl+F — toggle the panel search for list modules (sessions / files / tasks)
+      if (e.ctrlKey && !e.metaKey && !e.altKey && !e.shiftKey && e.key.toLowerCase() === 'f') {
+        const searchable = navView === 'terminal' || navView === 'documents' || navView === 'tasks'
+        if (searchable) {
+          e.preventDefault()
+          e.stopPropagation()
+          window.dispatchEvent(new CustomEvent('orbit:toggle-search'))
+          return
+        }
+      }
+
       // Ctrl+P — run selected make target
       if (e.ctrlKey && !e.metaKey && !e.altKey && !e.shiftKey && e.key.toLowerCase() === 'p') {
         const activeTab = tabs.find((t) => t.id === activeTabId)

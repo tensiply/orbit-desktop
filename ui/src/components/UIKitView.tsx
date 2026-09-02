@@ -13,6 +13,7 @@ import { Toggle } from './ui/toggle'
 import { ToggleGroup, ToggleGroupItem } from './ui/toggle-group'
 import { Kbd } from './ui/kbd'
 import { Separator } from './ui/separator'
+import { MarkerSeparator } from './ui/marker-separator'
 import { Skeleton } from './ui/skeleton'
 import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from './ui/tooltip'
 import { Empty, EmptyContent, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from './ui/empty'
@@ -363,6 +364,15 @@ export function UIKitView() {
               <span className="text-xs text-foreground/50">B</span>
               <code className="text-[9px] text-foreground/40">vertical</code>
             </div>
+          </div>
+        </Section>
+
+        {/* ── MarkerSeparator ──────────────────────────────────── */}
+        <Section title="MarkerSeparator">
+          <div className="flex flex-col gap-3 max-w-xs">
+            <MarkerSeparator label="Current" />
+            <MarkerSeparator label="History" />
+            <code className="text-[9px] text-foreground/40 block">marker (label) + rule — section headers in panel lists</code>
           </div>
         </Section>
 

@@ -164,7 +164,7 @@ export function ScopeNavigator({
   }
 
   return (
-    <div data-orbit-zone="orbit.desktop.sidebar.panel.scope-nav" className="mb-3">
+    <div data-orbit-zone="orbit.desktop.sidebar.panel.scope-nav">
       {/* Back / breadcrumb */}
       {scopePath.length > 0 && (
         <button
