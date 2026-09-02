@@ -123,38 +123,10 @@ export function computeSidebarItems(params: {
   documents:         DocEntry[]
   files:             AnyFileEntry[]
   selectedWorkspace: string | null
-  archHistory:       Array<{ workspace: string; tenant: string }>
 }): SidebarNavItem[] {
-  const { navView, scopeViewMode, scopePath, scopeTree, sessions, documents, files, selectedWorkspace, archHistory } = params
+  const { navView, scopeViewMode, scopePath, scopeTree, sessions, documents, files, selectedWorkspace } = params
 
   const items: SidebarNavItem[] = []
-
-  // ── Architecture ───────────────────────────────────────────────────────────
-  if (navView === 'architecture') {
-    if (scopeViewMode === 'scope') {
-      const ep = effectivePath(scopePath, selectedWorkspace)
-      if (ep.length >= 2) {
-        // Drilled to tenant level: show back + architecture action for current tenant
-        items.push({ type: 'scope-back' })
-        items.push({ type: 'scope-architecture', workspace: ep[0], tenant: ep[1] })
-      } else {
-        // Navigation level: show back + children to drill into
-        if (scopePath.length > 0) items.push({ type: 'scope-back' })
-        for (const name of getScopeChildren(scopeTree, scopePath, selectedWorkspace)) {
-          items.push({ type: 'scope-folder', name })
-        }
-      }
-    } else {
-      // All mode: show recently opened architectures (history), filtered by selected workspace
-      const filtered = selectedWorkspace
-        ? archHistory.filter((h) => h.workspace === selectedWorkspace)
-        : archHistory
-      for (const h of filtered) {
-        items.push({ type: 'scope-architecture', workspace: h.workspace, tenant: h.tenant })
-      }
-    }
-    return items
-  }
 
   if (navView !== 'terminal' && navView !== 'documents') return []
 
@@ -168,6 +140,13 @@ export function computeSidebarItems(params: {
     const children = getScopeChildren(scopeTree, scopePath, selectedWorkspace)
     if (navView === 'terminal' && scopePath.length > 0 && children.length > 0) {
       items.push({ type: 'scope-new-session' })
+    }
+    // In documents scope mode at tenant level, offer arch diagram entry
+    if (navView === 'documents') {
+      const ep = effectivePath(scopePath, selectedWorkspace)
+      if (ep.length >= 2) {
+        items.push({ type: 'scope-architecture', workspace: ep[0], tenant: ep[1] })
+      }
     }
     for (const name of children) {
       items.push({ type: 'scope-folder', name })

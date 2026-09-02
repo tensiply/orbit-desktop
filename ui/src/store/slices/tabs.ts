@@ -1,5 +1,5 @@
 import type { StateCreator } from 'zustand'
-import type { Tab, Session, LaunchedInfo, NavView } from '../../types'
+import type { Tab, Session, LaunchedInfo, NavView, DiagramEntry } from '../../types'
 import { tauriService } from '../../services/tauri'
 import { sendTerminalCmd } from '../../lib/terminalBus'
 import { workspaceFromWorkDir } from '../../domain/scope'
@@ -20,7 +20,8 @@ export interface TabsSlice {
   openUIMap: () => void
   openSettings: () => void
   openFeaturePage: (view: NavView) => void
-  openArchitecture: (workspace: string, tenant: string) => void
+  openDiagram: (entry: DiagramEntry) => void
+  removeFromArchHistory: (workspace: string, tenant: string) => void
   closeTab: (tabId: string) => Promise<void>
   setActiveTab: (tabId: string) => void
   killSession: (session: Session) => Promise<void>
@@ -176,25 +177,34 @@ export const createTabsSlice: StateCreator<AppStore, [], [], TabsSlice> = (set, 
       get().setNavView('settings')
     },
 
-    openArchitecture: (workspace: string, tenant: string) => {
-      const tabId = `arch-${workspace}-${tenant}`
+    openDiagram: (entry: DiagramEntry) => {
+      const tabId = `diagram-${entry.id}`
       const existing = get().tabs.find((t) => t.id === tabId)
-      const prev = get().archHistory.filter((h) => !(h.workspace === workspace && h.tenant === tenant))
-      const archHistory = [{ workspace, tenant }, ...prev].slice(0, 10)
+      // Track arch diagrams in history for sidebar list
+      let archHistory = get().archHistory
+      if (entry.diagram_type === 'arch' && entry.tenant) {
+        const prev = archHistory.filter((h) => !(h.workspace === entry.workspace && h.tenant === entry.tenant))
+        archHistory = [{ workspace: entry.workspace, tenant: entry.tenant }, ...prev].slice(0, 10)
+      }
       if (existing) {
-        set({ activeTabId: tabId, navView: 'architecture', archHistory })
+        set({ activeTabId: tabId, navView: 'documents', archHistory })
         syncActive(tabId)
         return
       }
       const tab: Tab = {
         id: tabId,
-        title: `${tenant} architecture`,
-        type: 'architecture',
-        archWorkspace: workspace,
-        archTenant: tenant,
+        title: entry.title,
+        type: 'diagram',
+        diagramEntry: entry,
       }
-      set((state) => ({ tabs: [...state.tabs, tab], activeTabId: tabId, navView: 'architecture', archHistory }))
+      set((state) => ({ tabs: [...state.tabs, tab], activeTabId: tabId, navView: 'documents', archHistory }))
       syncActive(tabId)
+    },
+
+    removeFromArchHistory: (workspace: string, tenant: string) => {
+      set((state) => ({
+        archHistory: state.archHistory.filter((h) => !(h.workspace === workspace && h.tenant === tenant)),
+      }))
     },
 
     closeTab: async (tabId: string) => {
@@ -224,10 +234,11 @@ export const createTabsSlice: StateCreator<AppStore, [], [], TabsSlice> = (set, 
         sessionCache.setActiveSessionId(tab.sessionId)
       }
       const navView: NavView =
-        tab?.type === 'document'     ? 'documents'    :
-        tab?.type === 'architecture' ? 'architecture' :
-        tab?.type === 'settings'     ? 'settings'     :
-        tab?.type === 'task'         ? 'tasks'        :
+        tab?.type === 'document'     ? 'documents' :
+        tab?.type === 'diagram'      ? 'documents' :
+        tab?.type === 'file'         ? 'documents' :
+        tab?.type === 'settings'     ? 'settings'  :
+        tab?.type === 'task'         ? 'tasks'     :
         tab?.type === 'feature-page' ? (tab.featureView ?? 'tasks') :
                                        'terminal'
       set({ activeTabId: tabId, navView })

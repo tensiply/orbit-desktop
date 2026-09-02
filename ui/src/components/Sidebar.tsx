@@ -1,5 +1,5 @@
 import { useEffect } from 'react'
-import { Loader2, BookOpen, User, Settings2, Monitor, Terminal as TerminalIcon, Cpu, ShieldCheck, Download, Package, Keyboard } from 'lucide-react'
+import { Loader2, BookOpen, User, Settings2, Monitor, Terminal as TerminalIcon, Cpu, ShieldCheck, Download, Package, Keyboard, Network as NetworkIcon } from 'lucide-react'
 import { useAppStore } from '../store'
 import { workspaceFromWorkDir } from '../domain/scope'
 import { useScopeSession } from '../hooks/useScopeSession'
@@ -25,7 +25,6 @@ import {
 import { ViewModeToggle, ScopeNavigator } from './sidebar/ScopePanel'
 import { SessionList } from './sidebar/SessionPanel'
 import { FilesPanel, DocsPanel } from './sidebar/DocumentPanel'
-import { ArchItemsList } from './sidebar/ArchPanel'
 import { TasksPanel } from './sidebar/TaskPanel'
 import type { ActiveSettingsCategory } from '../store/slices/settings'
 import type { UpdateCheck, SetupStatus } from '../types'
@@ -138,9 +137,9 @@ export function Sidebar({ width, collapsed }: { width: number; collapsed?: boole
   const sessionTitles      = useAppStore((s) => s.sessionTitles)
   const blankSessions      = useAppStore((s) => s.blankSessions)
   const navView            = useAppStore((s) => s.navView)
-  const openSession        = useAppStore((s) => s.openSession)
-  const openArchitecture   = useAppStore((s) => s.openArchitecture)
-  const setNavView         = useAppStore((s) => s.setNavView)
+  const openSession  = useAppStore((s) => s.openSession)
+  const openDiagram  = useAppStore((s) => s.openDiagram)
+  const setNavView   = useAppStore((s) => s.setNavView)
   const tabs               = useAppStore((s) => s.tabs)
   const activeTabId        = useAppStore((s) => s.activeTabId)
   const killSession        = useAppStore((s) => s.killSession)
@@ -173,6 +172,7 @@ export function Sidebar({ width, collapsed }: { width: number; collapsed?: boole
   const loadScopeTree          = useAppStore((s) => s.loadScopeTree)
   const archHistory            = useAppStore((s) => s.archHistory)
   const activeSettingsCategory = useAppStore((s) => s.activeSettingsCategory)
+
   const setSettingsCategory    = useAppStore((s) => s.setSettingsCategory)
   const updateCheck            = useAppStore((s) => s.updateCheck)
   const setupStatus            = useAppStore((s) => s.setupStatus)
@@ -212,8 +212,19 @@ export function Sidebar({ width, collapsed }: { width: number; collapsed?: boole
     setScopePath([])
   }, [selectedWorkspace])
 
-  const allFiles        = mergeFiles(documents, images, svgs)
-  const filesLoading    = documentsLoading || imagesLoading || svgsLoading
+  // Derive arch diagrams from history and merge with other files
+  const archDiagrams = archHistory.map((h) => ({
+    kind:         'diagram' as const,
+    id:           `arch-${h.workspace}-${h.tenant}`,
+    title:        `${h.tenant} architecture`,
+    diagram_type: 'arch'  as const,
+    workspace:    h.workspace,
+    tenant:       h.tenant,
+    created_at:   0,
+    updated_at:   0,
+  }))
+  const allFiles     = mergeFiles(documents, images, svgs, archDiagrams)
+  const filesLoading = documentsLoading || imagesLoading || svgsLoading
 
   const activeSessionId = tabs.find((t) => t.id === activeTabId)?.sessionId
   const panelLabel      = PANEL_LABELS[navView] ?? navView
@@ -227,11 +238,11 @@ export function Sidebar({ width, collapsed }: { width: number; collapsed?: boole
   const scopedSessions  = inScopeMode ? filterSessionsByScope(visibleSessions, scopePath, selectedWorkspace) : visibleSessions
   const scopedFiles     = filterFilesByScope(allFiles, inScopeMode ? scopePath : [], selectedWorkspace)
   const scopedTasks     = filterTasksByScope(tasks, inScopeMode ? scopePath : [], selectedWorkspace)
-  const hasScopeFilter  = navView === 'terminal' || navView === 'documents' || navView === 'architecture' || navView === 'tasks'
+  const hasScopeFilter  = navView === 'terminal' || navView === 'documents' || navView === 'tasks'
 
   // Compute unified items list to derive per-component selection state
   const sidebarItems = hasScopeFilter
-    ? computeSidebarItems({ navView, scopeViewMode, scopePath, scopeTree, sessions: visibleSessions, documents, files: allFiles, selectedWorkspace: selectedWorkspace ?? null, archHistory })
+    ? computeSidebarItems({ navView, scopeViewMode, scopePath, scopeTree, sessions: visibleSessions, documents, files: allFiles, selectedWorkspace: selectedWorkspace ?? null })
     : []
   const selectedItem = sidebarFocused ? sidebarItems[sidebarSelectedIdx] : null
 
@@ -245,8 +256,6 @@ export function Sidebar({ width, collapsed }: { width: number; collapsed?: boole
   const fileOffset         = sidebarItems.findIndex((i) => i.type === 'file')
   const sessionRelativeIdx = sessionOffset >= 0 ? sidebarSelectedIdx - sessionOffset : -1
   const fileRelativeIdx    = fileOffset >= 0 ? sidebarSelectedIdx - fileOffset : -1
-  const archOffset         = sidebarItems.findIndex((i) => i.type === 'scope-architecture')
-  const archRelativeIdx    = archOffset >= 0 ? sidebarSelectedIdx - archOffset : -1
 
   return (
     <SidebarProvider open={false} onOpenChange={() => {}} className="contents">
@@ -362,6 +371,21 @@ export function Sidebar({ width, collapsed }: { width: number; collapsed?: boole
                         newSessionSelected={newSessionSelected}
                       />
                     )}
+                    {/* Arch diagram shortcuts when drilled to tenant level */}
+                    {inScopeMode && sidebarItems.filter((i) => i.type === 'scope-architecture').map((i) => {
+                      if (i.type !== 'scope-architecture') return null
+                      const entry = { kind: 'diagram' as const, id: `arch-${i.workspace}-${i.tenant}`, title: `${i.tenant} architecture`, diagram_type: 'arch' as const, workspace: i.workspace, tenant: i.tenant, created_at: 0, updated_at: 0 }
+                      return (
+                        <button
+                          key={`${i.workspace}:${i.tenant}`}
+                          onClick={() => { blurSidebar(); openDiagram(entry) }}
+                          className="flex items-center gap-1.5 w-full px-2 py-1.5 rounded-md text-xs text-sidebar-foreground/55 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground transition-colors"
+                        >
+                          <NetworkIcon size={11} className="shrink-0 text-sidebar-foreground/30" />
+                          <span className="truncate font-medium">Architecture</span>
+                        </button>
+                      )
+                    })}
                     <FilesPanel
                       files={scopedFiles}
                       loading={filesLoading}
@@ -369,36 +393,17 @@ export function Sidebar({ width, collapsed }: { width: number; collapsed?: boole
                       sidebarSelectedIdx={fileRelativeIdx}
                       onOpen={(file) => {
                         blurSidebar()
-                        if (file.kind === 'doc')   openDocument(file)
-                        else if (file.kind === 'image') openImage(file)
-                        else openSvg(file)
+                        if (file.kind === 'diagram') {
+                          openDiagram(file)
+                        } else if (file.kind === 'doc') {
+                          openDocument(file)
+                        } else if (file.kind === 'image') {
+                          openImage(file)
+                        } else {
+                          openSvg(file)
+                        }
                       }}
                     />
-                  </>
-                )}
-                {navView === 'architecture' && (
-                  <>
-                    {inScopeMode && (
-                      <ScopeNavigator
-                        backSelected={backSelected}
-                        selectedFolderName={selectedFolderName}
-                        newSessionSelected={newSessionSelected}
-                      />
-                    )}
-                    {!inScopeMode && (
-                      <div className="px-2 pt-0.5 pb-0.5">
-                        <span className="text-[9px] text-sidebar-foreground/20 uppercase tracking-wider">Recent</span>
-                      </div>
-                    )}
-                    <ArchItemsList
-                      items={sidebarItems.filter((i): i is { type: 'scope-architecture'; workspace: string; tenant: string } => i.type === 'scope-architecture')}
-                      sidebarFocused={sidebarFocused}
-                      sidebarSelectedIdx={archRelativeIdx}
-                      onOpen={(ws, t) => { blurSidebar(); openArchitecture(ws, t) }}
-                    />
-                    {!inScopeMode && sidebarItems.filter((i) => i.type === 'scope-architecture').length === 0 && (
-                      <p className="text-[10px] text-sidebar-foreground/25 px-2 pt-1 italic">No architectures opened yet</p>
-                    )}
                   </>
                 )}
                 {navView === 'tasks' && taskWorkspace && (
@@ -429,7 +434,7 @@ export function Sidebar({ width, collapsed }: { width: number; collapsed?: boole
                     onOpenSetup={openSetupWizard}
                   />
                 )}
-                {navView !== 'terminal' && navView !== 'docs' && navView !== 'documents' && navView !== 'architecture' && navView !== 'tasks' && navView !== 'settings' && (
+                {navView !== 'terminal' && navView !== 'docs' && navView !== 'documents' && navView !== 'tasks' && navView !== 'settings' && (
                   <p className="text-[10px] text-sidebar-foreground/25 px-2 pt-1">Coming soon</p>
                 )}
               </div>

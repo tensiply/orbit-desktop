@@ -1,10 +1,10 @@
 import { useEffect, useRef, useState } from 'react'
 import {
   Copy, FolderOpen, Archive, Trash2, Info, Mail, Send,
-  FileText, Network, Clipboard, Image, FileCode,
+  FileText, Network, Clipboard, Image, FileCode, GitBranch, Database,
 } from 'lucide-react'
 import { useAppStore } from '../../store'
-import type { AnyFileEntry } from '../../types'
+import type { AnyFileEntry, DiagramType } from '../../types'
 import { tauriService } from '../../services/tauri'
 import {
   ContextMenu,
@@ -32,21 +32,34 @@ function fileScope(file: AnyFileEntry): string {
   return [file.tenant, file.project, file.repository].filter(Boolean).join(' › ')
 }
 
-function fileFilename(path: string): string {
-  return path.split('/').pop() ?? path
+function fileFilename(file: AnyFileEntry): string {
+  if (file.kind === 'diagram') return ''
+  return file.output_path.split('/').pop() ?? file.output_path
 }
 
 function fmtTs(secs: number): string {
   return new Date(secs * 1000).toLocaleString()
 }
 
-function kindIcon(kind: AnyFileEntry['kind']) {
-  if (kind === 'image') return <Image size={11} />
-  if (kind === 'svg')   return <FileCode size={11} />
+function diagramTypeIcon(t: DiagramType) {
+  if (t === 'sequence') return <GitBranch size={11} />
+  if (t === 'er')       return <Database size={11} />
+  return <Network size={11} />
+}
+
+function kindIcon(file: AnyFileEntry) {
+  if (file.kind === 'diagram') return diagramTypeIcon(file.diagram_type)
+  if (file.kind === 'image')   return <Image size={11} />
+  if (file.kind === 'svg')     return <FileCode size={11} />
   return <FileText size={11} />
 }
 
 function kindLabel(file: AnyFileEntry): string {
+  if (file.kind === 'diagram') {
+    if (file.diagram_type === 'sequence') return 'SEQ'
+    if (file.diagram_type === 'er')       return 'ER'
+    return 'ARCH'
+  }
   if (file.kind === 'svg') return 'SVG'
   return file.format.toUpperCase()
 }
@@ -77,14 +90,16 @@ function FileItem({
   }, [isKeySelected])
 
   const scope    = fileScope(file)
-  const filename = fileFilename(file.output_path)
+  const filename = fileFilename(file)
   const label    = kindLabel(file)
 
   async function copyPath() {
+    if (file.kind === 'diagram') return
     await navigator.clipboard.writeText(file.output_path)
   }
 
   async function copyContent() {
+    if (file.kind === 'diagram') return
     try {
       const b64 = await tauriService.documentReadB64(file.output_path)
       const text = atob(b64)
@@ -95,6 +110,7 @@ function FileItem({
   }
 
   async function reveal() {
+    if (file.kind === 'diagram') return
     if (file.kind === 'image') {
       await tauriService.imageReveal(file.output_path).catch(() => void 0)
     } else if (file.kind === 'svg') {
@@ -129,8 +145,18 @@ function FileItem({
             <div className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-1.5">
               <span className="text-foreground/40 font-medium">ID</span>
               <span className="font-mono">{file.id}</span>
-              <span className="text-foreground/40 font-medium">Path</span>
-              <span className="font-mono break-all text-[10px] leading-snug">{file.output_path}</span>
+              {file.kind !== 'diagram' && (
+                <>
+                  <span className="text-foreground/40 font-medium">Path</span>
+                  <span className="font-mono break-all text-[10px] leading-snug">{file.output_path}</span>
+                </>
+              )}
+              {file.kind === 'diagram' && (
+                <>
+                  <span className="text-foreground/40 font-medium">Type</span>
+                  <span className="capitalize">{file.diagram_type}</span>
+                </>
+              )}
               {'template' in file && file.template && (
                 <>
                   <span className="text-foreground/40 font-medium">Template</span>
@@ -189,7 +215,7 @@ function FileItem({
               <div className="flex flex-col gap-0.5 min-w-0">
                 <div className="flex items-center gap-1.5 min-w-0">
                   <span className="text-[10px] uppercase tracking-wider font-medium px-1 py-px rounded bg-sidebar-foreground/8 text-sidebar-foreground/40 shrink-0 flex items-center gap-0.5">
-                    {kindIcon(file.kind)}
+                    {kindIcon(file)}
                     {label}
                   </span>
                   <span className="text-xs font-medium leading-snug truncate text-sidebar-foreground/60 group-hover:text-sidebar-accent-foreground">
@@ -205,29 +231,35 @@ function FileItem({
           </ContextMenuTrigger>
 
           <ContextMenuContent className="w-52 text-xs">
+            {file.kind !== 'diagram' && (
+              <ContextMenuGroup>
+                <ContextMenuLabel>Clipboard</ContextMenuLabel>
+                <ContextMenuItem className="text-xs gap-2" onClick={copyPath}>
+                  <Copy size={13} />Copy path
+                </ContextMenuItem>
+                <ContextMenuItem className="text-xs gap-2" onClick={copyContent}>
+                  <Clipboard size={13} />Copy content
+                </ContextMenuItem>
+              </ContextMenuGroup>
+            )}
             <ContextMenuGroup>
-              <ContextMenuLabel>Clipboard</ContextMenuLabel>
-              <ContextMenuItem className="text-xs gap-2" onClick={copyPath}>
-                <Copy size={13} />Copy path
-              </ContextMenuItem>
-              <ContextMenuItem className="text-xs gap-2" onClick={copyContent}>
-                <Clipboard size={13} />Copy content
-              </ContextMenuItem>
-            </ContextMenuGroup>
-            <ContextMenuGroup>
-              <ContextMenuLabel>File</ContextMenuLabel>
-              <ContextMenuItem className="text-xs gap-2" onClick={reveal}>
-                <FolderOpen size={13} />Reveal in explorer
-              </ContextMenuItem>
+              <ContextMenuLabel>{file.kind === 'diagram' ? 'Diagram' : 'File'}</ContextMenuLabel>
+              {file.kind !== 'diagram' && (
+                <ContextMenuItem className="text-xs gap-2" onClick={reveal}>
+                  <FolderOpen size={13} />Reveal in explorer
+                </ContextMenuItem>
+              )}
               <ContextMenuItem className="text-xs gap-2" onClick={onArchive}>
-                <Archive size={13} />Archive
+                <Archive size={13} />{file.kind === 'diagram' ? 'Remove from history' : 'Archive'}
               </ContextMenuItem>
-              <ContextMenuItem
-                className="text-xs gap-2 text-destructive focus:text-destructive"
-                onClick={() => setShowDelete(true)}
-              >
-                <Trash2 size={13} />Delete…
-              </ContextMenuItem>
+              {file.kind !== 'diagram' && (
+                <ContextMenuItem
+                  className="text-xs gap-2 text-destructive focus:text-destructive"
+                  onClick={() => setShowDelete(true)}
+                >
+                  <Trash2 size={13} />Delete…
+                </ContextMenuItem>
+              )}
             </ContextMenuGroup>
             <ContextMenuGroup>
               <ContextMenuLabel>More</ContextMenuLabel>
@@ -271,20 +303,26 @@ export function FilesPanel({
   sidebarSelectedIdx: number
   onOpen: (file: AnyFileEntry) => void
 }) {
-  const archiveDocument = useAppStore((s) => s.archiveDocument)
-  const deleteDocument  = useAppStore((s) => s.deleteDocument)
-  const archiveImage    = useAppStore((s) => s.archiveImage)
-  const deleteImage     = useAppStore((s) => s.deleteImage)
-  const archiveSvg      = useAppStore((s) => s.archiveSvg)
-  const deleteSvg       = useAppStore((s) => s.deleteSvg)
+  const archiveDocument       = useAppStore((s) => s.archiveDocument)
+  const deleteDocument        = useAppStore((s) => s.deleteDocument)
+  const archiveImage          = useAppStore((s) => s.archiveImage)
+  const deleteImage           = useAppStore((s) => s.deleteImage)
+  const archiveSvg            = useAppStore((s) => s.archiveSvg)
+  const deleteSvg             = useAppStore((s) => s.deleteSvg)
+  const removeFromArchHistory = useAppStore((s) => s.removeFromArchHistory)
 
   function archive(file: AnyFileEntry) {
+    if (file.kind === 'diagram') {
+      if (file.diagram_type === 'arch' && file.tenant) removeFromArchHistory(file.workspace, file.tenant)
+      return
+    }
     if (file.kind === 'doc')   return void archiveDocument(file.id, file.workspace)
     if (file.kind === 'image') return void archiveImage(file.id, file.workspace)
     return void archiveSvg(file.id, file.workspace)
   }
 
   async function remove(file: AnyFileEntry) {
+    if (file.kind === 'diagram') return
     if (file.kind === 'doc')   return deleteDocument(file.id, file.workspace)
     if (file.kind === 'image') return deleteImage(file.id, file.workspace)
     return deleteSvg(file.id, file.workspace)

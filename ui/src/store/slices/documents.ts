@@ -1,7 +1,7 @@
 import type { StateCreator } from 'zustand'
 import { invoke } from '@tauri-apps/api/core'
 import type { AppStore } from '../types'
-import type { DocEntry, ImageEntry, SvgEntry, AnyFileEntry } from '../../types'
+import type { DocEntry, ImageEntry, SvgEntry, AnyFileEntry, DiagramEntry } from '../../types'
 import { tauriService } from '../../services/tauri'
 
 export interface DocumentsSlice {
@@ -20,7 +20,6 @@ export interface DocumentsSlice {
   openDocument:   (doc: DocEntry) => void
   openImage:      (img: ImageEntry) => void
   openSvg:        (svg: SvgEntry) => void
-
   deleteDocument: (id: string, workspace: string) => Promise<void>
   archiveDocument:(id: string, workspace: string) => Promise<void>
   deleteImage:    (id: string, workspace: string) => Promise<void>
@@ -33,11 +32,13 @@ export function mergeFiles(
   documents: DocEntry[],
   images: ImageEntry[],
   svgs: SvgEntry[],
+  diagrams: DiagramEntry[] = [],
 ): AnyFileEntry[] {
   const all: AnyFileEntry[] = [
-    ...documents.map((d) => ({ kind: 'doc' as const,   ...d })),
-    ...images.map((i)   => ({ kind: 'image' as const,  ...i })),
-    ...svgs.map((s)     => ({ kind: 'svg' as const, format: 'svg' as const, ...s })),
+    ...documents.map((d) => ({ kind: 'doc'     as const, ...d })),
+    ...images.map((i)    => ({ kind: 'image'   as const, ...i })),
+    ...svgs.map((s)      => ({ kind: 'svg'     as const, format: 'svg' as const, ...s })),
+    ...diagrams.map((g)  => ({ kind: 'diagram' as const, ...g })),
   ]
   all.sort((a, b) => b.updated_at - a.updated_at)
   return all

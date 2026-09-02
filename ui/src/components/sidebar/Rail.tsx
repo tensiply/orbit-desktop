@@ -1,6 +1,6 @@
 import {
   ListChecks, Terminal, FileText, LayoutGrid, Server,
-  Network, Settings, Files,
+  Settings, Files,
 } from 'lucide-react'
 import { useAppStore } from '../../store'
 import type { NavView } from '../../types'
@@ -11,27 +11,25 @@ import {
 } from '../ui/sidebar'
 
 export const PANEL_LABELS: Partial<Record<NavView, string>> = {
-  terminal:     'Sessions',
-  tasks:        'Tasks',
-  plans:        'Plans',
-  plugins:      'Plugins',
-  mcps:         'MCPs',
-  activity:     'Activity',
-  documents:    'Files',
-  architecture: 'Architecture',
-  profile:      'Profile',
-  docs:         'Documentation',
-  settings:     'Settings',
+  terminal:  'Sessions',
+  tasks:     'Tasks',
+  plans:     'Plans',
+  plugins:   'Plugins',
+  mcps:      'MCPs',
+  activity:  'Activity',
+  documents: 'Files',
+  profile:   'Profile',
+  docs:      'Documentation',
+  settings:  'Settings',
 }
 
 type RailItem = { label: string; view: NavView; icon: React.ReactNode }
 
 export const NAV_ITEMS: RailItem[] = [
-  { label: 'Tasks',        view: 'tasks',        icon: <ListChecks /> },
-  { label: 'Sessions',     view: 'terminal',     icon: <Terminal />   },
-  { label: 'Files',        view: 'documents',    icon: <Files />      },
-  { label: 'Plans',        view: 'plans',        icon: <FileText />   },
-  { label: 'Architecture', view: 'architecture', icon: <Network />    },
+  { label: 'Tasks',    view: 'tasks',     icon: <ListChecks /> },
+  { label: 'Sessions', view: 'terminal',  icon: <Terminal />   },
+  { label: 'Files',    view: 'documents', icon: <Files />      },
+  { label: 'Plans',    view: 'plans',     icon: <FileText />   },
 ]
 
 export const BOTTOM_NAV_ITEMS: RailItem[] = [

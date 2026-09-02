@@ -83,9 +83,9 @@ export function useGlobalShortcuts() {
   const navigateScopeOut      = useAppStore((s) => s.navigateScopeOut)
   const loadScopeTree         = useAppStore((s) => s.loadScopeTree)
   const launchScopeSession    = useAppStore((s) => s.launchScopeSession)
-  const openLaunchPicker      = useAppStore((s) => s.openLaunchPicker)
-  const openArchitecture      = useAppStore((s) => s.openArchitecture)
-  const archHistory           = useAppStore((s) => s.archHistory)
+  const openLaunchPicker = useAppStore((s) => s.openLaunchPicker)
+  const openDiagram      = useAppStore((s) => s.openDiagram)
+  const archHistory      = useAppStore((s) => s.archHistory)
 
   useEffect(() => {
     const parsed = shortcuts.map((s) => ({ ...s, parsed: parseShortcutKeys(s.keys) }))
@@ -99,7 +99,17 @@ export function useGlobalShortcuts() {
       allSessions.some((s) => !s.is_history && workspaceFromWorkDir(s.work_dir) === ws.name),
     )
 
-    const allFiles = mergeFiles(documents, images, svgs)
+    const archDiagrams = archHistory.map((h) => ({
+      kind:         'diagram' as const,
+      id:           `arch-${h.workspace}-${h.tenant}`,
+      title:        `${h.tenant} architecture`,
+      diagram_type: 'arch'  as const,
+      workspace:    h.workspace,
+      tenant:       h.tenant,
+      created_at:   0,
+      updated_at:   0,
+    }))
+    const allFiles = mergeFiles(documents, images, svgs, archDiagrams)
 
     // Unified sidebar items (only meaningful for terminal/documents views)
     const sidebarItems = computeSidebarItems({
@@ -111,7 +121,6 @@ export function useGlobalShortcuts() {
       documents,
       files: allFiles,
       selectedWorkspace: selectedWorkspace ?? null,
-      archHistory,
     })
 
     const onKeyDown = (e: KeyboardEvent) => {
@@ -160,7 +169,7 @@ export function useGlobalShortcuts() {
 
       // Alt+S — cycle All/Scope/Hist view mode and focus first item
       if (e.altKey && !e.ctrlKey && !e.metaKey && e.key.toLowerCase() === 's') {
-        const hasScopeFilter = navView === 'terminal' || navView === 'documents' || navView === 'architecture'
+        const hasScopeFilter = navView === 'terminal' || navView === 'documents'
         if (hasScopeFilter) {
           e.preventDefault()
           let next: 'all' | 'scope' | 'history'
@@ -192,7 +201,7 @@ export function useGlobalShortcuts() {
 
       // Ctrl+Enter in sidebar — open context menu for the focused item
       if (sidebarFocused && e.ctrlKey && !e.metaKey && !e.altKey && e.key === 'Enter') {
-        const hasScopeFilter = navView === 'terminal' || navView === 'documents' || navView === 'architecture'
+        const hasScopeFilter = navView === 'terminal' || navView === 'documents'
         if (hasScopeFilter) {
           e.preventDefault()
           e.stopPropagation()
@@ -201,8 +210,6 @@ export function useGlobalShortcuts() {
             window.dispatchEvent(new CustomEvent('orbit:open-session-menu', { detail: { sessionId: item.session.id } }))
           } else if (item?.type === 'scope-folder') {
             window.dispatchEvent(new CustomEvent('orbit:open-scope-folder-menu', { detail: { name: item.name } }))
-          } else if (item?.type === 'scope-architecture') {
-            window.dispatchEvent(new CustomEvent('orbit:open-arch-item-menu', { detail: { workspace: item.workspace, tenant: item.tenant } }))
           }
           return
         }
@@ -211,12 +218,12 @@ export function useGlobalShortcuts() {
       // Skip all sidebar navigation when a Radix UI popup menu is open and capturing input
       const radixMenuOpen = !!(document.querySelector('[role="menu"], [role="listbox"]'))
 
-      // ArrowDown activates sidebar focus when not already focused (documents, terminal, architecture).
+      // ArrowDown activates sidebar focus when not already focused (documents, terminal).
       // Skip when xterm has DOM focus — the terminal must receive the key (history navigation, etc.)
       if (!radixMenuOpen && !sidebarFocused && !e.ctrlKey && !e.metaKey && !e.altKey && !e.shiftKey && e.key === 'ArrowDown') {
         const terminalHasFocus = !!(document.activeElement?.closest('.xterm'))
         if (!terminalHasFocus) {
-          const hasScopeFilter = navView === 'terminal' || navView === 'documents' || navView === 'architecture'
+          const hasScopeFilter = navView === 'terminal' || navView === 'documents'
           if (hasScopeFilter && sidebarItems.length > 0) {
             e.preventDefault()
             e.stopPropagation()
@@ -296,10 +303,12 @@ export function useGlobalShortcuts() {
               openDocument(item.doc)
               blurSidebar()
               break
-            case 'scope-architecture':
-              openArchitecture(item.workspace, item.tenant)
+            case 'scope-architecture': {
+              const entry = { kind: 'diagram' as const, id: `arch-${item.workspace}-${item.tenant}`, title: `${item.tenant} architecture`, diagram_type: 'arch' as const, workspace: item.workspace, tenant: item.tenant, created_at: 0, updated_at: 0 }
+              openDiagram(entry)
               blurSidebar()
               break
+            }
           }
           return
         }
@@ -429,7 +438,7 @@ export function useGlobalShortcuts() {
             setNavView('plans')
             break
           case 'nav_architecture':
-            setNavView('architecture')
+            setNavView('documents')
             break
           case 'nav_plugins':
             setNavView('plugins')
@@ -462,7 +471,6 @@ export function useGlobalShortcuts() {
                 documents,
                 files: mergeFiles(documents, images, svgs),
                 selectedWorkspace: selectedWorkspace ?? null,
-                archHistory,
               })
               const activeSessionId = tabs.find((t) => t.id === activeTabId)?.sessionId
               const activeIdx = activeSessionId
@@ -512,5 +520,5 @@ export function useGlobalShortcuts() {
       scopeViewMode, scopePath, scopeTree,
       setScopeViewMode, navigateScopeIn, navigateScopeOut, loadScopeTree,
       launchScopeSession,
-      openLaunchPicker, openArchitecture])
+      openLaunchPicker, openDiagram])
 }

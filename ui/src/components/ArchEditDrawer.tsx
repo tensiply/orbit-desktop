@@ -22,7 +22,7 @@ export function ArchEditDrawer() {
   useEffect(() => {
     if (!open) return
     const activeTab = tabs.find((t) => t.id === activeTabId)
-    if (activeTab?.type !== 'architecture') {
+    if (activeTab?.type !== 'diagram' || activeTab.diagramEntry?.diagram_type !== 'arch') {
       closeArchDrawer()
     }
   }, [activeTabId])

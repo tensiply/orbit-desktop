@@ -1,4 +1,4 @@
-import { SquareTerminal, Settings, Keyboard, Layers, FileText, Network, Map, ListChecks, X } from 'lucide-react'
+import { SquareTerminal, Settings, Keyboard, Layers, FileText, Network, Waypoints, Map, ListChecks, X } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useAppStore } from '../store'
 import type { Tab } from '../store'
@@ -11,7 +11,7 @@ function tabIcon(type: Tab['type']) {
     case 'shortcuts':    return Keyboard
     case 'uikit':        return Layers
     case 'document':     return FileText
-    case 'architecture': return Network
+    case 'diagram':      return Waypoints
     case 'ui-map':       return Map
     case 'task':         return ListChecks
     case 'feature-page': return ListChecks

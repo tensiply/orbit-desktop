@@ -17,7 +17,7 @@ import { SettingsView } from './components/SettingsView'
 import { DocumentView, FileViewer } from './components/DocumentView'
 import { TaskView } from './components/TaskView'
 import { FEATURE_PAGES } from './lib/featurePages'
-import { ArchitectureView } from './components/ArchitectureView'
+import { DiagramTabView } from './components/diagram/DiagramTabView'
 import { DesktopUIView } from './components/DesktopUIView'
 import { SessionHeader } from './components/SessionHeader'
 import { LaunchPickerModal } from './components/LaunchPickerModal'
@@ -255,12 +255,10 @@ export default function App() {
                       </div>
                     )
                   }
-                  if (tab.type === 'architecture') {
+                  if (tab.type === 'diagram') {
                     return (
                       <div key={tab.id} className={`absolute inset-0 ${isActive ? '' : 'hidden'}`}>
-                        {tab.archWorkspace && tab.archTenant && (
-                          <ArchitectureView workspace={tab.archWorkspace} tenant={tab.archTenant} />
-                        )}
+                        {tab.diagramEntry && <DiagramTabView entry={tab.diagramEntry} />}
                       </div>
                     )
                   }

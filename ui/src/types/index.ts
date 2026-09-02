@@ -39,12 +39,11 @@ export interface Session extends Omit<SessionDto, 'is_history'> {
 export interface Tab {
   id: string
   title: string
-  type?: 'terminal' | 'shortcuts' | 'uikit' | 'colors' | 'settings' | 'document' | 'architecture' | 'ui-map' | 'task' | 'feature-page' | 'file'
+  type?: 'terminal' | 'shortcuts' | 'uikit' | 'colors' | 'settings' | 'document' | 'diagram' | 'ui-map' | 'task' | 'feature-page' | 'file'
   sessionId?: string
   tmuxSession?: string
   docId?: string
-  archWorkspace?: string
-  archTenant?: string
+  diagramEntry?: DiagramEntry
   taskId?: string
   /** Only on type === 'feature-page': which nav view this page belongs to */
   featureView?: NavView
@@ -86,7 +85,6 @@ export type NavView =
   | 'mcps'
   | 'activity'
   | 'documents'
-  | 'architecture'
   | 'settings'
   | 'profile'
   | 'docs'
@@ -121,16 +119,33 @@ export interface Shortcut {
   builtin: boolean
 }
 
-// ── Unified file entry (documents + images + SVGs) ────────────────────────────
+// ── Diagram types ─────────────────────────────────────────────────────────────
+
+export type DiagramType = 'arch' | 'sequence' | 'er'
+
+export interface DiagramEntry {
+  id: string
+  title: string
+  diagram_type: DiagramType
+  workspace: string
+  tenant?: string
+  project?: string
+  repository?: string
+  created_at: number
+  updated_at: number
+}
+
+// ── Unified file entry (documents + images + SVGs + diagrams) ─────────────────
 
 import type { DocEntry }   from '../bindings/DocEntry'
 import type { ImageEntry } from '../bindings/ImageEntry'
 import type { SvgEntry }   from '../bindings/SvgEntry'
 
 export type AnyFileEntry =
-  | ({ kind: 'doc'   } & DocEntry)
-  | ({ kind: 'image' } & ImageEntry)
+  | ({ kind: 'doc'     } & DocEntry)
+  | ({ kind: 'image'   } & ImageEntry)
   | ({ kind: 'svg';  format: 'svg' } & SvgEntry)
+  | ({ kind: 'diagram' } & DiagramEntry)
 
 // ── TS-only type aliases ───────────────────────────────────────────────────────
 export type ArchLayout = Record<string, [number, number]>
