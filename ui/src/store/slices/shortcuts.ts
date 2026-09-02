@@ -12,9 +12,7 @@ const DEFAULT_SHORTCUTS: Shortcut[] = [
   // rail shortcuts — Ctrl+number
   { id: 'nav-tasks',         name: 'Go to Tasks',          description: 'Switch sidebar to the Tasks panel',                 keys: 'Ctrl+1',     action: 'nav_tasks',        category: 'navigation', builtin: true },
   { id: 'nav-sessions',      name: 'Go to Sessions',       description: 'Switch sidebar to the Sessions panel',              keys: 'Ctrl+2',     action: 'nav_sessions',     category: 'navigation', builtin: true },
-  { id: 'nav-sessions-s',    name: 'Go to Sessions (alt)', description: 'Switch sidebar to the Sessions panel',              keys: 'Ctrl+S',     action: 'nav_sessions',     category: 'navigation', builtin: true },
   { id: 'nav-documents',     name: 'Go to Files',          description: 'Switch sidebar to the Files panel',                 keys: 'Ctrl+3',     action: 'nav_documents',    category: 'navigation', builtin: true },
-  { id: 'nav-documents-f',   name: 'Go to Files (alt)',    description: 'Switch sidebar to the Files panel',                 keys: 'Ctrl+F',     action: 'nav_documents',    category: 'navigation', builtin: true },
   { id: 'nav-plans',         name: 'Go to Plans',          description: 'Switch sidebar to the Plans panel',                 keys: 'Ctrl+4',     action: 'nav_plans',        category: 'navigation', builtin: true },
   { id: 'nav-architecture',  name: 'Go to Architecture',   description: 'Switch sidebar to the Architecture panel',          keys: 'Ctrl+5',     action: 'nav_architecture', category: 'navigation', builtin: true },
   { id: 'nav-plugins',       name: 'Go to Plugins',        description: 'Switch sidebar to the Plugins panel',               keys: 'Ctrl+6',     action: 'nav_plugins',      category: 'navigation', builtin: true },
@@ -40,7 +38,7 @@ const DEFAULT_SHORTCUTS: Shortcut[] = [
 ]
 
 // Bump this key name whenever defaults change to avoid stale user overrides.
-const STORAGE_KEY = 'orbit-shortcuts-v7'
+const STORAGE_KEY = 'orbit-shortcuts-v8'
 
 function loadShortcuts(): Shortcut[] {
   try {
