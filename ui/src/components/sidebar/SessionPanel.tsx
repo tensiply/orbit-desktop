@@ -298,7 +298,7 @@ export function SessionList({
   const isEmpty = nonHistory.length === 0 && history.length === 0
 
   return (
-    <ul data-orbit-zone="orbit.desktop.sidebar.panel.session-list" className="p-0 w-full space-y-0.5">
+    <ul data-orbit-zone="orbit.desktop.sidebar.panel.session-list" className="p-0 w-full space-y-2">
       {isEmpty && !sessionsLoading && (
         <li className="px-2 py-1 text-[10px] text-sidebar-foreground/30 italic">No sessions</li>
       )}

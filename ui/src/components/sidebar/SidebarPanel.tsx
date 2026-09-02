@@ -29,7 +29,7 @@ export function SidebarPanel({
   children: React.ReactNode
 }) {
   return (
-    <div data-orbit-zone="orbit.desktop.sidebar.panel" className="flex flex-col flex-1 min-h-0 min-w-0 gap-4">
+    <div data-orbit-zone="orbit.desktop.sidebar.panel" className="flex flex-col flex-1 min-h-0 min-w-0 gap-1">
       <div
         data-orbit-zone="orbit.desktop.sidebar.panel.header"
         className="flex items-center pt-3 pl-3 pr-2 shrink-0 gap-4"
@@ -50,7 +50,7 @@ export function SidebarPanel({
 
       <div
         data-orbit-zone="orbit.desktop.sidebar.panel.content"
-        className="flex flex-col gap-4 flex-1 overflow-y-auto overflow-x-hidden min-h-0 pl-3 pr-2 no-scrollbar"
+        className="flex flex-col gap-2 flex-1 overflow-y-auto overflow-x-hidden min-h-0 pl-3 pr-2 no-scrollbar"
       >
         {children}
       </div>

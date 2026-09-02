@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { Fragment, useEffect, useRef, useState } from 'react'
 import {
   Copy, FolderOpen, Archive, Trash2, Info, Mail, Send,
   FileText, Network, Clipboard, Image, FileCode, GitBranch, Database,
@@ -53,6 +53,15 @@ function kindIcon(file: AnyFileEntry) {
   if (file.kind === 'image')   return <Image size={11} />
   if (file.kind === 'svg')     return <FileCode size={11} />
   return <FileText size={11} />
+}
+
+// Section grouping for the files list — one marker per kind, in this order.
+const KIND_ORDER: AnyFileEntry['kind'][] = ['doc', 'image', 'svg', 'diagram']
+const KIND_SECTION_LABELS: Record<AnyFileEntry['kind'], string> = {
+  doc:     'Documents',
+  image:   'Images',
+  svg:     'SVG',
+  diagram: 'Diagrams',
 }
 
 function kindLabel(file: AnyFileEntry): string {
@@ -330,25 +339,36 @@ export function FilesPanel({
   }
 
   if (!loading && files.length === 0) {
-    return (
-      <p className="text-[10px] text-sidebar-foreground/30 px-2 pt-1 italic">No files yet</p>
-    )
+    return null
   }
+
+  const groups = KIND_ORDER
+    .map((kind) => ({ kind, items: files.filter((f) => f.kind === kind) }))
+    .filter((g) => g.items.length > 0)
+
+  let flatIdx = 0
 
   return (
     <ul className="p-0 w-full space-y-0.5">
-      <li className="pr-2 pt-1 pb-2">
-        <MarkerSeparator label="Files" />
-      </li>
-      {files.map((file, idx) => (
-        <FileItem
-          key={`${file.kind}-${file.id}`}
-          file={file}
-          isKeySelected={sidebarFocused && idx === sidebarSelectedIdx}
-          onOpen={() => onOpen(file)}
-          onArchive={() => archive(file)}
-          onDelete={() => remove(file)}
-        />
+      {groups.map((group) => (
+        <Fragment key={group.kind}>
+          <li className="pr-2 pt-1 pb-2">
+            <MarkerSeparator label={KIND_SECTION_LABELS[group.kind]} />
+          </li>
+          {group.items.map((file) => {
+            const idx = flatIdx++
+            return (
+              <FileItem
+                key={`${file.kind}-${file.id}`}
+                file={file}
+                isKeySelected={sidebarFocused && idx === sidebarSelectedIdx}
+                onOpen={() => onOpen(file)}
+                onArchive={() => archive(file)}
+                onDelete={() => remove(file)}
+              />
+            )
+          })}
+        </Fragment>
       ))}
     </ul>
   )

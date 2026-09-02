@@ -21,6 +21,13 @@ import { RING_CLASS, ENGINES_MENU } from './constants'
 const LEVEL_LABELS_ALL    = ['workspace', 'tenant', 'project', 'repository'] as const
 const LEVEL_LABELS_SCOPED = ['tenant', 'project', 'repository'] as const
 
+const LEVEL_PLURAL: Record<string, string> = {
+  workspace:  'Workspaces',
+  tenant:     'Tenants',
+  project:    'Projects',
+  repository: 'Repositories',
+}
+
 export function ViewModeToggle() {
   const scopeViewMode    = useAppStore((s) => s.scopeViewMode)
   const setScopeViewMode = useAppStore((s) => s.setScopeViewMode)
@@ -148,6 +155,10 @@ export function ScopeNavigator({
   const levelLabels = selectedWorkspace ? LEVEL_LABELS_SCOPED : LEVEL_LABELS_ALL
   const levelLabel  = levelLabels[scopePath.length] ?? ''
 
+  // Breadcrumb: workspace title as the root, then the drilled-in path.
+  const crumbSegments = selectedWorkspace ? [selectedWorkspace, ...scopePath] : scopePath
+  const canGoBack     = scopePath.length > 0
+
   if (scopeTreeLoading && scopeTree.length === 0) {
     return (
       <div className="flex items-center gap-1.5 px-2 py-2 text-sidebar-foreground/30">
@@ -165,33 +176,42 @@ export function ScopeNavigator({
 
   return (
     <div data-orbit-zone="orbit.desktop.sidebar.panel.scope-nav">
-      {/* Back / breadcrumb */}
-      {scopePath.length > 0 && (
+      {/* Back / breadcrumb — workspace path, or an "open workspace" hint at the All-mode root */}
+      {crumbSegments.length > 0 ? (
         <button
-          onClick={navigateOut}
-          className={`flex items-center gap-1 w-full px-2 py-1 mb-1 rounded-md text-[10px] text-sidebar-foreground/40 hover:bg-sidebar-accent/40 hover:text-sidebar-foreground/70 transition-colors ${backSelected ? RING_CLASS : ''}`}
+          onClick={canGoBack ? navigateOut : undefined}
+          disabled={!canGoBack}
+          className={`flex items-center gap-1 w-full px-2 py-1 rounded-md border border-sidebar-border/50 text-[10px] text-sidebar-foreground/40 transition-colors ${canGoBack ? 'hover:bg-sidebar-accent/40 hover:text-sidebar-foreground/70' : 'cursor-default'} ${backSelected ? RING_CLASS : ''}`}
         >
-          <ChevronLeft size={10} className="shrink-0" />
-          <span className="truncate">{scopePath.join(' › ')}</span>
+          {canGoBack && <ChevronLeft size={10} className="shrink-0" />}
+          <span className="truncate">{crumbSegments.join(' › ')}</span>
         </button>
+      ) : (
+        <div className="flex items-center w-full px-2 py-1 rounded-md border border-sidebar-border/50 text-[10px] text-sidebar-foreground/40">
+          Workspaces
+        </div>
       )}
 
       {/* Children */}
       {children.length > 0 && (
         <div className="mb-1">
-          {scopePath.length > 0 && (
-            <div className="px-2 pt-0.5 pb-0.5 flex items-center justify-between">
-              <span className="text-[9px] text-sidebar-foreground/20 uppercase tracking-wider">
-                {levelLabel}
+          <div className="pl-2 pr-1.5 pt-3 pb-2 flex items-center justify-between">
+            {crumbSegments.length > 0 ? (
+              <span className="flex items-center h-4 text-[9px] text-sidebar-foreground/20 uppercase tracking-wider">
+                {LEVEL_PLURAL[levelLabel] ?? levelLabel}
               </span>
+            ) : (
+              <span className="flex items-center h-4 text-[9px] text-sidebar-foreground/25">Open Workspace</span>
+            )}
+            {(selectedWorkspace || scopePath.length > 0) && (
               <ContextMenu onOpenChange={(open) => { if (open) blurSidebar() }}>
                 <ContextMenuTrigger asChild>
                   <button
                     onClick={() => launchCurrentScope('claude')}
-                    className={`flex items-center justify-center h-[14px] w-[14px] rounded text-sidebar-foreground/25 hover:text-sidebar-foreground/60 hover:bg-sidebar-accent/40 transition-colors ${newSessionSelected ? RING_CLASS : ''}`}
+                    className={`flex items-center justify-center h-[16px] w-[16px] rounded text-sidebar-foreground/25 hover:text-sidebar-foreground/60 hover:bg-sidebar-accent/40 transition-colors ${newSessionSelected ? RING_CLASS : ''}`}
                     title="New Session"
                   >
-                    <Plus size={10} />
+                    <Plus size={12} />
                   </button>
                 </ContextMenuTrigger>
                 <ContextMenuContent className="w-40 text-xs">
@@ -206,8 +226,8 @@ export function ScopeNavigator({
                   ))}
                 </ContextMenuContent>
               </ContextMenu>
-            </div>
-          )}
+            )}
+          </div>
           <ul className="space-y-0.5">
             {children.map((name) => {
               const isSelected = selectedFolderName === name
@@ -277,10 +297,6 @@ export function ScopeNavigator({
             })}
           </ul>
         </div>
-      )}
-
-      {scopePath.length > 0 && children.length > 0 && (
-        <div className="my-1.5 border-t border-sidebar-border/40" />
       )}
     </div>
   )
