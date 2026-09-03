@@ -3,7 +3,7 @@ TARGET_DIR  := target/release
 SRC_TAURI   := src-tauri
 ICONS_DIR   := src-tauri/icons
 
-.PHONY: dev build bundle install uninstall clean dev-local icons windows-assets flatpak snap help
+.PHONY: dev build bundle fetch-orbit install uninstall clean dev-local icons windows-assets flatpak snap help
 
 ## Start dev mode with hot-reload (UI + Tauri backend) — runs as "Orbit Dev" with separate data dir
 dev:
@@ -15,10 +15,27 @@ build:
 	cd ui && npm install
 	npx @tauri-apps/cli@2 build --no-bundle
 
-## Build distribution packages (deb, rpm, AppImage) — requires internet access for AppImage tools
-bundle:
+## Fetch the pinned orbit CLI (ORBIT_CLI_VERSION) as the bundle sidecar for the host
+fetch-orbit:
+	@mkdir -p src-tauri/binaries
+	@ORBIT_VER=$$(cat ORBIT_CLI_VERSION); \
+	TRIPLE=$$(rustc -vV | sed -n 's/host: //p'); \
+	case "$$TRIPLE" in \
+	  x86_64-*-linux-*)      ASSET=orbit-linux-x86_64 ;; \
+	  aarch64-*-linux-*)     ASSET=orbit-linux-aarch64 ;; \
+	  x86_64-apple-darwin)   ASSET=orbit-macos-x86_64 ;; \
+	  aarch64-apple-darwin)  ASSET=orbit-macos-aarch64 ;; \
+	  *) echo "unsupported host triple: $$TRIPLE"; exit 1 ;; \
+	esac; \
+	echo "Fetching orbit $$ORBIT_VER ($$ASSET) -> src-tauri/binaries/orbit-$$TRIPLE"; \
+	gh release download "$$ORBIT_VER" --repo tensiply/orbit --pattern "$$ASSET" \
+	  --output "src-tauri/binaries/orbit-$$TRIPLE" --clobber; \
+	chmod +x "src-tauri/binaries/orbit-$$TRIPLE"
+
+## Build distribution packages (deb, AppImage) with the bundled orbit sidecar
+bundle: fetch-orbit
 	cd ui && npm install
-	npx @tauri-apps/cli@2 build
+	npx @tauri-apps/cli@2 build -c src-tauri/tauri.bundle.conf.json
 
 ## Install binary + desktop entry + icons (app appears in launcher)
 install: build

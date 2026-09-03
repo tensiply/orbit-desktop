@@ -52,6 +52,11 @@ pub async fn pty_open(
             c.env("ZSH_THEME", "");
             c.env("POWERLEVEL9K_INSTANT_PROMPT", "off");
             c.env("ORBIT_TERMINAL", "1");
+            // Make the bundled orbit CLI available to commands typed in the terminal.
+            if let Some(dir) = crate::infrastructure::orbit_sidecar::sidecar_dir() {
+                let path = std::env::var("PATH").unwrap_or_default();
+                c.env("PATH", format!("{}:{path}", dir.display()));
+            }
             if let Some(ref dir) = cwd {
                 c.cwd(dir);
             }

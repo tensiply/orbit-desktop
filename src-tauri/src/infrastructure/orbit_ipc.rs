@@ -68,15 +68,16 @@ impl OrbitClient for OrbitIpcClient {
         if orbit_client::ipc::is_available() {
             return Ok(());
         }
-        let status = tokio::process::Command::new("orbitd")
-            .arg("--detach")
+        let orbit = crate::infrastructure::orbit_sidecar::orbit_program();
+        let status = tokio::process::Command::new(&orbit)
+            .args(["daemon", "start"])
             .spawn()
-            .map_err(|e| DomainError::Other(format!("failed to spawn orbitd: {e}")))?
+            .map_err(|e| DomainError::Other(format!("failed to start orbit daemon: {e}")))?
             .wait()
             .await
             .map_err(DomainError::from)?;
         if !status.success() {
-            tracing::warn!("orbitd exited with status {status}");
+            tracing::warn!("orbit daemon start exited with status {status}");
         }
         // Give daemon a moment to bind the socket
         tokio::time::sleep(tokio::time::Duration::from_millis(500)).await;

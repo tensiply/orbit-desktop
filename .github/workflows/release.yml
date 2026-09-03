@@ -112,12 +112,16 @@ jobs:
           - platform: ubuntu-22.04
             artifact_suffix: linux
             args: ""
+            orbit_asset: orbit-linux-x86_64
+            sidecar_triple: x86_64-unknown-linux-gnu
 
           # macOS build temporarily disabled — re-enable when code signing is configured (gap #3)
           # - platform: macos-latest
           #   artifact_suffix: macos
           #   # Universal binary (Intel + Apple Silicon)
           #   args: "--target universal-apple-darwin"
+          #   orbit_asset: orbit-macos-aarch64   # (universal build needs both arches — revisit)
+          #   sidecar_triple: aarch64-apple-darwin
 
     runs-on: ${{ matrix.platform }}
     steps:
@@ -164,6 +168,20 @@ jobs:
         working-directory: ui
         run: npm run build
 
+      # Bundle the orbit CLI as a Tauri sidecar so the app is self-contained.
+      # The pinned version lives in ORBIT_CLI_VERSION; orbit ships static musl
+      # binaries. Tauri expects the sidecar named with the target triple.
+      - name: Fetch bundled orbit CLI
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          ORBIT_VER=$(cat ORBIT_CLI_VERSION)
+          mkdir -p src-tauri/binaries
+          gh release download "${ORBIT_VER}" --repo tensiply/orbit \
+            --pattern "${{ matrix.orbit_asset }}" \
+            --output "src-tauri/binaries/orbit-${{ matrix.sidecar_triple }}"
+          chmod +x "src-tauri/binaries/orbit-${{ matrix.sidecar_triple }}"
+
       - name: Build Tauri app
         uses: tauri-apps/tauri-action@v0
         env:
@@ -181,7 +199,10 @@ jobs:
           releaseBody: "__Release notes will be updated below.__"
           releaseDraft: true
           prerelease: false
-          args: ${{ matrix.args }}
+          # Merge the bundle-only config so externalBin (the orbit sidecar) is
+          # applied only when bundling — base config stays sidecar-free so plain
+          # cargo builds (dev, CI checks) don't require the binary to exist.
+          args: ${{ matrix.args }} -c src-tauri/tauri.bundle.conf.json
 
   # ── Finalize: add checksums + release notes, publish ─────────────────────────
   publish:
