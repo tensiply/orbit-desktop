@@ -252,8 +252,8 @@ function SessionItem({
                   <span
                     className="w-2.5 h-2.5 rounded-full relative"
                     style={isHistory
-                      ? { border: '1.5px solid currentColor', opacity: 0.8 }
-                      : { backgroundColor: statusColor, opacity: 0.8 }
+                      ? { border: '1.5px solid currentColor', opacity: 0.6 }
+                      : { backgroundColor: statusColor, opacity: 0.6 }
                     }
                   />
                 </div>
