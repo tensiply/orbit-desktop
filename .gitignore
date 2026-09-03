@@ -4,3 +4,6 @@ ui/src/bindings/
 src-tauri/target/
 target/
 .cargo/config.toml
+
+# ts-rs stray export dir when TS_RS_EXPORT_DIR is unset (use `make gen-bindings`)
+/src-tauri/bindings/
