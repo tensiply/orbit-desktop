@@ -1,3 +1,4 @@
+pub mod appimage_integration;
 pub mod claude_session_title;
 pub mod fs_arch_catalog;
 pub mod fs_document_store;

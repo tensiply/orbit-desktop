@@ -170,6 +170,9 @@ pub fn run() {
                 }
             }
 
+            // Register a launcher entry when running as an AppImage (first run only).
+            std::thread::spawn(crate::infrastructure::appimage_integration::integrate);
+
             // Start debug MCP server (needs an AppHandle to emit events into the webview)
             tauri::async_runtime::spawn(debug_server::run(buffer_for_server, app.handle().clone()));
 
