@@ -186,6 +186,10 @@ jobs:
         uses: tauri-apps/tauri-action@v0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # Updater signing (tauri-plugin-updater). The public key is in
+          # tauri.conf.json; these sign the updater artifacts + latest.json.
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
           # Code signing disabled until Developer ID Certificate is configured (gap #4)
           # APPLE_CERTIFICATE: ${{ secrets.APPLE_CERTIFICATE }}
           # APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
@@ -202,7 +206,7 @@ jobs:
           # Merge the bundle-only config so externalBin (the orbit sidecar) is
           # applied only when bundling — base config stays sidecar-free so plain
           # cargo builds (dev, CI checks) don't require the binary to exist.
-          args: ${{ matrix.args }} -c src-tauri/tauri.bundle.conf.json
+          args: ${{ matrix.args }} -c src-tauri/tauri.bundle.conf.json -c src-tauri/tauri.updater.conf.json
 
   # ── Finalize: add checksums + release notes, publish ─────────────────────────
   publish:
@@ -253,6 +257,7 @@ jobs:
           TAG: ${{ needs.verify.outputs.tag }}
         run: |
           cd artifacts
+          # Rename installers + updater artifacts (.sig, .tar.gz all share the prefix).
           for f in *; do
             new=$(echo "$f" | sed -E 's/^Orbit[ .]Desktop_/orbit_desktop_/')
             if [ "$f" != "$new" ]; then
@@ -262,6 +267,13 @@ jobs:
               echo "renamed: $f -> $new"
             fi
           done
+          # The updater manifest references the artifact by name/URL — rewrite it
+          # to match the renamed files (handles space, %20, and dot forms).
+          if [ -f latest.json ]; then
+            sed -i -E 's/Orbit(%20| |\.)Desktop_/orbit_desktop_/g' latest.json
+            gh release upload "${TAG}" latest.json --clobber
+            echo "rewrote latest.json"
+          fi
 
       - name: Create checksums
         run: |

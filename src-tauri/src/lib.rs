@@ -52,6 +52,16 @@ pub fn run() {
     #[cfg(all(feature = "dev", target_os = "linux"))]
     let _ = std::fs::write("/proc/self/comm", "orbit-dev");
 
+    // Dev build: isolate the daemon, socket, and data under ~/.orbit-dev so the
+    // dev app and the stable install never share orbitd. Spawned orbit children
+    // inherit this env. Respect an explicit ORBIT_HOME if the caller set one.
+    #[cfg(feature = "dev")]
+    if std::env::var_os("ORBIT_HOME").is_none() {
+        if let Some(dirs) = directories::BaseDirs::new() {
+            std::env::set_var("ORBIT_HOME", dirs.home_dir().join(".orbit-dev"));
+        }
+    }
+
     let buffer = debug_buffer::new_shared();
 
     let fmt_layer = tracing_subscriber::fmt::layer().with_filter(
@@ -73,6 +83,8 @@ pub fn run() {
         .plugin(tauri_plugin_shell::init())
         .plugin(tauri_plugin_notification::init())
         .plugin(tauri_plugin_dialog::init())
+        .plugin(tauri_plugin_updater::Builder::new().build())
+        .plugin(tauri_plugin_process::init())
         .manage(recorder)
         .manage(OrbitIpcClient)
         .manage(PtyRegistry::new())

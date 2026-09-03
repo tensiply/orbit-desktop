@@ -18,6 +18,8 @@
     "window-state:default",
     "shell:allow-open",
     "dialog:allow-open",
-    "notification:default"
+    "notification:default",
+    "updater:default",
+    "process:allow-restart"
   ]
 }

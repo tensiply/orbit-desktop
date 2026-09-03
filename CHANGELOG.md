@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Features
+
+- **Auto-update** — Orbit Desktop updates itself via a signed updater (tauri-plugin-updater): it checks GitHub Releases, downloads and verifies the signature of the new build, installs it, and restarts. The bundled orbit CLI updates with it. AppImage is the auto-updating channel; `.deb` installs update through the system package manager.
+
+### Changed
+
+- **Settings › Updates** — The desktop "Update" button now installs and restarts in place instead of opening the releases page; the CLI row shows the bundled version read-only.
+
+[0.2.3]: https://github.com/tensiply/orbit-desktop/releases/tag/v0.2.3
+
 ## [0.2.2] — 2026-09-03
 
 ### Features

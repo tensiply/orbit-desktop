@@ -75,9 +75,12 @@ function StatusBadge({ ok, label }: { ok: boolean; label: string }) {
 // ── DesktopStep ────────────────────────────────────────────────────────────────
 
 export function DesktopStep() {
-  const updateCheck     = useAppStore((s) => s.updateCheck)
-  const updatesChecking = useAppStore((s) => s.updatesChecking)
-  const checkUpdates    = useAppStore((s) => s.checkUpdates)
+  const updateCheck        = useAppStore((s) => s.updateCheck)
+  const updatesChecking    = useAppStore((s) => s.updatesChecking)
+  const checkUpdates       = useAppStore((s) => s.checkUpdates)
+  const desktopUpdating    = useAppStore((s) => s.desktopUpdating)
+  const desktopUpdateError = useAppStore((s) => s.desktopUpdateError)
+  const installDesktop     = useAppStore((s) => s.installDesktop)
 
   const current   = updateCheck?.desktop.current ?? null
   const latest    = updateCheck?.desktop.latest ?? null
@@ -143,18 +146,26 @@ export function DesktopStep() {
             <div>
               <p className="text-sm font-medium">Version {latest} is available</p>
               <p className="text-xs text-muted-foreground mt-0.5 leading-relaxed">
-                Download the new release and replace this app manually.
-                Orbit Desktop doesn't auto-update yet.
+                Orbit Desktop downloads, verifies, and installs the update, then
+                restarts. The bundled orbit CLI updates with it.
               </p>
             </div>
           </div>
           <Button
             className="w-full gap-2"
-            onClick={() => window.open('https://github.com/tensiply/orbit-desktop/releases/latest', '_blank')}
+            disabled={desktopUpdating}
+            onClick={() => void installDesktop()}
           >
-            <Monitor size={14} />
-            Download {latest}
+            {desktopUpdating
+              ? <><Loader2 size={14} className="animate-spin" />Updating…</>
+              : <><Monitor size={14} />Update to {latest} &amp; restart</>
+            }
           </Button>
+          {desktopUpdateError && (
+            <p className="text-[11px] text-destructive bg-destructive/10 rounded px-2 py-1">
+              {desktopUpdateError}
+            </p>
+          )}
         </div>
       )}
 

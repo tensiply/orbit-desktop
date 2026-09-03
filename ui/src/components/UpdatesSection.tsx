@@ -11,6 +11,7 @@ function ComponentRow({
   latest,
   hasUpdate,
   onUpdate,
+  updating,
 }: {
   label: string
   icon: React.ReactNode
@@ -18,6 +19,7 @@ function ComponentRow({
   latest: string | null
   hasUpdate: boolean
   onUpdate?: () => void
+  updating?: boolean
 }) {
   return (
     <div className="flex items-start gap-4 px-6 py-4 border-b border-foreground/5">
@@ -47,9 +49,16 @@ function ComponentRow({
       </div>
 
       {hasUpdate && onUpdate && (
-        <Button size="xs" onClick={onUpdate} className="gap-1.5 text-[10px] shrink-0">
-          <ArrowUpCircle size={11} />
-          Update
+        <Button
+          size="xs"
+          onClick={onUpdate}
+          disabled={updating}
+          className="gap-1.5 text-[10px] shrink-0"
+        >
+          {updating
+            ? <><Loader2 size={11} className="animate-spin" />Updating…</>
+            : <><ArrowUpCircle size={11} />Update &amp; restart</>
+          }
         </Button>
       )}
     </div>
@@ -59,9 +68,12 @@ function ComponentRow({
 // ── UpdatesSection ─────────────────────────────────────────────────────────────
 
 export function UpdatesSection() {
-  const updateCheck     = useAppStore((s) => s.updateCheck)
-  const updatesChecking = useAppStore((s) => s.updatesChecking)
-  const checkUpdates    = useAppStore((s) => s.checkUpdates)
+  const updateCheck        = useAppStore((s) => s.updateCheck)
+  const updatesChecking    = useAppStore((s) => s.updatesChecking)
+  const checkUpdates       = useAppStore((s) => s.checkUpdates)
+  const desktopUpdating    = useAppStore((s) => s.desktopUpdating)
+  const desktopUpdateError = useAppStore((s) => s.desktopUpdateError)
+  const installDesktop     = useAppStore((s) => s.installDesktop)
 
   const cliCurrent       = updateCheck?.cli.current ?? null
   const desktopCurrent   = updateCheck?.desktop.current ?? null
@@ -114,12 +126,15 @@ export function UpdatesSection() {
         current={desktopCurrent}
         latest={desktopLatest}
         hasUpdate={desktopHasUpdate}
-        onUpdate={
-          desktopHasUpdate
-            ? () => { void window.open?.('https://github.com/tensiply/orbit-desktop/releases/latest', '_blank') }
-            : undefined
-        }
+        onUpdate={desktopHasUpdate ? () => void installDesktop() : undefined}
+        updating={desktopUpdating}
       />
+
+      {desktopUpdateError && (
+        <p className="mx-6 my-3 text-[11px] text-destructive bg-destructive/10 rounded px-2 py-1">
+          {desktopUpdateError}
+        </p>
+      )}
     </div>
   )
 }
