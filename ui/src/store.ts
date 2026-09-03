@@ -2,6 +2,7 @@ import { create } from 'zustand'
 import { persist, createJSONStorage } from 'zustand/middleware'
 import { createTabsSlice } from './store/slices/tabs'
 import { createSessionsSlice } from './store/slices/sessions'
+import { createSessionStatusSlice } from './store/slices/sessionStatus'
 import { createUiSlice, applyTheme } from './store/slices/ui'
 import { createShortcutsSlice } from './store/slices/shortcuts'
 import { createSettingsSlice } from './store/slices/settings'
@@ -18,6 +19,7 @@ export const useAppStore = create<AppStore>()(
     (...a) => ({
       ...createTabsSlice(...a),
       ...createSessionsSlice(...a),
+      ...createSessionStatusSlice(...a),
       ...createUiSlice(...a),
       ...createShortcutsSlice(...a),
       ...createSettingsSlice(...a),

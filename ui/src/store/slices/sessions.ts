@@ -55,6 +55,8 @@ export const createSessionsSlice: StateCreator<AppStore, [], [], SessionsSlice> 
       const sessions = await tauriService.listSessions()
       localStorage.setItem(SESSIONS_CACHE_KEY, JSON.stringify(sessions))
       set({ sessions, sessionsLoading: false })
+      // Drop runtime status for sessions that no longer exist.
+      get().pruneSessionStatus(sessions.map((s) => s.id))
 
       const knownTitles = get().sessionTitles
       // Always re-fetch active sessions (title updates as conversation progresses);

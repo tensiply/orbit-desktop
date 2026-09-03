@@ -122,6 +122,7 @@ function SessionItem({
 }) {
   const blurSidebar       = useAppStore((s) => s.blurSidebar)
   const openHarnessDrawer = useAppStore((s) => s.openHarnessDrawer)
+  const status            = useAppStore((s) => s.sessionStatus[session.id])
   const itemRef   = useRef<HTMLLIElement>(null)
   const buttonRef = useRef<HTMLButtonElement>(null)
 
@@ -150,7 +151,7 @@ function SessionItem({
   const label           = (isBlank && !title) ? '' : (title ?? sessionLabel(session))
   const crumb           = (title || (isBlank && !title)) ? sessionScopeCrumb(session) : sessionBreadcrumb(session)
   const timeStr         = relativeTime(session.started_at)
-  const effectiveStatus = !isHistory ? (session.status ?? 'ready') : undefined
+  const effectiveStatus = !isHistory ? (status ?? 'idle') : undefined
 
   const rowClass = isCurrent
     ? 'bg-sidebar-accent text-sidebar-accent-foreground'
@@ -246,7 +247,10 @@ function SessionItem({
                     className="w-2.5 h-2.5 rounded-full relative"
                     style={isHistory
                       ? { border: '1.5px solid currentColor' }
-                      : { backgroundColor: effectiveStatus === 'working' ? STATUS_COLORS.working : STATUS_COLORS.active }
+                      : { backgroundColor:
+                          effectiveStatus === 'working' ? STATUS_COLORS.working
+                          : effectiveStatus === 'ready' ? STATUS_COLORS.active
+                          : STATUS_COLORS.idle }
                     }
                   />
                 </div>

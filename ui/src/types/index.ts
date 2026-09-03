@@ -29,11 +29,15 @@ export type { DaemonStatus }    from '../bindings/DaemonStatus'
 
 import type { SessionDto } from '../bindings/SessionDto'
 
-// Session extends the Rust-generated SessionDto and adds `status` (UI-only annotation).
+// Runtime status of a session, derived from PTY activity (see useSessionActivity).
+// Kept out of the Session object because refreshSessions() overwrites the sessions
+// array on every poll — status lives in its own store slice keyed by session id.
+export type SessionStatus = 'working' | 'ready' | 'idle'
+
+// Session extends the Rust-generated SessionDto.
 // is_history is marked optional because the backend omits it when false.
 export interface Session extends Omit<SessionDto, 'is_history'> {
   is_history?: boolean
-  status?: 'working' | 'ready'
 }
 
 export interface Tab {

@@ -24,6 +24,7 @@ import { LaunchPickerModal } from './components/LaunchPickerModal'
 import { SetupWizardModal } from './components/InstallWizardModal'
 import { useSidebarResize } from './hooks/useSidebarResize'
 import { useSessionPoller } from './hooks/useSessionPoller'
+import { useSessionActivity } from './hooks/useSessionActivity'
 import { useGlobalShortcuts } from './hooks/useGlobalShortcuts'
 import { TooltipProvider } from './components/ui/tooltip'
 import {
@@ -127,6 +128,7 @@ export default function App() {
   }, [setupStatus])
 
   useSessionPoller(5000)
+  useSessionActivity()
   useGlobalShortcuts()
 
   return (

@@ -1,5 +1,6 @@
 import type { TabsSlice } from './slices/tabs'
 import type { SessionsSlice } from './slices/sessions'
+import type { SessionStatusSlice } from './slices/sessionStatus'
 import type { UiSlice } from './slices/ui'
 import type { ShortcutsSlice } from './slices/shortcuts'
 import type { SettingsSlice } from './slices/settings'
@@ -10,4 +11,4 @@ import type { ArchDrawerSlice } from './slices/archDrawer'
 import type { HarnessDrawerSlice } from './slices/harnessDrawer'
 import type { UpdatesSlice } from './slices/updates'
 
-export type AppStore = TabsSlice & SessionsSlice & UiSlice & ShortcutsSlice & SettingsSlice & DocumentsSlice & TasksSlice & ScopeSlice & ArchDrawerSlice & HarnessDrawerSlice & UpdatesSlice
+export type AppStore = TabsSlice & SessionsSlice & SessionStatusSlice & UiSlice & ShortcutsSlice & SettingsSlice & DocumentsSlice & TasksSlice & ScopeSlice & ArchDrawerSlice & HarnessDrawerSlice & UpdatesSlice
