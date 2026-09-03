@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Features
+
+- **Bundled orbit CLI** — The desktop app now ships the `orbit` CLI as a bundled sidecar, so it works without installing the CLI separately. This also fixes daemon auto-start, which previously tried to spawn a non-existent `orbitd` binary; the daemon now starts via the bundled `orbit daemon start`.
+
+### Bug Fixes
+
+- **Release artifacts** — Installer filenames are now the conventional lowercase `orbit_desktop_<version>_<arch>` and releases are titled `vX.Y.Z`, matching the orbit repo.
+
+[0.2.2]: https://github.com/tensiply/orbit-desktop/releases/tag/v0.2.2
+
 ## [0.2.1] — 2026-09-03
 
 ### Bug Fixes
