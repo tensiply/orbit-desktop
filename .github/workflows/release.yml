@@ -9,6 +9,12 @@ on:
       tag:
         description: "Tag to release (e.g. v0.2.0)"
         required: true
+  workflow_call:
+    inputs:
+      tag:
+        description: "Tag to release (e.g. v0.2.0)"
+        required: true
+        type: string
 
 env:
   CARGO_TERM_COLOR: always
@@ -24,12 +30,12 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: ${{ github.event.inputs.tag || github.ref }}
+          ref: ${{ inputs.tag || github.ref }}
 
       - name: Extract and verify versions
         id: ver
         run: |
-          TAG="${{ github.event.inputs.tag || github.ref_name }}"
+          TAG="${{ inputs.tag || github.ref_name }}"
           VERSION="${TAG#v}"
           echo "tag=${TAG}"         >> $GITHUB_OUTPUT
           echo "version=${VERSION}" >> $GITHUB_OUTPUT
@@ -59,7 +65,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: ${{ github.event.inputs.tag || github.ref }}
+          ref: ${{ inputs.tag || github.ref }}
 
       - uses: dtolnay/rust-toolchain@stable
 
@@ -117,7 +123,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: ${{ github.event.inputs.tag || github.ref }}
+          ref: ${{ inputs.tag || github.ref }}
 
       - uses: actions/setup-node@v4
         with:
@@ -174,7 +180,7 @@ jobs:
           releaseName: ${{ needs.verify.outputs.tag }}
           releaseBody: "__Release notes will be updated below.__"
           releaseDraft: true
-          prerelease: true
+          prerelease: false
           args: ${{ matrix.args }}
 
   # ── Finalize: add checksums + release notes, publish ─────────────────────────
@@ -187,7 +193,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: ${{ github.event.inputs.tag || github.ref }}
+          ref: ${{ inputs.tag || github.ref }}
 
       - name: Extract release notes from CHANGELOG
         env:
@@ -256,5 +262,5 @@ jobs:
           gh release edit "${TAG}" \
             --notes-file release_notes.md \
             --draft=false \
-            --prerelease=true \
+            --prerelease=false \
             --title "${TAG}"
