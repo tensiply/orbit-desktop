@@ -32,7 +32,11 @@ import type { SessionDto } from '../bindings/SessionDto'
 // Runtime status of a session, derived from PTY activity (see useSessionActivity).
 // Kept out of the Session object because refreshSessions() overwrites the sessions
 // array on every poll — status lives in its own store slice keyed by session id.
-export type SessionStatus = 'working' | 'ready' | 'idle'
+//  working  → engine is processing (yellow, pulsing)
+//  done     → engine finished but the tab hasn't been seen yet (green, pulsing)
+//  idle     → tab is active/seen and engine is not processing (green, solid)
+//  offline  → no live terminal for the session (gray, solid)
+export type SessionStatus = 'working' | 'done' | 'idle' | 'offline'
 
 // Session extends the Rust-generated SessionDto.
 // is_history is marked optional because the backend omits it when false.

@@ -123,6 +123,7 @@ function SessionItem({
   const blurSidebar       = useAppStore((s) => s.blurSidebar)
   const openHarnessDrawer = useAppStore((s) => s.openHarnessDrawer)
   const status            = useAppStore((s) => s.sessionStatus[session.id])
+  const hasLiveTab        = useAppStore((s) => s.tabs.some((t) => t.sessionId === session.id))
   const itemRef   = useRef<HTMLLIElement>(null)
   const buttonRef = useRef<HTMLButtonElement>(null)
 
@@ -151,7 +152,12 @@ function SessionItem({
   const label           = (isBlank && !title) ? '' : (title ?? sessionLabel(session))
   const crumb           = (title || (isBlank && !title)) ? sessionScopeCrumb(session) : sessionBreadcrumb(session)
   const timeStr         = relativeTime(session.started_at)
-  const effectiveStatus = !isHistory ? (status ?? 'idle') : undefined
+  const effectiveStatus = !isHistory ? (status ?? (hasLiveTab ? 'idle' : 'offline')) : undefined
+  const statusPulses    = effectiveStatus === 'working' || effectiveStatus === 'done'
+  const statusColor     =
+    effectiveStatus === 'working'                              ? STATUS_COLORS.working
+    : effectiveStatus === 'done' || effectiveStatus === 'idle' ? STATUS_COLORS.active
+    :                                                            STATUS_COLORS.offline
 
   const rowClass = isCurrent
     ? 'bg-sidebar-accent text-sidebar-accent-foreground'
@@ -237,20 +243,17 @@ function SessionItem({
             <div className="flex flex-col gap-0.5 min-w-0 pr-7">
               <div className="flex items-center gap-1.5 min-w-0">
                 <div className="relative flex items-center justify-center shrink-0">
-                  {effectiveStatus === 'working' && (
+                  {statusPulses && (
                     <span
                       className="absolute w-4 h-4 rounded-full animate-ping"
-                      style={{ backgroundColor: STATUS_COLORS.working, opacity: 0.35 }}
+                      style={{ backgroundColor: statusColor, opacity: 0.35 }}
                     />
                   )}
                   <span
                     className="w-2.5 h-2.5 rounded-full relative"
                     style={isHistory
-                      ? { border: '1.5px solid currentColor' }
-                      : { backgroundColor:
-                          effectiveStatus === 'working' ? STATUS_COLORS.working
-                          : effectiveStatus === 'ready' ? STATUS_COLORS.active
-                          : STATUS_COLORS.idle }
+                      ? { border: '1.5px solid currentColor', opacity: 0.8 }
+                      : { backgroundColor: statusColor, opacity: 0.8 }
                     }
                   />
                 </div>

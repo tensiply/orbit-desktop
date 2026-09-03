@@ -69,7 +69,7 @@ export function cssVarToHex(varName: string): string {
 export const STATUS_COLORS = {
   working: '#eab308',
   active:  '#22c55e',
-  idle:    '#6b7280',
+  offline: '#6b7280',
 } as const
 
 export const ARCH_KIND_COLORS: Record<string, string> = {

@@ -1,49 +1,72 @@
 import { useEffect } from 'react'
 import { listen } from '@tauri-apps/api/event'
 import { useAppStore } from '../store'
+import { lastPtyInputAt } from '../lib/ptyActivity'
 
-// Time a session may stay silent after PTY output before it's considered "ready"
-// (the engine finished / is awaiting input). The TUI redraws its spinner while
-// working, so a short window cleanly separates active output from a quiet prompt.
+// PTY output that lands within this window after a keystroke is treated as the
+// echo of what the user typed, not the engine working. This keeps the status
+// green while you type and only turns it yellow on engine-driven output (e.g. the
+// spinner redrawing while it processes).
+const ECHO_WINDOW_MS = 350
+// Silence after engine output before the session is considered no longer working.
 const QUIET_MS = 1200
-// After this much continued silence, the session is downgraded to "idle".
-const IDLE_MS = 5 * 60 * 1000
-
-interface Timers { quiet: ReturnType<typeof setTimeout>; idle: ReturnType<typeof setTimeout> }
 
 // Derives session status from PTY activity. Mount once at the app root.
-// A single global `pty-data` listener catches output from every open tab (the
-// Rust reader emits per PTY regardless of focus); the per-Terminal listener that
-// paints xterm is separate. tab_id -> sessionId is resolved via the tabs slice.
+//
+//  engine output → working. After QUIET_MS of silence it settles to:
+//    - idle  if the tab is currently seen (active tab + window focused)
+//    - done  otherwise (finished while you were elsewhere → green pulse)
+//  Focusing/activating a `done` session's tab clears it to idle.
 export function useSessionActivity() {
-  useEffect(() => {
-    const timers = new Map<string, Timers>()
+  const activeTabId    = useAppStore((s) => s.activeTabId)
 
-    const clear = (sessionId: string) => {
-      const t = timers.get(sessionId)
-      if (t) { clearTimeout(t.quiet); clearTimeout(t.idle) }
+  // ── PTY output → working / done / idle ───────────────────────────────────────
+  useEffect(() => {
+    const timers = new Map<string, ReturnType<typeof setTimeout>>()
+
+    const isSeen = (sessionId: string): boolean => {
+      if (!document.hasFocus()) return false
+      const { activeTabId, tabs } = useAppStore.getState()
+      const activeTab = tabs.find((t) => t.id === activeTabId)
+      return activeTab?.sessionId === sessionId
     }
 
     const bump = (sessionId: string) => {
       const { setSessionStatus } = useAppStore.getState()
       setSessionStatus(sessionId, 'working')
-      clear(sessionId)
-      timers.set(sessionId, {
-        quiet: setTimeout(() => setSessionStatus(sessionId, 'ready'), QUIET_MS),
-        idle:  setTimeout(() => setSessionStatus(sessionId, 'idle'), IDLE_MS),
-      })
+      const existing = timers.get(sessionId)
+      if (existing) clearTimeout(existing)
+      timers.set(sessionId, setTimeout(() => {
+        useAppStore.getState().setSessionStatus(sessionId, isSeen(sessionId) ? 'idle' : 'done')
+      }, QUIET_MS))
     }
 
     let unlisten: (() => void) | null = null
     listen<{ tab_id: string; data: string }>('pty-data', (event) => {
-      const tab = useAppStore.getState().tabs.find((t) => t.id === event.payload.tab_id)
+      const { tab_id } = event.payload
+      // Ignore keystroke echoes — only engine-driven output flips to working.
+      if (Date.now() - lastPtyInputAt(tab_id) < ECHO_WINDOW_MS) return
+      const tab = useAppStore.getState().tabs.find((t) => t.id === tab_id)
       if (tab?.sessionId) bump(tab.sessionId)
     }).then((fn) => { unlisten = fn })
 
     return () => {
       unlisten?.()
-      for (const t of timers.values()) { clearTimeout(t.quiet); clearTimeout(t.idle) }
+      for (const t of timers.values()) clearTimeout(t)
       timers.clear()
     }
   }, [])
+
+  // ── Clear `done` → idle once the user actually sees the session ──────────────
+  useEffect(() => {
+    const promoteActive = () => {
+      if (!document.hasFocus()) return
+      const { activeTabId, tabs, sessionStatus, setSessionStatus } = useAppStore.getState()
+      const sid = tabs.find((t) => t.id === activeTabId)?.sessionId
+      if (sid && sessionStatus[sid] === 'done') setSessionStatus(sid, 'idle')
+    }
+    promoteActive()
+    window.addEventListener('focus', promoteActive)
+    return () => window.removeEventListener('focus', promoteActive)
+  }, [activeTabId])
 }

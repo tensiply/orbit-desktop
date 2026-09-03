@@ -213,7 +213,7 @@ export const createTabsSlice: StateCreator<AppStore, [], [], TabsSlice> = (set, 
       if (tab.type === 'terminal' || tab.type == null) {
         await tauriService.ptyClose(tabId).catch(console.error)
         // PTY is gone — no more activity signal for this session.
-        if (tab.sessionId) get().setSessionStatus(tab.sessionId, 'idle')
+        if (tab.sessionId) get().setSessionStatus(tab.sessionId, 'offline')
       }
       await get().closeTabDrawer(tabId)
       set((state) => {

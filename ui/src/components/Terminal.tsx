@@ -6,6 +6,7 @@ import { WebLinksAddon } from '@xterm/addon-web-links'
 import { useAppStore } from '../store'
 import { tauriService } from '../services/tauri'
 import type { TerminalCmd } from '../lib/terminalBus'
+import { markPtyInput } from '../lib/ptyActivity'
 import { TERMINAL_THEME_DARK, TERMINAL_THEME_LIGHT, cssVarToHex } from '../theme'
 
 interface Props {
@@ -76,6 +77,7 @@ export function TerminalPane({ tabId, active, panelFocused, onCwdChange }: Props
     ro.observe(el)
 
     term.onData((data) => {
+      markPtyInput(tabId)
       tauriService.ptyWrite(tabId, data).catch(console.error)
     })
 
