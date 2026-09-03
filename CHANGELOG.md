@@ -10,6 +10,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Features
 
 - **AppImage launcher integration** — On first launch the AppImage registers a `.desktop` entry and icon under `~/.local/share/applications`, so Orbit Desktop appears in the system app launcher without having to be started from a terminal.
+- **Isolated dev build** — The dev app ("Orbit Desktop Dev") runs against a separate `~/.orbit-dev` home with its own daemon and drives the `dev-orbit` CLI, so it coexists with the installed stable app without sharing state. Build and link it with `make dev-install`; `make dev` fails early via `check-dev-orbit` if the dev CLI is missing.
+
+### CI
+
+- **Bundled orbit CLI pinned per release** — `prepare-release` resolves the latest orbit CLI release (or an explicit override) and writes it to `ORBIT_CLI_VERSION` in the release commit, so a desktop release never drifts from the CLI it ships. `make sync-orbit-cli` refreshes it locally.
 
 ## [0.2.3] — 2026-09-03
 
