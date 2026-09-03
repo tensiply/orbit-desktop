@@ -6,7 +6,7 @@ import { WebLinksAddon } from '@xterm/addon-web-links'
 import { useAppStore } from '../store'
 import { tauriService } from '../services/tauri'
 import type { TerminalCmd } from '../lib/terminalBus'
-import { markPtyInput } from '../lib/ptyActivity'
+import { markPtyInput, markPtyResize } from '../lib/ptyActivity'
 import { TERMINAL_THEME_DARK, TERMINAL_THEME_LIGHT, cssVarToHex } from '../theme'
 
 interface Props {
@@ -82,6 +82,8 @@ export function TerminalPane({ tabId, active, panelFocused, onCwdChange }: Props
     })
 
     term.onResize(({ cols, rows }) => {
+      // The engine repaints on SIGWINCH; mark it so that burst isn't read as work.
+      markPtyResize(tabId)
       tauriService.ptyResize(tabId, cols, rows).catch(console.error)
     })
 
@@ -100,6 +102,7 @@ export function TerminalPane({ tabId, active, panelFocused, onCwdChange }: Props
           safeFit()
           term.focus()
           const { cols, rows } = term
+          markPtyResize(tabId)
           tauriService.ptyResize(tabId, cols + 1, rows)
             .then(() => tauriService.ptyResize(tabId, cols, rows))
             .catch(console.error)
