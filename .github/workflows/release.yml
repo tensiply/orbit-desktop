@@ -171,7 +171,7 @@ jobs:
           # APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
         with:
           tagName: ${{ needs.verify.outputs.tag }}
-          releaseName: "Orbit Desktop ${{ needs.verify.outputs.tag }}"
+          releaseName: ${{ needs.verify.outputs.tag }}
           releaseBody: "__Release notes will be updated below.__"
           releaseDraft: true
           prerelease: true
@@ -216,6 +216,26 @@ jobs:
           mkdir -p artifacts
           gh release download "${TAG}" --dir artifacts --skip-existing || true
 
+      # Tauri derives artifact filenames from productName ("Orbit Desktop"),
+      # yielding "Orbit Desktop_x.y.z_arch.ext" (GitHub shows the space as a dot).
+      # Normalize to the conventional lowercase orbit_desktop_x.y.z_arch.ext,
+      # keeping the extension casing (e.g. .AppImage) intact.
+      - name: Normalize asset filenames
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG: ${{ needs.verify.outputs.tag }}
+        run: |
+          cd artifacts
+          for f in *; do
+            new=$(echo "$f" | sed -E 's/^Orbit[ .]Desktop_/orbit_desktop_/')
+            if [ "$f" != "$new" ]; then
+              mv "$f" "$new"
+              gh release delete-asset "${TAG}" "$f" --yes || true
+              gh release upload "${TAG}" "$new" --clobber
+              echo "renamed: $f -> $new"
+            fi
+          done
+
       - name: Create checksums
         run: |
           cd artifacts
@@ -237,4 +257,4 @@ jobs:
             --notes-file release_notes.md \
             --draft=false \
             --prerelease=true \
-            --title "Orbit Desktop ${TAG}"
+            --title "${TAG}"
