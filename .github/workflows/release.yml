@@ -267,12 +267,31 @@ jobs:
               echo "renamed: $f -> $new"
             fi
           done
-          # The updater manifest references the artifact by name/URL — rewrite it
-          # to match the renamed files (handles space, %20, and dot forms).
+          # The updater manifest references artifacts by URL and carries a build
+          # placeholder for notes — rewrite the URLs to the renamed files and set
+          # the real release notes (release_notes.md is written by the step above).
           if [ -f latest.json ]; then
-            sed -i -E 's/Orbit(%20| |\.)Desktop_/orbit_desktop_/g' latest.json
+            python3 - <<'PY'
+          import json
+          with open("latest.json") as f:
+              manifest = json.load(f)
+          def normalize(url):
+              for old in ("Orbit%20Desktop_", "Orbit Desktop_", "Orbit.Desktop_"):
+                  url = url.replace(old, "orbit_desktop_")
+              return url
+          for platform in manifest.get("platforms", {}).values():
+              if "url" in platform:
+                  platform["url"] = normalize(platform["url"])
+          try:
+              with open("../release_notes.md") as f:
+                  manifest["notes"] = f.read().strip()
+          except FileNotFoundError:
+              pass
+          with open("latest.json", "w") as f:
+              json.dump(manifest, f, indent=2)
+          PY
             gh release upload "${TAG}" latest.json --clobber
-            echo "rewrote latest.json"
+            echo "rewrote latest.json (urls + notes)"
           fi
 
       - name: Create checksums
