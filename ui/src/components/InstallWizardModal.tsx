@@ -1,25 +1,16 @@
 import { useState, useEffect, Fragment } from 'react'
 import {
-  Package, Terminal, Monitor, Cpu, FolderOpen, Check, ChevronLeft, ChevronRight,
+  Package, Monitor, Cpu, FolderOpen, Check, ChevronLeft, ChevronRight,
 } from 'lucide-react'
 import { useAppStore } from '../store'
 import { Dialog, DialogContent, DialogTitle, DialogDescription } from './ui/dialog'
 import { Button } from './ui/button'
-import { CliStep, DesktopStep, EnginesStep, WorkspacesStep } from './SetupOrbitView'
+import { DesktopStep, EnginesStep, WorkspacesStep } from './SetupOrbitView'
 import { cn } from '@/lib/utils'
 
 // ── Step definitions ───────────────────────────────────────────────────────────
 
 const STEPS = [
-  {
-    id:          'cli',
-    label:       'CLI',
-    icon:        <Terminal size={14} />,
-    headline:    'Install the Orbit CLI',
-    description: 'The CLI is the backbone of Orbit — it runs sessions, manages workspaces, and coordinates engines. The desktop app is just a shell; without the CLI nothing executes.',
-    required:    true,
-    component:   CliStep,
-  },
   {
     id:          'desktop',
     label:       'Desktop',
@@ -99,7 +90,6 @@ function StepIndicator({
 export function SetupWizardModal() {
   const open         = useAppStore((s) => s.setupWizardOpen)
   const close        = useAppStore((s) => s.closeSetupWizard)
-  const checkCli     = useAppStore((s) => s.checkCli)
   const checkSetup   = useAppStore((s) => s.checkSetup)
   const checkUpdates = useAppStore((s) => s.checkUpdates)
 
@@ -108,7 +98,7 @@ export function SetupWizardModal() {
   useEffect(() => {
     if (open) {
       setStepIdx(0)
-      void Promise.all([checkCli(), checkSetup(), checkUpdates()])
+      void Promise.all([checkSetup(), checkUpdates()])
     }
   }, [open])
 

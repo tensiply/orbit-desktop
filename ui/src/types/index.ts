@@ -168,7 +168,6 @@ export interface CliInfo {
 }
 
 export interface SetupStatus {
-  cli_installed: boolean
   has_workspaces: boolean
 }
 

@@ -65,7 +65,7 @@ export function SettingsRailButton() {
   const navView         = useAppStore((s) => s.navView)
   const setupStatus     = useAppStore((s) => s.setupStatus)
   const updateCheck     = useAppStore((s) => s.updateCheck)
-  const setupIncomplete  = setupStatus !== null && (!setupStatus.cli_installed || !setupStatus.has_workspaces)
+  const setupIncomplete  = setupStatus !== null && !setupStatus.has_workspaces
   const updatesAvailable = updateCheck
     ? (updateCheck.cli.has_update || updateCheck.desktop.has_update)
     : false

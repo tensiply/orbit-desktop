@@ -80,7 +80,7 @@ function SettingsCategoryPanel({
   const updatesAvailable = updateCheck
     ? (updateCheck.cli.has_update || updateCheck.desktop.has_update)
     : false
-  const setupIncomplete = setupStatus !== null && (!setupStatus.cli_installed || !setupStatus.has_workspaces)
+  const setupIncomplete = setupStatus !== null && !setupStatus.has_workspaces
 
   return (
     <div className="flex flex-col pt-1">

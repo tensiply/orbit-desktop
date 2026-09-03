@@ -121,7 +121,7 @@ export default function App() {
   useEffect(() => {
     if (
       setupStatus &&
-      (!setupStatus.cli_installed || !setupStatus.has_workspaces) &&
+      !setupStatus.has_workspaces &&
       !setupWizardTriggeredOnce
     ) {
       markSetupWizardTriggered()

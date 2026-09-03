@@ -3,7 +3,7 @@ import type {
   Session, LaunchScope, LaunchedInfo, WorkspaceInfo, ScopeTreeWorkspace,
   ArchCatalogDto, ArchEntityDto, SaveEntityArgs, ArchLayout, ArchRoutes,
   HarnessReport, PluginInfo,
-  CliInfo, SetupStatus, UpdateCheck, ImageEntry, SvgEntry, DocEntry,
+  SetupStatus, UpdateCheck, ImageEntry, SvgEntry, DocEntry,
 } from '../types'
 
 export const tauriService = {
@@ -120,12 +120,6 @@ export const tauriService = {
 
   pluginDisable: (name: string, scope: string): Promise<void> =>
     invoke('plugin_disable', { name, scope }),
-
-  cliCheck: (): Promise<CliInfo> =>
-    invoke('cli_check'),
-
-  cliInstall: (method: string): Promise<void> =>
-    invoke('cli_install', { method }),
 
   setupCheck: (): Promise<SetupStatus> =>
     invoke('setup_check'),

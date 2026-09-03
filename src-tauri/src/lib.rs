@@ -143,8 +143,6 @@ pub fn run() {
             // Makefile
             makefile::makefile_targets,
             // Updates & CLI
-            updates::cli_check,
-            updates::cli_install,
             updates::check_updates,
             updates::setup_check,
             updates::orbit_workspace_add,

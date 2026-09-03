@@ -1,5 +1,5 @@
 import type { StateCreator } from 'zustand'
-import type { CliInfo, SetupStatus, UpdateCheck } from '../../types'
+import type { SetupStatus, UpdateCheck } from '../../types'
 import { tauriService } from '../../services/tauri'
 import type { AppStore } from '../types'
 
@@ -7,17 +7,15 @@ import type { AppStore } from '../types'
 // phases active and checkSetup becomes a no-op so the real system state
 // never overwrites the forced status. Useful for visual testing in dev.
 const FORCE_WIZARD = import.meta.env.VITE_FORCE_SETUP_WIZARD === 'true'
-const FORCED_STATUS: SetupStatus = { cli_installed: false, has_workspaces: false }
+const FORCED_STATUS: SetupStatus = { has_workspaces: false }
 
 export interface UpdatesSlice {
-  cliInfo: CliInfo | null
   setupStatus: SetupStatus | null
   updateCheck: UpdateCheck | null
   updatesChecking: boolean
   setupWizardOpen: boolean
   setupWizardTriggeredOnce: boolean
 
-  checkCli: () => Promise<void>
   checkSetup: () => Promise<void>
   checkUpdates: () => Promise<void>
   openSetupWizard: () => void
@@ -26,21 +24,11 @@ export interface UpdatesSlice {
 }
 
 export const createUpdatesSlice: StateCreator<AppStore, [], [], UpdatesSlice> = (set) => ({
-  cliInfo: null,
   setupStatus: FORCE_WIZARD ? FORCED_STATUS : null,
   updateCheck: null,
   updatesChecking: false,
   setupWizardOpen: FORCE_WIZARD,
   setupWizardTriggeredOnce: false,
-
-  checkCli: async () => {
-    try {
-      const info = await tauriService.cliCheck()
-      set({ cliInfo: info })
-    } catch {
-      // daemon not available yet
-    }
-  },
 
   checkSetup: async () => {
     if (FORCE_WIZARD) return
