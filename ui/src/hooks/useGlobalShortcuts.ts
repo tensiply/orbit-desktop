@@ -186,12 +186,8 @@ export function useGlobalShortcuts() {
         const hasScopeFilter = navView === 'terminal' || navView === 'documents'
         if (hasScopeFilter) {
           e.preventDefault()
-          let next: 'all' | 'scope' | 'history'
-          if (navView === 'terminal') {
-            next = scopeViewMode === 'all' ? 'scope' : scopeViewMode === 'scope' ? 'history' : 'all'
-          } else {
-            next = scopeViewMode === 'all' ? 'scope' : 'all'
-          }
+          const next: 'all' | 'scope' | 'history' =
+            scopeViewMode === 'all' ? 'scope' : scopeViewMode === 'scope' ? 'history' : 'all'
           setScopeViewMode(next)
           if (next === 'scope') void loadScopeTree()
           setSidebarSelectedIdx(0)
@@ -293,10 +289,6 @@ export function useGlobalShortcuts() {
           const item = sidebarItems[sidebarSelectedIdx]
           if (!item) return
           switch (item.type) {
-            case 'scope-back':
-              navigateScopeOut()
-              setSidebarSelectedIdx(0)
-              break
             case 'scope-folder':
               navigateScopeIn(item.name)
               setSidebarSelectedIdx(0)

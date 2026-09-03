@@ -305,7 +305,6 @@ export function Sidebar({ width, collapsed }: { width: number; collapsed?: boole
   const selectedItem = sidebarFocused ? sidebarItems[sidebarSelectedIdx] : null
 
   // Scope navigator selection
-  const backSelected         = selectedItem?.type === 'scope-back'
   const selectedFolderName   = selectedItem?.type === 'scope-folder' ? selectedItem.name : null
 
   // Session/file list: adjust index relative to where sessions/files start in the flat list
@@ -416,18 +415,19 @@ export function Sidebar({ width, collapsed }: { width: number; collapsed?: boole
               }
               filters={hasScopeFilter && <ViewModeToggle />}
               footer={
-                navView === 'terminal'
-                  ? <NewSessionButton />
-                  : navView === 'documents'
-                    ? <FileUploader />
-                    : undefined
+                !inScopeMode
+                  ? undefined
+                  : navView === 'terminal'
+                    ? <NewSessionButton />
+                    : navView === 'documents'
+                      ? <FileUploader />
+                      : undefined
               }
             >
               {navView === 'terminal' && (
                 <>
                   {inScopeMode && (
                     <ScopeNavigator
-                      backSelected={backSelected}
                       selectedFolderName={selectedFolderName}
                     />
                   )}
@@ -454,7 +454,6 @@ export function Sidebar({ width, collapsed }: { width: number; collapsed?: boole
                 <>
                   {inScopeMode && (
                     <ScopeNavigator
-                      backSelected={backSelected}
                       selectedFolderName={selectedFolderName}
                     />
                   )}
@@ -484,7 +483,6 @@ export function Sidebar({ width, collapsed }: { width: number; collapsed?: boole
                 <>
                   {inScopeMode && (
                     <ScopeNavigator
-                      backSelected={backSelected}
                       selectedFolderName={selectedFolderName}
                     />
                   )}

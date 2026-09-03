@@ -5,7 +5,6 @@ export { workspaceFromWorkDir } from '../domain/scope'
 // ── Item types ────────────────────────────────────────────────────────────────
 
 export type SidebarNavItem =
-  | { type: 'scope-back' }
   | { type: 'scope-folder'; name: string }
   | { type: 'session'; session: Session }
   | { type: 'document'; doc: DocEntry }
@@ -130,11 +129,9 @@ export function computeSidebarItems(params: {
 
   // ── Sessions / Documents / Files ───────────────────────────────────────────
 
-  // Scope navigator
+  // Scope navigator — the breadcrumb is intentionally not keyboard-navigable;
+  // focus lands on the first folder. Going back is handled by ArrowLeft.
   if (scopeViewMode === 'scope') {
-    if (scopePath.length > 0) {
-      items.push({ type: 'scope-back' })
-    }
     const children = getScopeChildren(scopeTree, scopePath, selectedWorkspace)
     for (const name of children) {
       items.push({ type: 'scope-folder', name })

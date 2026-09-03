@@ -84,10 +84,8 @@ export function ViewModeToggle() {
 }
 
 export function ScopeNavigator({
-  backSelected,
   selectedFolderName,
 }: {
-  backSelected:        boolean
   selectedFolderName:  string | null
 }) {
   const scopeTree          = useAppStore((s) => s.scopeTree)
@@ -165,19 +163,21 @@ export function ScopeNavigator({
   }
 
   return (
-    <div data-orbit-zone="orbit.desktop.sidebar.panel.scope-nav">
+    // mt/mb stack on top of the panel's gap-1 (header→content) and the content's
+    // gap-2 (nav→search) to land on an effective spacing of 2 above and 4 below.
+    <div data-orbit-zone="orbit.desktop.sidebar.panel.scope-nav" className="mt-2">
       {/* Back / breadcrumb — workspace path, or an "open workspace" hint at the All-mode root */}
       {crumbSegments.length > 0 ? (
         <button
           onClick={canGoBack ? navigateOut : undefined}
           disabled={!canGoBack}
-          className={`flex items-center gap-1 w-full px-2 py-1 rounded-md border border-sidebar-border/50 text-[10px] text-sidebar-foreground/40 transition-colors ${canGoBack ? 'hover:bg-sidebar-accent/40 hover:text-sidebar-foreground/70' : 'cursor-default'} ${backSelected ? RING_CLASS : ''}`}
+          className={`flex items-center gap-1 w-full px-2 py-1 rounded border-l-2 border-sidebar-border/70 text-[10px] text-sidebar-foreground/40 transition-colors ${canGoBack ? 'hover:bg-sidebar-accent/40 hover:text-sidebar-foreground/70' : 'cursor-default'}`}
         >
           {canGoBack && <ChevronLeft size={10} className="shrink-0" />}
           <span className="truncate">{crumbSegments.join(' › ')}</span>
         </button>
       ) : (
-        <div className="flex items-center w-full px-2 py-1 rounded-md border border-sidebar-border/50 text-[10px] text-sidebar-foreground/40">
+        <div className="flex items-center w-full px-2 py-1 rounded border-l-2 border-sidebar-border/70 text-[10px] text-sidebar-foreground/40">
           Workspaces
         </div>
       )}
@@ -205,13 +205,13 @@ export function ScopeNavigator({
                         ref={(el) => { if (el) buttonRefs.current.set(name, el); else buttonRefs.current.delete(name) }}
                         onClick={() => navigateIn(name)}
                         onContextMenu={(e) => e.stopPropagation()}
-                        className={`group flex items-center justify-between w-full px-2 py-1.5 rounded-md text-xs text-sidebar-foreground/55 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground transition-colors ${isSelected ? RING_CLASS : ''}`}
+                        className={`group flex items-center justify-between w-full px-2 py-1.5 rounded-md text-xs text-sidebar-foreground/55 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-inset focus-visible:ring-foreground/30 ${isSelected ? RING_CLASS : ''}`}
                       >
                         <span className="truncate">{name}</span>
                         <ChevronRight size={11} className="shrink-0 text-sidebar-foreground/20 group-hover:text-sidebar-accent-foreground/50 transition-colors" />
                       </button>
                     </ContextMenuTrigger>
-                    <ContextMenuContent className="w-48 text-xs">
+                    <ContextMenuContent className="w-48 text-xs" onCloseAutoFocus={(e) => e.preventDefault()}>
                       <ContextMenuGroup>
                         <ContextMenuLabel>Launch</ContextMenuLabel>
                         <ContextMenuSub>
