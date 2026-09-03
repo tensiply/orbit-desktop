@@ -7,7 +7,6 @@ export { workspaceFromWorkDir } from '../domain/scope'
 export type SidebarNavItem =
   | { type: 'scope-back' }
   | { type: 'scope-folder'; name: string }
-  | { type: 'scope-new-session' }
   | { type: 'session'; session: Session }
   | { type: 'document'; doc: DocEntry }
   | { type: 'file'; file: AnyFileEntry }
@@ -137,9 +136,6 @@ export function computeSidebarItems(params: {
       items.push({ type: 'scope-back' })
     }
     const children = getScopeChildren(scopeTree, scopePath, selectedWorkspace)
-    if (navView === 'terminal' && scopePath.length > 0 && children.length > 0) {
-      items.push({ type: 'scope-new-session' })
-    }
     for (const name of children) {
       items.push({ type: 'scope-folder', name })
     }

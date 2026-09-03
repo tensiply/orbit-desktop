@@ -115,6 +115,7 @@ pub fn run() {
             plugins::plugin_disable,
             // Documents
             documents::document_list,
+            documents::document_import,
             documents::document_read_b64,
             documents::document_delete,
             documents::document_archive,

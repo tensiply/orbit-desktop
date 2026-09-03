@@ -82,7 +82,6 @@ export function useGlobalShortcuts() {
   const navigateScopeIn       = useAppStore((s) => s.navigateScopeIn)
   const navigateScopeOut      = useAppStore((s) => s.navigateScopeOut)
   const loadScopeTree         = useAppStore((s) => s.loadScopeTree)
-  const launchScopeSession    = useAppStore((s) => s.launchScopeSession)
   const openLaunchPicker = useAppStore((s) => s.openLaunchPicker)
   const openDiagram      = useAppStore((s) => s.openDiagram)
   const archHistory      = useAppStore((s) => s.archHistory)
@@ -298,14 +297,6 @@ export function useGlobalShortcuts() {
               navigateScopeOut()
               setSidebarSelectedIdx(0)
               break
-            case 'scope-new-session': {
-              const fullPath = selectedWorkspace
-                ? [selectedWorkspace, ...scopePath]
-                : [...scopePath]
-              blurSidebar()
-              void launchScopeSession(fullPath, 'claude')
-              break
-            }
             case 'scope-folder':
               navigateScopeIn(item.name)
               setSidebarSelectedIdx(0)
@@ -528,6 +519,5 @@ export function useGlobalShortcuts() {
       registeredWorkspaces, setSelectedWorkspace,
       scopeViewMode, scopePath, scopeTree,
       setScopeViewMode, navigateScopeIn, navigateScopeOut, loadScopeTree,
-      launchScopeSession,
       openLaunchPicker, openDiagram])
 }

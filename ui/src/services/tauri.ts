@@ -3,7 +3,7 @@ import type {
   Session, LaunchScope, LaunchedInfo, WorkspaceInfo, ScopeTreeWorkspace,
   ArchCatalogDto, ArchEntityDto, SaveEntityArgs, ArchLayout, ArchRoutes,
   HarnessReport, PluginInfo,
-  CliInfo, SetupStatus, UpdateCheck, ImageEntry, SvgEntry,
+  CliInfo, SetupStatus, UpdateCheck, ImageEntry, SvgEntry, DocEntry,
 } from '../types'
 
 export const tauriService = {
@@ -72,6 +72,15 @@ export const tauriService = {
 
   documentReadB64: (path: string): Promise<string> =>
     invoke('document_read_b64', { path }),
+
+  documentImport: (
+    sourcePath: string,
+    workspace: string,
+    tenant: string,
+    project: string,
+    repository: string,
+  ): Promise<DocEntry> =>
+    invoke('document_import', { sourcePath, workspace, tenant, project, repository }),
 
   documentReveal: (path: string): Promise<void> =>
     invoke('document_reveal', { path }),

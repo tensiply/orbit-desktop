@@ -86,11 +86,9 @@ export function ViewModeToggle() {
 export function ScopeNavigator({
   backSelected,
   selectedFolderName,
-  newSessionSelected,
 }: {
   backSelected:        boolean
   selectedFolderName:  string | null
-  newSessionSelected:  boolean
 }) {
   const scopeTree          = useAppStore((s) => s.scopeTree)
   const scopeTreeLoading   = useAppStore((s) => s.scopeTreeLoading)
@@ -124,14 +122,6 @@ export function ScopeNavigator({
     const fullPath = selectedWorkspace
       ? [selectedWorkspace, ...scopePath, folderName]
       : [...scopePath, folderName]
-    blurSidebar()
-    void launchScopeSession(fullPath, engine)
-  }
-
-  const launchCurrentScope = (engine: string) => {
-    const fullPath = selectedWorkspace
-      ? [selectedWorkspace, ...scopePath]
-      : [...scopePath]
     blurSidebar()
     void launchScopeSession(fullPath, engine)
   }
@@ -202,30 +192,6 @@ export function ScopeNavigator({
               </span>
             ) : (
               <span className="flex items-center h-4 text-[9px] text-sidebar-foreground/25">Open Workspace</span>
-            )}
-            {(selectedWorkspace || scopePath.length > 0) && (
-              <ContextMenu onOpenChange={(open) => { if (open) blurSidebar() }}>
-                <ContextMenuTrigger asChild>
-                  <button
-                    onClick={() => launchCurrentScope('claude')}
-                    className={`flex items-center justify-center h-[16px] w-[16px] rounded text-sidebar-foreground/25 hover:text-sidebar-foreground/60 hover:bg-sidebar-accent/40 transition-colors ${newSessionSelected ? RING_CLASS : ''}`}
-                    title="New Session"
-                  >
-                    <Plus size={12} />
-                  </button>
-                </ContextMenuTrigger>
-                <ContextMenuContent className="w-40 text-xs">
-                  {ENGINES_MENU.map(({ id, label, Icon }) => (
-                    <ContextMenuItem
-                      key={id}
-                      className="text-xs gap-2"
-                      onClick={() => launchCurrentScope(id)}
-                    >
-                      <Icon size={13} />{label}
-                    </ContextMenuItem>
-                  ))}
-                </ContextMenuContent>
-              </ContextMenu>
             )}
           </div>
           <ul className="space-y-0.5">

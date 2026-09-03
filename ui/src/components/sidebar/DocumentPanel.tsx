@@ -1,11 +1,15 @@
 import { Fragment, useEffect, useRef, useState } from 'react'
 import {
   Copy, FolderOpen, Archive, Trash2, Info, Mail, Send,
-  FileText, Network, Clipboard, Image, FileCode, GitBranch, Database,
+  FileText, Network, Clipboard, Image, FileCode, GitBranch, Database, Upload,
 } from 'lucide-react'
+import { getCurrentWebview } from '@tauri-apps/api/webview'
+import { open } from '@tauri-apps/plugin-dialog'
 import { useAppStore } from '../../store'
 import type { AnyFileEntry, DiagramType } from '../../types'
 import { tauriService } from '../../services/tauri'
+import { cn } from '@/lib/utils'
+import { Attachment } from '../ui/attachment'
 import {
   ContextMenu,
   ContextMenuContent,
@@ -305,12 +309,14 @@ export function FilesPanel({
   loading,
   sidebarFocused,
   sidebarSelectedIdx,
+  kindFilter,
   onOpen,
 }: {
   files:              AnyFileEntry[]
   loading:            boolean
   sidebarFocused:     boolean
   sidebarSelectedIdx: number
+  kindFilter:         AnyFileEntry['kind'] | null
   onOpen: (file: AnyFileEntry) => void
 }) {
   const archiveDocument       = useAppStore((s) => s.archiveDocument)
@@ -342,9 +348,13 @@ export function FilesPanel({
     return null
   }
 
-  const groups = KIND_ORDER
-    .map((kind) => ({ kind, items: files.filter((f) => f.kind === kind) }))
-    .filter((g) => g.items.length > 0)
+  // Without a kind filter the list is a single "Content" section; once a filter
+  // is active we split into per-kind sections with their own labels.
+  const groups = kindFilter === null
+    ? [{ kind: 'content', label: 'Content', items: files }]
+    : KIND_ORDER
+        .map((kind) => ({ kind, label: KIND_SECTION_LABELS[kind], items: files.filter((f) => f.kind === kind) }))
+        .filter((g) => g.items.length > 0)
 
   let flatIdx = 0
 
@@ -353,7 +363,7 @@ export function FilesPanel({
       {groups.map((group) => (
         <Fragment key={group.kind}>
           <li className="pr-2 pt-1 pb-2">
-            <MarkerSeparator label={KIND_SECTION_LABELS[group.kind]} />
+            <MarkerSeparator label={group.label} />
           </li>
           {group.items.map((file) => {
             const idx = flatIdx++
@@ -376,6 +386,102 @@ export function FilesPanel({
 
 // Keep old export for any remaining direct usage
 export { FilesPanel as DocumentsPanel }
+
+/**
+ * FileUploader — panel-footer control for importing files into the current scope.
+ * Files can be dropped onto the dashed zone or picked with the Upload button;
+ * in-flight and just-finished imports render as Attachment cards above the zone.
+ *
+ * Drag-and-drop uses Tauri's native webview drag events (the OS owns file drops
+ * when `dragDropEnabled` is on), so we hit-test the drop position against the
+ * zone rect. Positions are physical pixels, hence the devicePixelRatio scaling.
+ */
+export function FileUploader() {
+  const uploads         = useAppStore((s) => s.uploads)
+  const importFiles     = useAppStore((s) => s.importFiles)
+  const dismissUpload   = useAppStore((s) => s.dismissUpload)
+  const [dragOver, setDragOver] = useState(false)
+  const zoneRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    let unlisten: (() => void) | undefined
+
+    // Accept drops anywhere over the files panel (list + footer); the visual
+    // hover highlight still lives only on the uploader dropzone below.
+    const inZone = (x: number, y: number): boolean => {
+      const el = zoneRef.current?.closest('[data-orbit-zone="orbit.desktop.sidebar.panel"]')
+      if (!el) return false
+      const dpr = window.devicePixelRatio || 1
+      const r   = el.getBoundingClientRect()
+      const cx  = x / dpr
+      const cy  = y / dpr
+      return cx >= r.left && cx <= r.right && cy >= r.top && cy <= r.bottom
+    }
+
+    void getCurrentWebview()
+      .onDragDropEvent((event) => {
+        const p = event.payload
+        if (p.type === 'over') {
+          setDragOver(inZone(p.position.x, p.position.y))
+        } else if (p.type === 'drop') {
+          if (inZone(p.position.x, p.position.y) && p.paths.length > 0) {
+            void importFiles(p.paths)
+          }
+          setDragOver(false)
+        } else {
+          setDragOver(false)
+        }
+      })
+      .then((fn) => { unlisten = fn })
+
+    return () => { unlisten?.() }
+  }, [importFiles])
+
+  const pickFiles = async () => {
+    const selected = await open({ multiple: true })
+    if (!selected) return
+    void importFiles(Array.isArray(selected) ? selected : [selected])
+  }
+
+  return (
+    <div className="flex flex-col gap-2">
+      {uploads.length > 0 && (
+        <div className="flex flex-col gap-1">
+          {uploads.map((u) => (
+            <Attachment
+              key={u.id}
+              name={u.name}
+              status={u.status}
+              onDismiss={() => dismissUpload(u.id)}
+            />
+          ))}
+        </div>
+      )}
+
+      <div
+        ref={zoneRef}
+        onClick={() => void pickFiles()}
+        className={cn(
+          'flex flex-col items-center justify-center gap-1.5 w-full py-4 px-3 rounded-lg cursor-pointer transition-colors text-center',
+          dragOver
+            ? 'bg-primary/5 text-sidebar-foreground/70'
+            : 'text-sidebar-foreground/40 hover:text-sidebar-foreground/60',
+        )}
+      >
+        <Upload size={16} className="shrink-0" />
+        <span className="text-[10px] leading-tight">Drop files here</span>
+        <Button
+          size="sm"
+          variant="outline"
+          className="h-6 text-[10px] px-2 mt-0.5 bg-transparent border-0 opacity-40 hover:opacity-100"
+          onClick={(e) => { e.stopPropagation(); void pickFiles() }}
+        >
+          Upload file
+        </Button>
+      </div>
+    </div>
+  )
+}
 
 export function DocsPanel() {
   const openUIKit  = useAppStore((s) => s.openUIKit)

@@ -38,6 +38,21 @@ pub fn document_list(store: State<'_, Arc<dyn DocumentStore>>) -> Vec<DocInfo> {
     store.list()
 }
 
+/// Copy an external file into the given scope and register it as a document.
+#[tauri::command]
+pub fn document_import(
+    store: State<'_, Arc<dyn DocumentStore>>,
+    source_path: String,
+    workspace: String,
+    tenant: String,
+    project: String,
+    repository: String,
+) -> Result<DocInfo, String> {
+    store
+        .import(&source_path, &workspace, &tenant, &project, &repository)
+        .map_err(|e| e.to_string())
+}
+
 /// Open the folder containing the document in the system file manager.
 #[tauri::command]
 pub fn document_reveal(path: String) -> Result<(), String> {

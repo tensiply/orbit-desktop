@@ -1,7 +1,7 @@
 import { useEffect, useRef } from 'react'
 import {
   ExternalLink, Copy, FolderOpen, Wrench, CircleStop,
-  CopyPlus, RefreshCw, Plus, Cpu,
+  CopyPlus, RefreshCw, Plus, Cpu, ChevronDown,
 } from 'lucide-react'
 import { STATUS_COLORS } from '../../theme'
 import { useAppStore } from '../../store'
@@ -25,6 +25,13 @@ import {
   ContextMenuTrigger,
 } from '../ui/context-menu'
 import { MarkerSeparator } from '../ui/marker-separator'
+import { Button } from '../ui/button'
+import {
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuItem,
+} from '../ui/dropdown-menu'
 import { RING_CLASS, ENGINES_MENU } from './constants'
 
 const MAX_SESSIONS = 10
@@ -260,6 +267,55 @@ function SessionItem({
         </ContextMenuTrigger>
       </ContextMenu>
     </li>
+  )
+}
+
+/**
+ * NewSessionButton — panel-footer action that launches a session at the current
+ * scope (workspace + drilled-in path). Mirrors the files uploader zone: clicking
+ * the zone launches with the default engine; the chevron button opens the
+ * engine picker.
+ */
+export function NewSessionButton() {
+  const selectedWorkspace  = useAppStore((s) => s.selectedWorkspace)
+  const scopePath          = useAppStore((s) => s.scopePath)
+  const launchScopeSession = useAppStore((s) => s.launchScopeSession)
+  const blurSidebar        = useAppStore((s) => s.blurSidebar)
+
+  const launch = (engine: string) => {
+    const fullPath = selectedWorkspace ? [selectedWorkspace, ...scopePath] : [...scopePath]
+    blurSidebar()
+    void launchScopeSession(fullPath, engine)
+  }
+
+  return (
+    <div
+      onClick={() => launch('claude')}
+      className="flex flex-col items-center justify-center gap-1.5 w-full py-4 px-3 rounded-lg cursor-pointer transition-colors text-center text-sidebar-foreground/40 hover:text-sidebar-foreground/60"
+    >
+      <Plus size={16} className="shrink-0" />
+      <span className="text-[10px] leading-tight">New session here</span>
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button
+            size="sm"
+            variant="outline"
+            className="h-6 text-[10px] px-2 mt-0.5 gap-1 bg-transparent border-0 opacity-40 hover:opacity-100"
+            onClick={(e) => e.stopPropagation()}
+            title="New session with…"
+          >
+            <ChevronDown size={12} />
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="center" className="w-40 text-xs">
+          {ENGINES_MENU.map(({ id, label, Icon }) => (
+            <DropdownMenuItem key={id} className="text-xs gap-2" onClick={() => launch(id)}>
+              <Icon size={13} />{label}
+            </DropdownMenuItem>
+          ))}
+        </DropdownMenuContent>
+      </DropdownMenu>
+    </div>
   )
 }
 

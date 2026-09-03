@@ -4,6 +4,13 @@ import type { AppStore } from '../types'
 import type { DocEntry, ImageEntry, SvgEntry, AnyFileEntry, DiagramEntry } from '../../types'
 import { tauriService } from '../../services/tauri'
 
+/** One file being imported into the current scope, tracked for the uploads UI. */
+export interface UploadItem {
+  id:     string
+  name:   string
+  status: 'uploading' | 'done' | 'error'
+}
+
 export interface DocumentsSlice {
   documents:        DocEntry[]
   documentsLoading: boolean
@@ -11,11 +18,14 @@ export interface DocumentsSlice {
   imagesLoading:    boolean
   svgs:             SvgEntry[]
   svgsLoading:      boolean
+  uploads:          UploadItem[]
 
   fetchDocuments: () => Promise<void>
   fetchImages:    () => Promise<void>
   fetchSvgs:      () => Promise<void>
   fetchFiles:     () => Promise<void>
+  importFiles:    (paths: string[]) => Promise<void>
+  dismissUpload:  (id: string) => void
 
   openDocument:   (doc: DocEntry) => void
   openImage:      (img: ImageEntry) => void
@@ -59,6 +69,7 @@ export const createDocumentsSlice: StateCreator<AppStore, [], [], DocumentsSlice
   imagesLoading:    false,
   svgs:             [],
   svgsLoading:      false,
+  uploads:          [],
 
   fetchDocuments: async () => {
     set({ documentsLoading: true })
@@ -98,6 +109,34 @@ export const createDocumentsSlice: StateCreator<AppStore, [], [], DocumentsSlice
       s.fetchSvgs(),
     ])
   },
+
+  importFiles: async (paths: string[]) => {
+    // Destination scope mirrors the scope navigator's "current scope"
+    // (workspace + drilled-in path), same derivation as launching a session.
+    const st = get()
+    const fullPath = st.selectedWorkspace
+      ? [st.selectedWorkspace, ...st.scopePath]
+      : [...st.scopePath]
+    const [workspace = '', tenant = '', project = '', repository = ''] = fullPath
+
+    await Promise.all(paths.map(async (path) => {
+      const name = path.split('/').pop() ?? path
+      const id   = `up-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`
+      set((s) => ({ uploads: [...s.uploads, { id, name, status: 'uploading' }] }))
+      try {
+        const entry = await tauriService.documentImport(path, workspace, tenant, project, repository)
+        set((s) => ({
+          uploads:   s.uploads.map((u) => (u.id === id ? { ...u, status: 'done' } : u)),
+          documents: [entry, ...s.documents.filter((d) => d.id !== entry.id)],
+        }))
+        setTimeout(() => set((s) => ({ uploads: s.uploads.filter((u) => u.id !== id) })), 2000)
+      } catch {
+        set((s) => ({ uploads: s.uploads.map((u) => (u.id === id ? { ...u, status: 'error' } : u)) }))
+      }
+    }))
+  },
+
+  dismissUpload: (id: string) => set((s) => ({ uploads: s.uploads.filter((u) => u.id !== id) })),
 
   openDocument: (doc: DocEntry) => {
     const tabId = `doc-${doc.id}`

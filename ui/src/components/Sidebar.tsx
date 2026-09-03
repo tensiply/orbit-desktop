@@ -25,8 +25,8 @@ import {
 import { SidebarPanel } from './sidebar/SidebarPanel'
 import { ScopeSearch } from './sidebar/ScopeSearch'
 import { ViewModeToggle, ScopeNavigator } from './sidebar/ScopePanel'
-import { SessionList } from './sidebar/SessionPanel'
-import { FilesPanel, DocsPanel } from './sidebar/DocumentPanel'
+import { SessionList, NewSessionButton } from './sidebar/SessionPanel'
+import { FilesPanel, DocsPanel, FileUploader } from './sidebar/DocumentPanel'
 import { TasksPanel } from './sidebar/TaskPanel'
 import { DropdownMenuItem } from './ui/dropdown-menu'
 import type { ActiveSettingsCategory } from '../store/slices/settings'
@@ -307,7 +307,6 @@ export function Sidebar({ width, collapsed }: { width: number; collapsed?: boole
   // Scope navigator selection
   const backSelected         = selectedItem?.type === 'scope-back'
   const selectedFolderName   = selectedItem?.type === 'scope-folder' ? selectedItem.name : null
-  const newSessionSelected   = selectedItem?.type === 'scope-new-session'
 
   // Session/file list: adjust index relative to where sessions/files start in the flat list
   const sessionOffset      = sidebarItems.findIndex((i) => i.type === 'session')
@@ -416,6 +415,13 @@ export function Sidebar({ width, collapsed }: { width: number; collapsed?: boole
                 )
               }
               filters={hasScopeFilter && <ViewModeToggle />}
+              footer={
+                navView === 'terminal'
+                  ? <NewSessionButton />
+                  : navView === 'documents'
+                    ? <FileUploader />
+                    : undefined
+              }
             >
               {navView === 'terminal' && (
                 <>
@@ -423,7 +429,6 @@ export function Sidebar({ width, collapsed }: { width: number; collapsed?: boole
                     <ScopeNavigator
                       backSelected={backSelected}
                       selectedFolderName={selectedFolderName}
-                      newSessionSelected={newSessionSelected}
                     />
                   )}
                   {searchNode}
@@ -451,7 +456,6 @@ export function Sidebar({ width, collapsed }: { width: number; collapsed?: boole
                     <ScopeNavigator
                       backSelected={backSelected}
                       selectedFolderName={selectedFolderName}
-                      newSessionSelected={newSessionSelected}
                     />
                   )}
                   {searchNode}
@@ -460,6 +464,7 @@ export function Sidebar({ width, collapsed }: { width: number; collapsed?: boole
                     loading={filesLoading}
                     sidebarFocused={sidebarFocused}
                     sidebarSelectedIdx={fileRelativeIdx}
+                    kindFilter={fileKindFilter}
                     onOpen={(file) => {
                       blurSidebar()
                       if (file.kind === 'diagram') {
@@ -481,7 +486,6 @@ export function Sidebar({ width, collapsed }: { width: number; collapsed?: boole
                     <ScopeNavigator
                       backSelected={backSelected}
                       selectedFolderName={selectedFolderName}
-                      newSessionSelected={newSessionSelected}
                     />
                   )}
                   {searchNode}

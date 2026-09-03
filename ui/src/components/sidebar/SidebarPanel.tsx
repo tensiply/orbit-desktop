@@ -16,16 +16,19 @@
  *
  * `actions` — module-specific header controls (loading spinners, etc.).
  * `filters` — scope toggle (`orbit.desktop.sidebar.panel.filters`), in the header.
+ * `footer`  — pinned action area below the scrollable content (new session, uploads, …).
  */
 export function SidebarPanel({
   label,
   actions,
   filters,
+  footer,
   children,
 }: {
   label: string
   actions?: React.ReactNode
   filters?: React.ReactNode
+  footer?: React.ReactNode
   children: React.ReactNode
 }) {
   return (
@@ -54,6 +57,15 @@ export function SidebarPanel({
       >
         {children}
       </div>
+
+      {footer && (
+        <div
+          data-orbit-zone="orbit.desktop.sidebar.panel.footer"
+          className="shrink-0 pt-2 pb-1 pl-3 pr-2"
+        >
+          {footer}
+        </div>
+      )}
     </div>
   )
 }
