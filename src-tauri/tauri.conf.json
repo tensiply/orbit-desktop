@@ -1,7 +1,7 @@
 {
-  "productName": "Orbit",
+  "productName": "Orbit Desktop",
   "version": "0.2.0",
-  "identifier": "dev.tensiply.orbit",
+  "identifier": "com.tensiply.orbit-desktop",
   "build": {
     "frontendDist": "../ui/dist",
     "devUrl": "http://localhost:5173",
@@ -18,7 +18,7 @@
     "withGlobalTauri": false,
     "windows": [
       {
-        "title": "Orbit",
+        "title": "Orbit Desktop",
         "width": 1400,
         "height": 860,
         "minWidth": 900,

@@ -1,14 +1,14 @@
 [Desktop Entry]
 Version=1.0
 Type=Application
-Name=Orbit
+Name=Orbit Desktop
 GenericName=AI Development Toolkit
 Comment=AI-assisted development — scope-aware, daemon-based, multi-engine
 Exec=orbit-desktop
-Icon=orbit-desktop
+Icon=com.tensiply.orbit-desktop
 Terminal=false
 StartupNotify=true
-StartupWMClass=Orbit
+StartupWMClass=Orbit Desktop
 Categories=Development;IDE;
 Keywords=ai;development;claude;gemini;orbit;tensiply;cli;terminal;
 MimeType=

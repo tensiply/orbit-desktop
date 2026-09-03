@@ -25,13 +25,13 @@ install: build
 	@mkdir -p $(INSTALL_DIR)
 	install -m 755 $(TARGET_DIR)/orbit-desktop $(INSTALL_DIR)/orbit-desktop
 	@mkdir -p $(HOME)/.local/share/applications
-	install -m 644 packaging/linux/orbit.desktop $(HOME)/.local/share/applications/orbit-desktop.desktop
+	install -m 644 packaging/linux/com.tensiply.orbit-desktop.desktop $(HOME)/.local/share/applications/com.tensiply.orbit-desktop.desktop
 	@mkdir -p $(HOME)/.local/share/icons/hicolor/128x128/apps
 	@mkdir -p $(HOME)/.local/share/icons/hicolor/256x256/apps
 	@mkdir -p $(HOME)/.local/share/icons/hicolor/512x512/apps
-	install -m 644 $(ICONS_DIR)/128x128.png $(HOME)/.local/share/icons/hicolor/128x128/apps/orbit-desktop.png
-	install -m 644 $(ICONS_DIR)/256x256.png $(HOME)/.local/share/icons/hicolor/256x256/apps/orbit-desktop.png
-	install -m 644 $(ICONS_DIR)/512x512.png $(HOME)/.local/share/icons/hicolor/512x512/apps/orbit-desktop.png
+	install -m 644 $(ICONS_DIR)/128x128.png $(HOME)/.local/share/icons/hicolor/128x128/apps/com.tensiply.orbit-desktop.png
+	install -m 644 $(ICONS_DIR)/256x256.png $(HOME)/.local/share/icons/hicolor/256x256/apps/com.tensiply.orbit-desktop.png
+	install -m 644 $(ICONS_DIR)/512x512.png $(HOME)/.local/share/icons/hicolor/512x512/apps/com.tensiply.orbit-desktop.png
 	@update-desktop-database $(HOME)/.local/share/applications 2>/dev/null || true
 	@gtk-update-icon-cache -f -t $(HOME)/.local/share/icons/hicolor 2>/dev/null || true
 	@echo "Installed — Orbit should now appear in your app launcher"
@@ -39,10 +39,10 @@ install: build
 ## Remove binary, desktop entry, and icons
 uninstall:
 	rm -f $(INSTALL_DIR)/orbit-desktop
-	rm -f $(HOME)/.local/share/applications/orbit-desktop.desktop
-	rm -f $(HOME)/.local/share/icons/hicolor/128x128/apps/orbit-desktop.png
-	rm -f $(HOME)/.local/share/icons/hicolor/256x256/apps/orbit-desktop.png
-	rm -f $(HOME)/.local/share/icons/hicolor/512x512/apps/orbit-desktop.png
+	rm -f $(HOME)/.local/share/applications/com.tensiply.orbit-desktop.desktop
+	rm -f $(HOME)/.local/share/icons/hicolor/128x128/apps/com.tensiply.orbit-desktop.png
+	rm -f $(HOME)/.local/share/icons/hicolor/256x256/apps/com.tensiply.orbit-desktop.png
+	rm -f $(HOME)/.local/share/icons/hicolor/512x512/apps/com.tensiply.orbit-desktop.png
 	@update-desktop-database $(HOME)/.local/share/applications 2>/dev/null || true
 	@echo "Uninstalled"
 
@@ -73,8 +73,8 @@ windows-assets:
 
 ## Build Flatpak bundle (requires flatpak-builder)
 flatpak:
-	flatpak-builder --force-clean build-flatpak packaging/linux/dev.tensiply.orbit.flatpak.yml
-	flatpak build-bundle $(HOME)/.local/share/flatpak/repo orbit.flatpak dev.tensiply.orbit
+	flatpak-builder --force-clean build-flatpak packaging/linux/com.tensiply.orbit-desktop.flatpak.yml
+	flatpak build-bundle $(HOME)/.local/share/flatpak/repo orbit-desktop.flatpak com.tensiply.orbit-desktop
 
 ## Build Snap (requires snapcraft + LXD/multipass)
 snap:

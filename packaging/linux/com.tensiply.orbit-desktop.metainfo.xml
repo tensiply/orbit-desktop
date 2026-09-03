@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <component type="desktop-application">
-  <id>dev.tensiply.orbit</id>
+  <id>com.tensiply.orbit-desktop</id>
   <metadata_license>MIT</metadata_license>
   <project_license>MIT</project_license>
-  <name>Orbit</name>
+  <name>Orbit Desktop</name>
   <summary>AI development toolkit — scope-aware, daemon-based, multi-engine</summary>
   <description>
     <p>
@@ -22,9 +22,9 @@
       <li>Secrets management via OS keychain</li>
     </ul>
   </description>
-  <launchable type="desktop-id">dev.tensiply.orbit.desktop</launchable>
-  <url type="homepage">https://tensiply.dev/orbit</url>
-  <url type="bugtracker">https://github.com/eloircorona/orbit/issues</url>
+  <launchable type="desktop-id">com.tensiply.orbit-desktop.desktop</launchable>
+  <url type="homepage">https://tensiply.com/orbit-desktop</url>
+  <url type="bugtracker">https://github.com/eloircorona/orbit-desktop/issues</url>
   <categories>
     <category>Development</category>
     <category>IDE</category>
@@ -39,7 +39,7 @@
     <keyword>terminal</keyword>
   </keywords>
   <provides>
-    <binary>orbit</binary>
+    <binary>orbit-desktop</binary>
   </provides>
   <content_rating type="oars-1.1"/>
 </component>

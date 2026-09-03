@@ -24,7 +24,7 @@ architectures:
 apps:
   orbit-desktop:
     command: bin/orbit-desktop
-    desktop: share/applications/dev.tensiply.orbit.desktop
+    desktop: share/applications/com.tensiply.orbit-desktop.desktop
     extensions: [gnome]
     plugs:
       - home
@@ -54,9 +54,9 @@ parts:
       cd $CRAFT_PART_SRC/../ui && npm ci && npm run build
       craftctl default
       install -Dm755 target/release/orbit-desktop $CRAFT_PART_INSTALL/bin/orbit-desktop
-      install -Dm644 $CRAFT_PART_SRC/../packaging/linux/dev.tensiply.orbit.desktop \
-        $CRAFT_PART_INSTALL/share/applications/dev.tensiply.orbit.desktop
+      install -Dm644 $CRAFT_PART_SRC/../packaging/linux/com.tensiply.orbit-desktop.desktop \
+        $CRAFT_PART_INSTALL/share/applications/com.tensiply.orbit-desktop.desktop
       install -Dm644 $CRAFT_PART_SRC/../src-tauri/icons/128x128.png \
-        $CRAFT_PART_INSTALL/share/icons/hicolor/128x128/apps/dev.tensiply.orbit.png
+        $CRAFT_PART_INSTALL/share/icons/hicolor/128x128/apps/com.tensiply.orbit-desktop.png
       install -Dm644 $CRAFT_PART_SRC/../src-tauri/icons/256x256.png \
-        $CRAFT_PART_INSTALL/share/icons/hicolor/256x256/apps/dev.tensiply.orbit.png
+        $CRAFT_PART_INSTALL/share/icons/hicolor/256x256/apps/com.tensiply.orbit-desktop.png

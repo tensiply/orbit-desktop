@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Bug Fixes
+
+- **Bundle** — Product renamed from "Orbit" to "Orbit Desktop" across the bundle name, window title, and Linux launcher entry, so installers and desktop entries no longer collide with the Orbit CLI.
+- **App identifier** — Reverse-DNS identifier changed from `dev.tensiply.orbit` to `com.tensiply.orbit-desktop`: correct TLD for `tensiply.com` and reserves the `com.tensiply.orbit-*` namespace for the product family (orbit, orbit-desktop, orbit-mobile). Existing installs do not upgrade in place — the new identifier is treated as a distinct app.
+- **Packaging** — Fixed Flatpak/Snap referencing a non-existent desktop-entry source file, the Flatpak launch command (`orbit` → `orbit-desktop` binary), and the AppStream `<binary>` and homepage metadata.
+
+[0.2.1]: https://github.com/tensiply/orbit-desktop/releases/tag/v0.2.1
+
 ## [0.2.0] — 2026-09-03
 
 ### Features
