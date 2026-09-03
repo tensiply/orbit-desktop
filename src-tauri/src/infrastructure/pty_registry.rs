@@ -28,7 +28,9 @@ impl Default for PtyRegistry {
 
 impl PtyRegistry {
     pub fn new() -> Self {
-        Self { map: Arc::new(Mutex::new(HashMap::new())) }
+        Self {
+            map: Arc::new(Mutex::new(HashMap::new())),
+        }
     }
 
     /// Store a newly created handle. Called by the pty_open command after spawning the child.
@@ -51,7 +53,12 @@ impl PtyRepository for PtyRegistry {
         if let Some(handle) = map.get(tab_id) {
             handle
                 .master
-                .resize(PtySize { rows, cols, pixel_width: 0, pixel_height: 0 })
+                .resize(PtySize {
+                    rows,
+                    cols,
+                    pixel_width: 0,
+                    pixel_height: 0,
+                })
                 .map_err(|e| DomainError::Other(e.to_string()))?;
         }
         Ok(())

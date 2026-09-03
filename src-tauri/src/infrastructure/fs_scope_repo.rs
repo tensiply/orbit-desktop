@@ -46,11 +46,8 @@ impl ScopeRepository for FsScopeRepo {
                     let repositories = repo_names
                         .into_iter()
                         .map(|repo| {
-                            let work_dir = home
-                                .join(&ws.name)
-                                .join(&tenant)
-                                .join(&project)
-                                .join(&repo);
+                            let work_dir =
+                                home.join(&ws.name).join(&tenant).join(&project).join(&repo);
                             let description =
                                 self.read_description(&ws.ai_root, &tenant, &project, &repo);
                             ScopeTreeRepo {
@@ -61,13 +58,22 @@ impl ScopeRepository for FsScopeRepo {
                         })
                         .collect();
 
-                    projects.push(ScopeTreeProject { name: project, repositories });
+                    projects.push(ScopeTreeProject {
+                        name: project,
+                        repositories,
+                    });
                 }
 
-                tenants.push(ScopeTreeTenant { name: tenant, projects });
+                tenants.push(ScopeTreeTenant {
+                    name: tenant,
+                    projects,
+                });
             }
 
-            workspaces.push(ScopeTreeWorkspace { name: ws.name.clone(), tenants });
+            workspaces.push(ScopeTreeWorkspace {
+                name: ws.name.clone(),
+                tenants,
+            });
         }
 
         workspaces

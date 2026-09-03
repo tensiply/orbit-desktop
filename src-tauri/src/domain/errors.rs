@@ -21,14 +21,22 @@ impl std::fmt::Display for DomainError {
 
 impl std::error::Error for DomainError {
     fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
-        if let Self::Io(e) = self { Some(e) } else { None }
+        if let Self::Io(e) = self {
+            Some(e)
+        } else {
+            None
+        }
     }
 }
 
 impl From<std::io::Error> for DomainError {
-    fn from(e: std::io::Error) -> Self { Self::Io(e) }
+    fn from(e: std::io::Error) -> Self {
+        Self::Io(e)
+    }
 }
 
 impl From<anyhow::Error> for DomainError {
-    fn from(e: anyhow::Error) -> Self { Self::Other(e.to_string()) }
+    fn from(e: anyhow::Error) -> Self {
+        Self::Other(e.to_string())
+    }
 }

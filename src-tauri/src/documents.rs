@@ -1,5 +1,5 @@
-use std::sync::Arc;
 use base64::{engine::general_purpose::STANDARD, Engine as _};
+use std::sync::Arc;
 use tauri::State;
 
 use crate::domain::{document::DocInfo, ports::document_store::DocumentStore};
@@ -57,7 +57,11 @@ pub fn document_import(
 #[tauri::command]
 pub fn document_reveal(path: String) -> Result<(), String> {
     let p = std::path::Path::new(&path);
-    let dir = if p.is_dir() { p.to_owned() } else { p.parent().unwrap_or(p).to_owned() };
+    let dir = if p.is_dir() {
+        p.to_owned()
+    } else {
+        p.parent().unwrap_or(p).to_owned()
+    };
     std::process::Command::new("xdg-open")
         .arg(&dir)
         .spawn()

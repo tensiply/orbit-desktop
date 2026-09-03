@@ -23,26 +23,17 @@ use std::sync::Arc;
 
 use command_recorder::CommandRecorder;
 use domain::ports::{
-    arch_catalog::ArchCatalogRepo,
-    document_store::DocumentStore,
-    folder_opener::FolderOpener,
-    harness_inspector::HarnessInspector,
-    plugin_repository::PluginRepository,
-    scope_repository::ScopeRepository,
-    session_title_reader::SessionTitleReader,
+    arch_catalog::ArchCatalogRepo, document_store::DocumentStore, folder_opener::FolderOpener,
+    harness_inspector::HarnessInspector, plugin_repository::PluginRepository,
+    scope_repository::ScopeRepository, session_title_reader::SessionTitleReader,
     workspace_repository::WorkspaceRepository,
 };
 use infrastructure::{
-    claude_session_title::ClaudeSessionTitleReader,
-    fs_arch_catalog::FsArchCatalog,
-    fs_document_store::FsDocumentStore,
-    fs_scope_repo::FsScopeRepo,
-    orbit_engine_harness::OrbitEngineHarness,
-    orbit_ipc::OrbitIpcClient,
-    orbit_plugin_repo::OrbitPluginRepo,
-    orbit_workspace_repo::OrbitWorkspaceRepo,
-    pty_registry::PtyRegistry,
-    xdg_folder_opener::XdgFolderOpener,
+    claude_session_title::ClaudeSessionTitleReader, fs_arch_catalog::FsArchCatalog,
+    fs_document_store::FsDocumentStore, fs_scope_repo::FsScopeRepo,
+    orbit_engine_harness::OrbitEngineHarness, orbit_ipc::OrbitIpcClient,
+    orbit_plugin_repo::OrbitPluginRepo, orbit_workspace_repo::OrbitWorkspaceRepo,
+    pty_registry::PtyRegistry, xdg_folder_opener::XdgFolderOpener,
 };
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt, Layer};
 

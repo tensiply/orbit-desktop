@@ -1,7 +1,10 @@
 use std::sync::Arc;
 use tauri::State;
 
-use crate::domain::{ports::folder_opener::FolderOpener, ports::scope_repository::ScopeRepository, scope::ScopeTreeWorkspace};
+use crate::domain::{
+    ports::folder_opener::FolderOpener, ports::scope_repository::ScopeRepository,
+    scope::ScopeTreeWorkspace,
+};
 
 #[tauri::command]
 pub fn scope_tree(repo: State<'_, Arc<dyn ScopeRepository>>) -> Vec<ScopeTreeWorkspace> {

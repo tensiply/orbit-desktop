@@ -5,7 +5,9 @@ use crate::domain::plugin::PluginInfo;
 use crate::domain::ports::plugin_repository::PluginRepository;
 
 #[tauri::command]
-pub async fn plugin_list(repo: State<'_, Arc<dyn PluginRepository>>) -> Result<Vec<PluginInfo>, String> {
+pub async fn plugin_list(
+    repo: State<'_, Arc<dyn PluginRepository>>,
+) -> Result<Vec<PluginInfo>, String> {
     let repo = Arc::clone(&*repo);
     tokio::task::spawn_blocking(move || repo.list())
         .await

@@ -48,7 +48,11 @@ pub async fn cli_check() -> Result<CliInfo, String> {
     let path = which_binary("orbit").await;
 
     let Some(path) = path else {
-        return Ok(CliInfo { installed: false, version: None, path: None });
+        return Ok(CliInfo {
+            installed: false,
+            version: None,
+            path: None,
+        });
     };
 
     let version = Command::new(&path)
@@ -58,9 +62,13 @@ pub async fn cli_check() -> Result<CliInfo, String> {
         .ok()
         .and_then(|o| {
             if o.status.success() {
-                String::from_utf8(o.stdout).ok().map(|s| s.trim().to_string())
+                String::from_utf8(o.stdout)
+                    .ok()
+                    .map(|s| s.trim().to_string())
             } else {
-                String::from_utf8(o.stderr).ok().map(|s| s.trim().to_string())
+                String::from_utf8(o.stderr)
+                    .ok()
+                    .map(|s| s.trim().to_string())
             }
         });
 
@@ -90,7 +98,10 @@ pub async fn setup_check(
 ) -> Result<SetupStatus, String> {
     let cli_installed = which_binary("orbit").await.is_some();
     let has_workspaces = !workspace_repo.list().is_empty();
-    Ok(SetupStatus { cli_installed, has_workspaces })
+    Ok(SetupStatus {
+        cli_installed,
+        has_workspaces,
+    })
 }
 
 /// Run `orbit workspace add <path> [--name <name>]` and stream output via the
@@ -152,9 +163,12 @@ pub async fn check_updates(app: AppHandle) -> Result<UpdateCheck, String> {
 
     let client = build_client(60)?;
 
-    let cli_latest = fetch_latest_github_release(&client, "tensiply", "orbit").await.ok();
-    let desktop_latest =
-        fetch_latest_github_release(&client, "tensiply", "orbit-desktop").await.ok();
+    let cli_latest = fetch_latest_github_release(&client, "tensiply", "orbit")
+        .await
+        .ok();
+    let desktop_latest = fetch_latest_github_release(&client, "tensiply", "orbit-desktop")
+        .await
+        .ok();
 
     let cli_has_update = match (&cli_current, &cli_latest) {
         (Some(cur), Some(lat)) => is_older(cur, lat),
@@ -200,8 +214,7 @@ async fn install_from_github(app: &AppHandle) -> Result<(), String> {
         .await
         .map_err(|e| format!("failed to fetch release info: {e}"))?;
     let tag = format!("v{version}");
-    let url =
-        format!("https://github.com/tensiply/orbit/releases/download/{tag}/{artifact}");
+    let url = format!("https://github.com/tensiply/orbit/releases/download/{tag}/{artifact}");
 
     emit(app, &format!("Downloading {artifact} ({tag})…"));
 
@@ -236,14 +249,19 @@ async fn install_from_github(app: &AppHandle) -> Result<(), String> {
         .await
         .map_err(|e| format!("download error: {e}"))?
     {
-        file.write_all(&chunk).await.map_err(|e| format!("write error: {e}"))?;
+        file.write_all(&chunk)
+            .await
+            .map_err(|e| format!("write error: {e}"))?;
         downloaded += chunk.len() as u64;
 
         if let Some(total) = content_length {
             let pct = downloaded * 100 / total;
             // Emit at most once per 5%
             if pct >= last_pct + 5 || pct == 100 {
-                emit(app, &format!("  {}% ({} / {} MB)", pct, mb(downloaded), mb(total)));
+                emit(
+                    app,
+                    &format!("  {}% ({} / {} MB)", pct, mb(downloaded), mb(total)),
+                );
                 last_pct = pct;
             }
         }
@@ -311,7 +329,10 @@ async fn install_via_brew(app: &AppHandle) -> Result<(), String> {
 
     let status = child.wait().await.map_err(|e| e.to_string())?;
     if !status.success() {
-        return Err(format!("brew exited with status {}", status.code().unwrap_or(-1)));
+        return Err(format!(
+            "brew exited with status {}",
+            status.code().unwrap_or(-1)
+        ));
     }
 
     Ok(())
@@ -319,10 +340,19 @@ async fn install_via_brew(app: &AppHandle) -> Result<(), String> {
 
 async fn install_via_cargo(app: &AppHandle) -> Result<(), String> {
     use std::process::Stdio;
-    emit(app, "Building orbit from source (this may take several minutes)…");
+    emit(
+        app,
+        "Building orbit from source (this may take several minutes)…",
+    );
 
     let mut child = Command::new("cargo")
-        .args(["install", "--git", "https://github.com/tensiply/orbit", "orbit", "--locked"])
+        .args([
+            "install",
+            "--git",
+            "https://github.com/tensiply/orbit",
+            "orbit",
+            "--locked",
+        ])
         .stdout(Stdio::piped())
         .stderr(Stdio::piped())
         .spawn()
@@ -345,7 +375,10 @@ async fn install_via_cargo(app: &AppHandle) -> Result<(), String> {
 
     let status = child.wait().await.map_err(|e| e.to_string())?;
     if !status.success() {
-        return Err(format!("cargo exited with status {}", status.code().unwrap_or(-1)));
+        return Err(format!(
+            "cargo exited with status {}",
+            status.code().unwrap_or(-1)
+        ));
     }
 
     Ok(())

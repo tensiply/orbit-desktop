@@ -118,18 +118,12 @@ async fn streamable_post(
     use axum::{body::Body, http::header, response::Response};
 
     let Ok(body_val) = serde_json::from_slice::<Value>(&body) else {
-        return Response::builder()
-            .status(400)
-            .body(Body::empty())
-            .unwrap();
+        return Response::builder().status(400).body(Body::empty()).unwrap();
     };
 
     // Notifications have no id — acknowledge with 202, no response body
     if body_val.get("id").is_none() {
-        return Response::builder()
-            .status(202)
-            .body(Body::empty())
-            .unwrap();
+        return Response::builder().status(202).body(Body::empty()).unwrap();
     }
 
     let result = handle_rpc(&state, &body_val).await;
@@ -152,15 +146,9 @@ async fn sse_handler(
 
     // Send the endpoint URL as the first SSE event
     let endpoint_url = format!("/message?sessionId={session_id}");
-    let _ = tx
-        .try_send(("endpoint".to_string(), endpoint_url))
-        .is_ok();
+    let _ = tx.try_send(("endpoint".to_string(), endpoint_url)).is_ok();
 
-    state
-        .sessions
-        .lock()
-        .await
-        .insert(session_id, tx);
+    state.sessions.lock().await.insert(session_id, tx);
 
     let stream = ReceiverStream::new(rx).map(|(event_type, data)| {
         Ok::<_, Infallible>(Event::default().event(event_type).data(data))
@@ -209,10 +197,7 @@ async fn message_handler(
 
 async fn handle_rpc(state: &ServerState, body: &Value) -> Value {
     let id = body.get("id").cloned().unwrap_or(Value::Null);
-    let method = body
-        .get("method")
-        .and_then(|m| m.as_str())
-        .unwrap_or("");
+    let method = body.get("method").and_then(|m| m.as_str()).unwrap_or("");
     let params = body.get("params").cloned().unwrap_or(json!({}));
 
     match method {
@@ -235,14 +220,8 @@ async fn handle_rpc(state: &ServerState, body: &Value) -> Value {
             "result": { "tools": tool_definitions() }
         }),
         "tools/call" => {
-            let name = params
-                .get("name")
-                .and_then(|n| n.as_str())
-                .unwrap_or("");
-            let args = params
-                .get("arguments")
-                .cloned()
-                .unwrap_or(json!({}));
+            let name = params.get("name").and_then(|n| n.as_str()).unwrap_or("");
+            let args = params.get("arguments").cloned().unwrap_or(json!({}));
             let result = call_tool(state, name, &args).await;
             let text = serde_json::to_string_pretty(&result).unwrap_or_default();
             json!({
@@ -416,8 +395,14 @@ async fn call_tool(state: &ServerState, name: &str, args: &Value) -> Value {
         },
 
         "notify" => {
-            let dismiss = args.get("dismiss").and_then(|v| v.as_bool()).unwrap_or(false);
-            let title = args.get("title").and_then(|v| v.as_str()).unwrap_or("Orbit");
+            let dismiss = args
+                .get("dismiss")
+                .and_then(|v| v.as_bool())
+                .unwrap_or(false);
+            let title = args
+                .get("title")
+                .and_then(|v| v.as_str())
+                .unwrap_or("Orbit");
             let payload = json!({
                 "dismiss": dismiss,
                 "title": title,
@@ -427,7 +412,9 @@ async fn call_tool(state: &ServerState, name: &str, args: &Value) -> Value {
                 "duration": args.get("duration").and_then(|v| v.as_u64()),
             });
             match state.app.emit("debug:notify", payload) {
-                Ok(_) => json!({ "ok": true, "event": "debug:notify", "dismiss": dismiss, "title": title }),
+                Ok(_) => {
+                    json!({ "ok": true, "event": "debug:notify", "dismiss": dismiss, "title": title })
+                }
                 Err(e) => json!({ "error": e.to_string() }),
             }
         }

@@ -2,7 +2,9 @@ use std::collections::HashMap;
 use std::path::PathBuf;
 
 use orbit_core::{
-    architecture::{catalog_root, delete_entity, load_catalog, save_entity, CatalogEntity, EntityKind},
+    architecture::{
+        catalog_root, delete_entity, load_catalog, save_entity, CatalogEntity, EntityKind,
+    },
     resolver::{self, ResolveArgs},
 };
 
@@ -22,7 +24,11 @@ fn to_dto(e: CatalogEntity) -> ArchEntityDto {
         .environments
         .as_ref()
         .and_then(|v| v.as_mapping())
-        .map(|m| m.keys().filter_map(|k| k.as_str().map(|s| s.to_lowercase())).collect())
+        .map(|m| {
+            m.keys()
+                .filter_map(|k| k.as_str().map(|s| s.to_lowercase()))
+                .collect()
+        })
         .unwrap_or_default();
 
     let environments = if env_keys.is_empty() {
@@ -69,7 +75,9 @@ impl ArchCatalogRepo for FsArchCatalog {
         })
         .map_err(|e| DomainError::Other(e.to_string()))?;
         let result = load_catalog(&scope.tenant_dir);
-        let catalog_path = catalog_root(&scope.tenant_dir).to_string_lossy().to_string();
+        let catalog_path = catalog_root(&scope.tenant_dir)
+            .to_string_lossy()
+            .to_string();
 
         let entities = result.entities.into_iter().map(to_dto).collect();
         let errors = result
@@ -158,7 +166,8 @@ impl ArchCatalogRepo for FsArchCatalog {
         if let Some(parent) = path.parent() {
             std::fs::create_dir_all(parent)?;
         }
-        let json = serde_json::to_string(&positions).map_err(|e| DomainError::Other(e.to_string()))?;
+        let json =
+            serde_json::to_string(&positions).map_err(|e| DomainError::Other(e.to_string()))?;
         std::fs::write(&path, json)?;
         Ok(())
     }

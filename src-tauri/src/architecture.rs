@@ -2,10 +2,7 @@ use std::collections::HashMap;
 use std::sync::Arc;
 use tauri::State;
 
-use crate::domain::{
-    architecture::SaveEntityArgs,
-    ports::arch_catalog::ArchCatalogRepo,
-};
+use crate::domain::{architecture::SaveEntityArgs, ports::arch_catalog::ArchCatalogRepo};
 
 #[tauri::command]
 pub fn architecture_load(

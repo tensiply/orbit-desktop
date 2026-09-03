@@ -87,14 +87,24 @@ pub async fn pty_open(
                         let data = String::from_utf8_lossy(&buf[..n]).into_owned();
                         let _ = app_reader.emit(
                             "pty-data",
-                            PtyDataEvent { tab_id: tid_reader.clone(), data },
+                            PtyDataEvent {
+                                tab_id: tid_reader.clone(),
+                                data,
+                            },
                         );
                     }
                 }
             }
         });
 
-        reg.insert(tid, PtyHandle { writer, master: pair.master, _child: child });
+        reg.insert(
+            tid,
+            PtyHandle {
+                writer,
+                master: pair.master,
+                _child: child,
+            },
+        );
         Ok(())
     })
     .await
@@ -112,7 +122,8 @@ pub async fn pty_write(
 ) -> Result<(), String> {
     let reg = registry.inner().clone();
     tokio::task::spawn_blocking(move || {
-        reg.write(&tab_id, data.as_bytes()).map_err(|e| e.to_string())
+        reg.write(&tab_id, data.as_bytes())
+            .map_err(|e| e.to_string())
     })
     .await
     .map_err(|e| e.to_string())?
@@ -126,18 +137,13 @@ pub async fn pty_resize(
     rows: u16,
 ) -> Result<(), String> {
     let reg = registry.inner().clone();
-    tokio::task::spawn_blocking(move || {
-        reg.resize(&tab_id, cols, rows).map_err(|e| e.to_string())
-    })
-    .await
-    .map_err(|e| e.to_string())?
+    tokio::task::spawn_blocking(move || reg.resize(&tab_id, cols, rows).map_err(|e| e.to_string()))
+        .await
+        .map_err(|e| e.to_string())?
 }
 
 #[tauri::command]
-pub async fn pty_close(
-    registry: State<'_, PtyRegistry>,
-    tab_id: String,
-) -> Result<(), String> {
+pub async fn pty_close(registry: State<'_, PtyRegistry>, tab_id: String) -> Result<(), String> {
     let reg = registry.inner().clone();
     tokio::task::spawn_blocking(move || {
         reg.close(&tab_id);

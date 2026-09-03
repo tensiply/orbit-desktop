@@ -1,5 +1,5 @@
-use orbit_core::svg::{load_all_entries_global, SvgEntry};
 use orbit_core::data_paths;
+use orbit_core::svg::{load_all_entries_global, SvgEntry};
 
 use crate::domain::svg::SvgInfo;
 
@@ -30,7 +30,9 @@ pub fn svg_list() -> Vec<SvgInfo> {
 #[tauri::command]
 pub fn svg_delete(id: String, workspace: String) -> Result<(), String> {
     let entries = load_all_entries_global();
-    let entry = entries.iter().find(|e| e.id == id)
+    let entry = entries
+        .iter()
+        .find(|e| e.id == id)
         .ok_or_else(|| format!("svg {id} not found"))?;
     let path = entry.output_path.clone();
 
@@ -45,14 +47,14 @@ pub fn svg_delete(id: String, workspace: String) -> Result<(), String> {
 #[tauri::command]
 pub fn svg_archive(id: String, workspace: String) -> Result<(), String> {
     let entries = load_all_entries_global();
-    let entry = entries.iter().find(|e| e.id == id)
+    let entry = entries
+        .iter()
+        .find(|e| e.id == id)
         .ok_or_else(|| format!("svg {id} not found"))?;
     let src = entry.output_path.clone();
 
     if src.exists() {
-        let archived_dir = src.parent()
-            .map(|p| p.join("archived"))
-            .unwrap_or_default();
+        let archived_dir = src.parent().map(|p| p.join("archived")).unwrap_or_default();
         std::fs::create_dir_all(&archived_dir).map_err(|e| e.to_string())?;
         let dst = archived_dir.join(src.file_name().unwrap_or_default());
         std::fs::rename(&src, &dst).map_err(|e| e.to_string())?;
@@ -65,7 +67,11 @@ pub fn svg_archive(id: String, workspace: String) -> Result<(), String> {
 #[tauri::command]
 pub fn svg_reveal(path: String) -> Result<(), String> {
     let p = std::path::Path::new(&path);
-    let dir = if p.is_dir() { p.to_owned() } else { p.parent().unwrap_or(p).to_owned() };
+    let dir = if p.is_dir() {
+        p.to_owned()
+    } else {
+        p.parent().unwrap_or(p).to_owned()
+    };
     std::process::Command::new("xdg-open")
         .arg(&dir)
         .spawn()

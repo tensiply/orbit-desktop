@@ -11,16 +11,16 @@ use crate::infrastructure::orbit_ipc::OrbitIpcClient;
 
 fn to_dto(s: orbit_core::session::Session) -> SessionDto {
     SessionDto {
-        id:           s.id,
-        pid:          s.pid,
-        engine:       s.engine,
-        tenant:       s.tenant,
-        project:      s.project,
-        repository:   s.repository,
-        work_dir:     s.work_dir.to_string_lossy().into_owned(),
-        started_at:   s.started_at,
-        global_mode:  s.global_mode,
-        is_history:   s.is_history,
+        id: s.id,
+        pid: s.pid,
+        engine: s.engine,
+        tenant: s.tenant,
+        project: s.project,
+        repository: s.repository,
+        work_dir: s.work_dir.to_string_lossy().into_owned(),
+        started_at: s.started_at,
+        global_mode: s.global_mode,
+        is_history: s.is_history,
         tmux_session: s.tmux_session,
     }
 }

@@ -1,8 +1,4 @@
-use crate::domain::{
-    document::DocInfo,
-    errors::DomainError,
-    ports::document_store::DocumentStore,
-};
+use crate::domain::{document::DocInfo, errors::DomainError, ports::document_store::DocumentStore};
 use orbit_core::data_paths::documents_scope_dir;
 use orbit_core::document::{
     load_all_entries_global, next_id, now_secs_pub, remove_entry, save_entry, DocumentEntry,
@@ -126,8 +122,7 @@ impl DocumentStore for FsDocumentStore {
             .ok_or_else(|| DomainError::NotFound(format!("document {id}")))?;
         let src = entry.output_path.clone();
         if src.exists() {
-            let archived_dir =
-                src.parent().map(|p| p.join("archived")).unwrap_or_default();
+            let archived_dir = src.parent().map(|p| p.join("archived")).unwrap_or_default();
             std::fs::create_dir_all(&archived_dir).map_err(DomainError::from)?;
             let dst = archived_dir.join(src.file_name().unwrap_or_default());
             std::fs::rename(&src, &dst).map_err(DomainError::from)?;

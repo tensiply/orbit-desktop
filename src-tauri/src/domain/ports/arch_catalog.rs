@@ -15,10 +15,7 @@ pub trait ArchCatalogRepo: Send + Sync {
         kind_folder: &str,
         id: &str,
     ) -> Result<(), DomainError>;
-    fn load_layout(
-        &self,
-        catalog_path: &str,
-    ) -> Result<HashMap<String, [f64; 2]>, DomainError>;
+    fn load_layout(&self, catalog_path: &str) -> Result<HashMap<String, [f64; 2]>, DomainError>;
     fn save_layout(
         &self,
         catalog_path: &str,

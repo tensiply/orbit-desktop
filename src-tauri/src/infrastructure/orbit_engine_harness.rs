@@ -60,21 +60,19 @@ impl HarnessInspector for OrbitEngineHarness {
                     .unwrap_or_default();
                 let hook_state = orbit_core::engine_hook::EngineHookState::load();
                 let catalog = orbit_core::engine_hook::load_all();
-                let hooks_suffix = if orbit_engine::launcher::engine_hooks::build_settings(
-                    &hook_state,
-                    &catalog,
-                )
-                .is_some()
-                {
-                    let hooks_path = orbit_engine::launcher::runtime::runtime_dir_for_slug(
-                        &scope,
-                        Engine::Claude.as_str(),
-                    )
-                    .join("claude-hooks-settings.json");
-                    format!(" --settings {}", shorten_home(&home, &hooks_path))
-                } else {
-                    String::new()
-                };
+                let hooks_suffix =
+                    if orbit_engine::launcher::engine_hooks::build_settings(&hook_state, &catalog)
+                        .is_some()
+                    {
+                        let hooks_path = orbit_engine::launcher::runtime::runtime_dir_for_slug(
+                            &scope,
+                            Engine::Claude.as_str(),
+                        )
+                        .join("claude-hooks-settings.json");
+                        format!(" --settings {}", shorten_home(&home, &hooks_path))
+                    } else {
+                        String::new()
+                    };
                 format!(
                     "claude --mcp-config {}{}{}",
                     shorten_home(&home, &config_file),
@@ -127,7 +125,11 @@ impl HarnessInspector for OrbitEngineHarness {
                 let ctx = p.context.as_ref()?;
                 let prompt_preview = ctx.prompt.as_ref().map(|s| {
                     let max = 120;
-                    if s.len() > max { format!("{}…", &s[..max]) } else { s.clone() }
+                    if s.len() > max {
+                        format!("{}…", &s[..max])
+                    } else {
+                        s.clone()
+                    }
                 });
                 Some(HarnessPluginContext {
                     name: p.name.clone(),
@@ -138,9 +140,21 @@ impl HarnessInspector for OrbitEngineHarness {
             .collect();
 
         let activity_scope = orbit_core::activity::scope_key(
-            if scope.tenant.is_empty() { None } else { Some(scope.tenant.as_str()) },
-            if scope.project.is_empty() { None } else { Some(scope.project.as_str()) },
-            if scope.repository.is_empty() { None } else { Some(scope.repository.as_str()) },
+            if scope.tenant.is_empty() {
+                None
+            } else {
+                Some(scope.tenant.as_str())
+            },
+            if scope.project.is_empty() {
+                None
+            } else {
+                Some(scope.project.as_str())
+            },
+            if scope.repository.is_empty() {
+                None
+            } else {
+                Some(scope.repository.as_str())
+            },
         );
         let activity_preview: Vec<String> = if activity_scope.is_empty() {
             vec![]
