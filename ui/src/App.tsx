@@ -26,7 +26,9 @@ import { useSidebarResize } from './hooks/useSidebarResize'
 import { useSessionPoller } from './hooks/useSessionPoller'
 import { useSessionActivity } from './hooks/useSessionActivity'
 import { useGlobalShortcuts } from './hooks/useGlobalShortcuts'
+import { useSessionNotifications } from './hooks/useSessionNotifications'
 import { TooltipProvider } from './components/ui/tooltip'
+import { Toaster } from './components/ui/sonner'
 import {
   ContextMenu,
   ContextMenuContent,
@@ -130,9 +132,11 @@ export default function App() {
   useSessionPoller(5000)
   useSessionActivity()
   useGlobalShortcuts()
+  useSessionNotifications()
 
   return (
     <TooltipProvider delayDuration={600}>
+      <Toaster />
       <LaunchPickerModal />
       <SetupWizardModal />
       <ContextMenu>

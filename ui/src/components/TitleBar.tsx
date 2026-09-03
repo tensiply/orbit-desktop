@@ -11,6 +11,7 @@ import {
   DropdownMenuTrigger,
 } from './ui/dropdown-menu'
 import { Button } from './ui/button'
+import { NotificationsButton } from './NotificationsButton'
 import { cn } from '@/lib/utils'
 
 const win = getCurrentWindow()
@@ -127,10 +128,10 @@ export function TitleBar() {
     >
       <WorkspacePicker />
 
-      {/* Separator before window controls */}
-      <div className="h-4 w-px bg-foreground/10 mx-1 shrink-0" />
+      {/* Notifications history — beside the workspace selector */}
+      <NotificationsButton />
 
-      <div data-orbit-zone="orbit.desktop.principal.titlebar.controls" className="flex items-center gap-0.5 px-2">
+      <div data-orbit-zone="orbit.desktop.principal.titlebar.controls" className="flex items-center gap-0.5 pl-3 pr-2">
         <Button
           variant="ghost"
           size="icon"

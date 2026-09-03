@@ -160,17 +160,17 @@ pub fn run() {
             // Dev tools (no-op in release builds)
             open_devtools,
         ])
-        .setup(|_app| {
+        .setup(|app| {
             #[cfg(feature = "dev")]
             {
                 use tauri::Manager;
-                if let Some(win) = _app.get_webview_window("main") {
+                if let Some(win) = app.get_webview_window("main") {
                     let _ = win.set_title("Orbit Dev");
                 }
             }
 
-            // Start debug MCP server
-            tauri::async_runtime::spawn(debug_server::run(buffer_for_server));
+            // Start debug MCP server (needs an AppHandle to emit events into the webview)
+            tauri::async_runtime::spawn(debug_server::run(buffer_for_server, app.handle().clone()));
 
             // Auto-start daemon on launch
             tauri::async_runtime::spawn(async move {

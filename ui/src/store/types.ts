@@ -10,5 +10,6 @@ import type { ScopeSlice } from './slices/scope'
 import type { ArchDrawerSlice } from './slices/archDrawer'
 import type { HarnessDrawerSlice } from './slices/harnessDrawer'
 import type { UpdatesSlice } from './slices/updates'
+import type { NotificationsSlice } from './slices/notifications'
 
-export type AppStore = TabsSlice & SessionsSlice & SessionStatusSlice & UiSlice & ShortcutsSlice & SettingsSlice & DocumentsSlice & TasksSlice & ScopeSlice & ArchDrawerSlice & HarnessDrawerSlice & UpdatesSlice
+export type AppStore = TabsSlice & SessionsSlice & SessionStatusSlice & UiSlice & ShortcutsSlice & SettingsSlice & DocumentsSlice & TasksSlice & ScopeSlice & ArchDrawerSlice & HarnessDrawerSlice & UpdatesSlice & NotificationsSlice

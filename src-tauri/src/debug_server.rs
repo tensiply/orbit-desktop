@@ -13,6 +13,7 @@ use std::{
     sync::Arc,
     time::{Duration, SystemTime, UNIX_EPOCH},
 };
+use tauri::{AppHandle, Emitter};
 use tokio::sync::{mpsc, Mutex};
 use tokio_stream::{wrappers::ReceiverStream, StreamExt};
 use uuid::Uuid;
@@ -29,9 +30,12 @@ type SseMsg = (String, String);
 struct ServerState {
     buffer: SharedDebugBuffer,
     sessions: Arc<Mutex<HashMap<String, mpsc::Sender<SseMsg>>>>,
+    /// Handle to the running app, used to emit events into the webview
+    /// (e.g. `debug:notify` for MCP-triggered toast notifications).
+    app: AppHandle,
 }
 
-pub async fn run(buffer: SharedDebugBuffer) {
+pub async fn run(buffer: SharedDebugBuffer, app: AppHandle) {
     let port = match bind_port().await {
         Some(p) => p,
         None => {
@@ -47,6 +51,7 @@ pub async fn run(buffer: SharedDebugBuffer) {
     let state = ServerState {
         buffer,
         sessions: Arc::new(Mutex::new(HashMap::new())),
+        app,
     };
 
     let app = Router::new()
@@ -316,6 +321,43 @@ fn tool_definitions() -> Value {
                 "type": "object",
                 "properties": {}
             }
+        },
+        {
+            "name": "notify",
+            "description": "Fire a toast notification in the running orbit-desktop UI, and optionally a native OS notification. Handy for testing the notification system or leaving a toast on screen while iterating on its design.",
+            "inputSchema": {
+                "type": "object",
+                "properties": {
+                    "title": {
+                        "type": "string",
+                        "description": "Toast title / heading"
+                    },
+                    "description": {
+                        "type": "string",
+                        "description": "Optional secondary line"
+                    },
+                    "level": {
+                        "type": "string",
+                        "description": "Visual style / severity (default: message)",
+                        "enum": ["success", "error", "info", "warning", "message"],
+                        "default": "message"
+                    },
+                    "native": {
+                        "type": "boolean",
+                        "description": "Also send a native OS notification, regardless of window focus (default: false)",
+                        "default": false
+                    },
+                    "duration": {
+                        "type": "integer",
+                        "description": "Milliseconds before auto-dismiss. Use 0 to keep it on screen until dismissed (for design work)."
+                    },
+                    "dismiss": {
+                        "type": "boolean",
+                        "description": "Dismiss all currently visible toasts instead of showing a new one (default: false)",
+                        "default": false
+                    }
+                }
+            }
         }
     ])
 }
@@ -372,6 +414,23 @@ async fn call_tool(state: &ServerState, name: &str, args: &Value) -> Value {
             Ok(sessions) => json!(sessions),
             Err(e) => json!({ "error": e.to_string() }),
         },
+
+        "notify" => {
+            let dismiss = args.get("dismiss").and_then(|v| v.as_bool()).unwrap_or(false);
+            let title = args.get("title").and_then(|v| v.as_str()).unwrap_or("Orbit");
+            let payload = json!({
+                "dismiss": dismiss,
+                "title": title,
+                "description": args.get("description").and_then(|v| v.as_str()),
+                "level": args.get("level").and_then(|v| v.as_str()).unwrap_or("message"),
+                "native": args.get("native").and_then(|v| v.as_bool()).unwrap_or(false),
+                "duration": args.get("duration").and_then(|v| v.as_u64()),
+            });
+            match state.app.emit("debug:notify", payload) {
+                Ok(_) => json!({ "ok": true, "event": "debug:notify", "dismiss": dismiss, "title": title }),
+                Err(e) => json!({ "error": e.to_string() }),
+            }
+        }
 
         _ => json!({ "error": format!("unknown tool: {name}") }),
     }
