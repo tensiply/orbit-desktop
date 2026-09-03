@@ -24,11 +24,7 @@ fn to_dto(e: CatalogEntity) -> ArchEntityDto {
         .environments
         .as_ref()
         .and_then(|v| v.as_mapping())
-        .map(|m| {
-            m.keys()
-                .filter_map(|k| k.as_str().map(|s| s.to_lowercase()))
-                .collect()
-        })
+        .map(|m| m.keys().map(|k| k.as_str().to_lowercase()).collect())
         .unwrap_or_default();
 
     let environments = if env_keys.is_empty() {
