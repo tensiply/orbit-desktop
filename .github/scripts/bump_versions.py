@@ -1,6 +1,10 @@
 """
 Bump version in CHANGELOG.md, ui/package.json, src-tauri/tauri.conf.json,
 and src-tauri/Cargo.toml to the version passed via the VERSION env var.
+
+When ORBIT_CLI_VERSION is set (resolved by the workflow to the latest orbit CLI
+release, or an explicit override), also pin the bundled sidecar in the
+ORBIT_CLI_VERSION file so a desktop release never drifts from the CLI it ships.
 """
 import json
 import os
@@ -53,3 +57,12 @@ with open("src-tauri/Cargo.toml", "w") as f:
     f.write(cargo)
 
 print(f"Bumped all versions to {version}")
+
+# ── ORBIT_CLI_VERSION (bundled orbit CLI sidecar pin) ─────────────────────────
+orbit_cli = os.environ.get("ORBIT_CLI_VERSION", "").strip()
+if orbit_cli:
+    if not orbit_cli.startswith("v"):
+        orbit_cli = "v" + orbit_cli
+    with open("ORBIT_CLI_VERSION", "w") as f:
+        f.write(orbit_cli + "\n")
+    print(f"Pinned bundled orbit CLI to {orbit_cli}")

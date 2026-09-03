@@ -22,6 +22,11 @@ on:
         required: false
         type: boolean
         default: true
+      orbit_cli_version:
+        description: "orbit CLI to bundle (e.g. v0.21.0). Leave empty to pin the latest orbit release."
+        required: false
+        type: string
+        default: ""
 
 jobs:
   # ── Job 1: CI gate ────────────────────────────────────────────────────────────
@@ -111,6 +116,23 @@ jobs:
           ref: main
           token: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: Resolve orbit CLI version to bundle
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          OVERRIDE: ${{ inputs.orbit_cli_version }}
+        run: |
+          if [ -n "$OVERRIDE" ]; then
+            VER="$OVERRIDE"
+          else
+            VER=$(gh api repos/${{ github.repository_owner }}/orbit/releases/latest -q .tag_name)
+          fi
+          if [ -z "$VER" ]; then
+            echo "::error::could not resolve orbit CLI version to bundle"
+            exit 1
+          fi
+          echo "ORBIT_CLI_VERSION=$VER" >> "$GITHUB_ENV"
+          echo "Bundling orbit CLI $VER"
+
       - name: Bump versions and update CHANGELOG
         env:
           VERSION: ${{ inputs.version }}
@@ -124,7 +146,7 @@ jobs:
         run: |
           git config user.name  "Eloir Corona"
           git config user.email "eloircoronah@outlook.com"
-          git add CHANGELOG.md ui/package.json src-tauri/tauri.conf.json src-tauri/Cargo.toml Cargo.lock
+          git add CHANGELOG.md ui/package.json src-tauri/tauri.conf.json src-tauri/Cargo.toml Cargo.lock ORBIT_CLI_VERSION
           git commit -m "chore: release v${VERSION}"
           git tag "v${VERSION}"
           git push --atomic origin main "v${VERSION}"
