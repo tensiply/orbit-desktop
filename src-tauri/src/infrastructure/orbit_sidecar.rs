@@ -20,7 +20,15 @@ pub fn sidecar_dir() -> Option<PathBuf> {
 }
 
 /// The `orbit` program to invoke: the bundled sidecar when present, otherwise
-/// `orbit` resolved from PATH (dev builds / unbundled installs).
+/// resolved from PATH. Dev builds have no bundled sidecar and target the dev
+/// CLI (`dev-orbit`) so the app drives the same isolated ~/.orbit-dev daemon it
+/// set up; stable builds fall back to `orbit`.
 pub fn orbit_program() -> PathBuf {
-    sidecar_path().unwrap_or_else(|| PathBuf::from("orbit"))
+    sidecar_path().unwrap_or_else(|| {
+        if cfg!(feature = "dev") {
+            PathBuf::from("dev-orbit")
+        } else {
+            PathBuf::from("orbit")
+        }
+    })
 }

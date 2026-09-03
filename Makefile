@@ -1,12 +1,23 @@
 INSTALL_DIR ?= $(HOME)/.local/bin
 TARGET_DIR  := target/release
+DEV_TARGET  := target-dev
+DEV_LINK    := dev-orbit-desktop
 SRC_TAURI   := src-tauri
 ICONS_DIR   := src-tauri/icons
 
-.PHONY: dev build bundle fetch-orbit install uninstall clean dev-local icons windows-assets flatpak snap help
+.PHONY: dev check-dev-orbit build bundle fetch-orbit sync-orbit-cli install uninstall dev-build dev-install dev-uninstall clean dev-local icons windows-assets flatpak snap help
 
-## Start dev mode with hot-reload (UI + Tauri backend) — runs as "Orbit Dev" with separate data dir
-dev:
+## Fail early if dev-orbit is missing — the dev app spawns it to start the daemon
+check-dev-orbit:
+	@command -v dev-orbit >/dev/null 2>&1 || { \
+	  echo "error: dev-orbit not found on PATH."; \
+	  echo "  The dev app starts its daemon via 'dev-orbit'. Install it first:"; \
+	  echo "    cd ../orbit && make dev-install"; \
+	  exit 1; \
+	}
+
+## Start dev mode with hot-reload (UI + Tauri backend) — "Orbit Desktop Dev", isolated ~/.orbit-dev daemon
+dev: check-dev-orbit
 	cd ui && npm install
 	npx @tauri-apps/cli@2 dev --config src-tauri/tauri.dev.conf.json --features dev
 
@@ -14,6 +25,32 @@ dev:
 build:
 	cd ui && npm install
 	npx @tauri-apps/cli@2 build --no-bundle
+
+## Build a standalone dev binary ("Orbit Desktop Dev") into a separate target dir
+## so it never overwrites the stable build at target/release/orbit-desktop.
+dev-build:
+	cd ui && npm install
+	CARGO_TARGET_DIR=$(CURDIR)/$(DEV_TARGET) npx @tauri-apps/cli@2 build --no-bundle --features dev -c src-tauri/tauri.dev.conf.json
+
+## Symlink dev-orbit-desktop -> local dev build. Uses the dev-orbit CLI against
+## the isolated ~/.orbit-dev daemon. Rebuild with `make dev-build` to update.
+dev-install: check-dev-orbit dev-build
+	@mkdir -p $(INSTALL_DIR)
+	ln -sf $(CURDIR)/$(DEV_TARGET)/release/orbit-desktop $(INSTALL_DIR)/$(DEV_LINK)
+	@echo "Linked $(INSTALL_DIR)/$(DEV_LINK) -> $(CURDIR)/$(DEV_TARGET)/release/orbit-desktop"
+
+## Remove the dev symlink
+dev-uninstall:
+	rm -f $(INSTALL_DIR)/$(DEV_LINK)
+	@echo "Removed $(INSTALL_DIR)/$(DEV_LINK)"
+
+## Pin ORBIT_CLI_VERSION to the latest orbit CLI release (default) or ORBIT_VER=vX.Y.Z
+sync-orbit-cli:
+	@VER="$(ORBIT_VER)"; \
+	if [ -z "$$VER" ]; then VER=$$(gh api repos/tensiply/orbit/releases/latest -q .tag_name); fi; \
+	if [ -z "$$VER" ]; then echo "could not resolve orbit CLI version"; exit 1; fi; \
+	echo "$$VER" > ORBIT_CLI_VERSION; \
+	echo "Pinned bundled orbit CLI to $$VER"
 
 ## Fetch the pinned orbit CLI (ORBIT_CLI_VERSION) as the bundle sidecar for the host
 fetch-orbit:
