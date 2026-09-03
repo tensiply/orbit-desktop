@@ -7,6 +7,33 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.2.0] — 2026-09-03
+
+### Features
+
+- **Tasks view** — New Tasks module with sidebar list, detail panel, and session integration, plus a board view offering backlog, kanban, and timeline tabs. Includes a scope navigator in the tasks panel.
+- **Setup wizard** — Replaced the install wizard with a multi-phase setup wizard, redesigned with step components, a sidebar entry, and a folder picker with workspace list.
+- **Unified Files view** — Replaced the Documents panel with a unified Files view (docs, images, SVGs). Adds name search and kind filter, an `All | Scope | History` toggle sorted by recency, and diagram file types (arch/sequence/ER) as first-class items.
+- **Session notifications** — Toast system with native OS pings, an MCP trigger, and notification history.
+- **Live session status** — Session status (working/done/idle/offline) derived from live PTY activity via a typed event bus.
+- **Sidebar overhaul** — New `SidebarPanel` shell with module search and section markers, scope breadcrumb, per-kind file markers, panel footer actions (new session, file upload), and a refined scope navigator.
+- **Per-session terminal** — Per-session PTY with CWD-aware spawn, a path header, and xterm fixes. Open session tabs are restored on window relaunch.
+- **Keyboard shortcuts** — `Ctrl+number` shortcuts for all rail panels, idle-focus redirect to the terminal, and a space shortcut for sidebar navigation.
+- **Make runner** — Makefile target picker in the session header.
+- **Settings** — Added a shortcuts category and refactored the `kbd` component.
+- **CLI install** — GitHub binary download as the primary CLI install method.
+
+### Bug Fixes
+
+- **Sessions** — Ignore the resize repaint burst in PTY status derivation, and only flag "working" on engine output and model-seen state.
+- **Session titles** — Resolve title lookup by session ID instead of an mtime scan.
+- **Harness drawer** — Reload the harness dynamically on tab switch.
+- **Tabs** — Hide task tabs outside the tasks view.
+- **Wizard** — Use a static dot for the active breadcrumb step and advance on skip.
+- **Focus** — Unify the sidebar ring color and prevent the settings dropdown from retaining focus.
+
+[0.2.0]: https://github.com/tensiply/orbit-desktop/releases/tag/v0.2.0
+
 ## [0.1.0] — 2026-08-28
 
 ### Features
