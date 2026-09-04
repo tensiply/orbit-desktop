@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.0] — 2026-09-04
+
 ### Features
 
 - **AppImage launcher integration** — On first launch the AppImage registers a `.desktop` entry and icon under `~/.local/share/applications`, so Orbit Desktop appears in the system app launcher without having to be started from a terminal.
