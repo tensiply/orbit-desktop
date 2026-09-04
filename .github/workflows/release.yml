@@ -3,11 +3,13 @@ name: Release
 on:
   push:
     tags:
-      - "v*"
+      # Stable ships only as vX.Y.0. Patch tags (vX.Y.Z, Z>=1) are canary
+      # pre-releases handled by canary.yml and must not trigger a full release.
+      - "v*.*.0"
   workflow_dispatch:
     inputs:
       tag:
-        description: "Tag to release (e.g. v0.2.0)"
+        description: "Tag to release (e.g. v0.3.0)"
         required: true
   workflow_call:
     inputs:

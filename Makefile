@@ -2,10 +2,12 @@ INSTALL_DIR ?= $(HOME)/.local/bin
 TARGET_DIR  := target/release
 DEV_TARGET  := target-dev
 DEV_LINK    := dev-orbit-desktop
+CANARY_TARGET := target-canary
+CANARY_LINK   := canary-orbit-desktop
 SRC_TAURI   := src-tauri
 ICONS_DIR   := src-tauri/icons
 
-.PHONY: dev check-dev-orbit build bundle fetch-orbit sync-orbit-cli install uninstall dev-build dev-install dev-uninstall clean dev-local icons windows-assets flatpak snap help
+.PHONY: dev check-dev-orbit build bundle fetch-orbit sync-orbit-cli install uninstall dev-build dev-install dev-uninstall canary-build canary-install canary-uninstall clean dev-local icons windows-assets flatpak snap help
 
 ## Fail early if dev-orbit is missing — the dev app spawns it to start the daemon
 check-dev-orbit:
@@ -43,6 +45,33 @@ dev-install: check-dev-orbit dev-build
 dev-uninstall:
 	rm -f $(INSTALL_DIR)/$(DEV_LINK)
 	@echo "Removed $(INSTALL_DIR)/$(DEV_LINK)"
+
+## Check the orbit-canary CLI is present — the canary app spawns it for its daemon
+check-canary-orbit:
+	@command -v orbit-canary >/dev/null 2>&1 || { \
+	  echo "error: orbit-canary not found on PATH."; \
+	  echo "  The canary app starts its daemon via 'orbit-canary'. Install it first:"; \
+	  echo "    cd ../orbit && make canary-install"; \
+	  exit 1; \
+	}
+
+## Build a standalone canary binary ("Orbit Desktop CANARY") into a separate
+## target dir so it never overwrites the stable or dev builds.
+canary-build:
+	cd ui && npm install
+	CARGO_TARGET_DIR=$(CURDIR)/$(CANARY_TARGET) npx @tauri-apps/cli@2 build --no-bundle --features canary -c src-tauri/tauri.canary.conf.json
+
+## Symlink canary-orbit-desktop -> local canary build. Uses the orbit-canary CLI
+## against the isolated ~/.orbit-canary daemon. Rebuild with `make canary-build`.
+canary-install: check-canary-orbit canary-build
+	@mkdir -p $(INSTALL_DIR)
+	ln -sf $(CURDIR)/$(CANARY_TARGET)/release/orbit-desktop $(INSTALL_DIR)/$(CANARY_LINK)
+	@echo "Linked $(INSTALL_DIR)/$(CANARY_LINK) -> $(CURDIR)/$(CANARY_TARGET)/release/orbit-desktop"
+
+## Remove the canary symlink
+canary-uninstall:
+	rm -f $(INSTALL_DIR)/$(CANARY_LINK)
+	@echo "Removed $(INSTALL_DIR)/$(CANARY_LINK)"
 
 ## Pin ORBIT_CLI_VERSION to the latest orbit CLI release (default) or ORBIT_VER=vX.Y.Z
 sync-orbit-cli:

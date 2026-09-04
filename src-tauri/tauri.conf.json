@@ -1,6 +1,6 @@
 {
   "productName": "Orbit Desktop",
-  "version": "0.2.3",
+  "version": "0.3.0",
   "identifier": "com.tensiply.orbit-desktop",
   "build": {
     "frontendDist": "../ui/dist",
