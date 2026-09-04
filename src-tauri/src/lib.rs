@@ -51,14 +51,27 @@ fn open_devtools(_window: tauri::WebviewWindow) {}
 pub fn run() {
     #[cfg(all(feature = "dev", target_os = "linux"))]
     let _ = std::fs::write("/proc/self/comm", "orbit-dev");
+    #[cfg(all(feature = "canary", not(feature = "dev"), target_os = "linux"))]
+    let _ = std::fs::write("/proc/self/comm", "orbit-canary");
 
-    // Dev build: isolate the daemon, socket, and data under ~/.orbit-dev so the
-    // dev app and the stable install never share orbitd. Spawned orbit children
-    // inherit this env. Respect an explicit ORBIT_HOME if the caller set one.
+    // Non-stable builds isolate the daemon, socket, and data under a
+    // channel-specific home so they never share orbitd with the stable install.
+    // Spawned orbit children inherit these env vars. Respect explicit overrides.
     #[cfg(feature = "dev")]
-    if std::env::var_os("ORBIT_HOME").is_none() {
-        if let Some(dirs) = directories::BaseDirs::new() {
-            std::env::set_var("ORBIT_HOME", dirs.home_dir().join(".orbit-dev"));
+    let channel: Option<(&str, &str)> = Some(("dev", ".orbit-dev"));
+    #[cfg(all(feature = "canary", not(feature = "dev")))]
+    let channel: Option<(&str, &str)> = Some(("canary", ".orbit-canary"));
+    #[cfg(not(any(feature = "dev", feature = "canary")))]
+    let channel: Option<(&str, &str)> = None;
+
+    if let Some((name, home)) = channel {
+        if std::env::var_os("ORBIT_CHANNEL").is_none() {
+            std::env::set_var("ORBIT_CHANNEL", name);
+        }
+        if std::env::var_os("ORBIT_HOME").is_none() {
+            if let Some(dirs) = directories::BaseDirs::new() {
+                std::env::set_var("ORBIT_HOME", dirs.home_dir().join(home));
+            }
         }
     }
 
@@ -166,7 +179,14 @@ pub fn run() {
             {
                 use tauri::Manager;
                 if let Some(win) = app.get_webview_window("main") {
-                    let _ = win.set_title("Orbit Dev");
+                    let _ = win.set_title("Orbit Desktop DEV");
+                }
+            }
+            #[cfg(all(feature = "canary", not(feature = "dev")))]
+            {
+                use tauri::Manager;
+                if let Some(win) = app.get_webview_window("main") {
+                    let _ = win.set_title("Orbit Desktop CANARY");
                 }
             }
 

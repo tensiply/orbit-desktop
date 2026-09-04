@@ -1,0 +1,14 @@
+[Desktop Entry]
+Version=1.0
+Type=Application
+Name=Orbit Desktop CANARY
+GenericName=AI Development Toolkit (Canary)
+Comment=AI-assisted development — canary pre-release channel
+Exec=canary-orbit-desktop
+Icon=com.tensiply.orbit-desktop
+Terminal=false
+StartupNotify=true
+StartupWMClass=Orbit Desktop CANARY
+Categories=Development;IDE;
+Keywords=ai;development;claude;gemini;orbit;tensiply;cli;terminal;canary;
+MimeType=

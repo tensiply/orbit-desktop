@@ -46,6 +46,7 @@ ts-rs = "10"
 
 [features]
 dev = []
+canary = []
 
 [profile.release]
 codegen-units = 1
