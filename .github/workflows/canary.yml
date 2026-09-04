@@ -62,7 +62,7 @@ jobs:
           - platform: ubuntu-22.04
             artifact_suffix: linux
             args: ""
-            orbit_asset: orbit-linux-x86_64
+            orbit_slug: linux-x86_64
             sidecar_triple: x86_64-unknown-linux-gnu
     runs-on: ${{ matrix.platform }}
     steps:
@@ -131,9 +131,10 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           ORBIT_VER=$(cat ORBIT_CLI_VERSION)
+          ASSET="orbit-stable-${ORBIT_VER#v}-${{ matrix.orbit_slug }}"
           mkdir -p src-tauri/binaries
           gh release download "${ORBIT_VER}" --repo tensiply/orbit \
-            --pattern "${{ matrix.orbit_asset }}" \
+            --pattern "${ASSET}" \
             --output "src-tauri/binaries/orbit-${{ matrix.sidecar_triple }}"
           chmod +x "src-tauri/binaries/orbit-${{ matrix.sidecar_triple }}"
 
@@ -151,3 +152,24 @@ jobs:
           # the `canary` cargo feature. No updater config: canary users pull new
           # pre-releases directly.
           args: ${{ matrix.args }} -c src-tauri/tauri.canary.conf.json -c src-tauri/tauri.bundle.conf.json --features canary
+
+      # Homologate the tauri bundle names to
+      # orbit-desktop-canary-<version>-<arch>.<ext> (amd64 -> x86_64).
+      - name: Normalize asset filenames
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG: ${{ needs.prepare.outputs.tag }}
+          CHANNEL: canary
+        run: |
+          mkdir -p artifacts
+          gh release download "${TAG}" --dir artifacts --skip-existing || true
+          cd artifacts
+          for f in *; do
+            new=$(python3 "$GITHUB_WORKSPACE/.github/scripts/homologate_asset.py" "$f" "$CHANNEL")
+            if [ -n "$new" ] && [ "$f" != "$new" ]; then
+              mv "$f" "$new"
+              gh release delete-asset "${TAG}" "$f" --yes || true
+              gh release upload "${TAG}" "$new" --clobber
+              echo "renamed: $f -> $new"
+            fi
+          done
