@@ -114,7 +114,7 @@ jobs:
           - platform: ubuntu-22.04
             artifact_suffix: linux
             args: ""
-            orbit_asset: orbit-linux-x86_64
+            orbit_slug: linux-x86_64
             sidecar_triple: x86_64-unknown-linux-gnu
 
           # macOS build temporarily disabled — re-enable when code signing is configured (gap #3)
@@ -122,7 +122,7 @@ jobs:
           #   artifact_suffix: macos
           #   # Universal binary (Intel + Apple Silicon)
           #   args: "--target universal-apple-darwin"
-          #   orbit_asset: orbit-macos-aarch64   # (universal build needs both arches — revisit)
+          #   orbit_slug: macos-aarch64   # (universal build needs both arches — revisit)
           #   sidecar_triple: aarch64-apple-darwin
 
     runs-on: ${{ matrix.platform }}
@@ -178,9 +178,10 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           ORBIT_VER=$(cat ORBIT_CLI_VERSION)
+          ASSET="orbit-stable-${ORBIT_VER#v}-${{ matrix.orbit_slug }}"
           mkdir -p src-tauri/binaries
           gh release download "${ORBIT_VER}" --repo tensiply/orbit \
-            --pattern "${{ matrix.orbit_asset }}" \
+            --pattern "${ASSET}" \
             --output "src-tauri/binaries/orbit-${{ matrix.sidecar_triple }}"
           chmod +x "src-tauri/binaries/orbit-${{ matrix.sidecar_triple }}"
 
@@ -250,19 +251,19 @@ jobs:
           gh release download "${TAG}" --dir artifacts --skip-existing || true
 
       # Tauri derives artifact filenames from productName ("Orbit Desktop"),
-      # yielding "Orbit Desktop_x.y.z_arch.ext" (GitHub shows the space as a dot).
-      # Normalize to the conventional lowercase orbit_desktop_x.y.z_arch.ext,
-      # keeping the extension casing (e.g. .AppImage) intact.
+      # yielding "Orbit Desktop_x.y.z_amd64.ext". Homologate to the canonical
+      # orbit-desktop-<channel>-<version>-<arch>.<ext> (amd64 -> x86_64).
       - name: Normalize asset filenames
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           TAG: ${{ needs.verify.outputs.tag }}
+          CHANNEL: stable
         run: |
           cd artifacts
-          # Rename installers + updater artifacts (.sig, .tar.gz all share the prefix).
+          # Rename installers + updater artifacts (.sig share the prefix).
           for f in *; do
-            new=$(echo "$f" | sed -E 's/^Orbit[ .]Desktop_/orbit_desktop_/')
-            if [ "$f" != "$new" ]; then
+            new=$(python3 "$GITHUB_WORKSPACE/.github/scripts/homologate_asset.py" "$f" "$CHANNEL")
+            if [ -n "$new" ] && [ "$f" != "$new" ]; then
               mv "$f" "$new"
               gh release delete-asset "${TAG}" "$f" --yes || true
               gh release upload "${TAG}" "$new" --clobber
@@ -273,17 +274,21 @@ jobs:
           # placeholder for notes — rewrite the URLs to the renamed files and set
           # the real release notes (release_notes.md is written by the step above).
           if [ -f latest.json ]; then
-            python3 - <<'PY'
-          import json
+            CHANNEL="$CHANNEL" python3 - <<'PY'
+          import json, os, subprocess, urllib.parse
+          script = os.path.join(os.environ["GITHUB_WORKSPACE"], ".github/scripts/homologate_asset.py")
+          channel = os.environ["CHANNEL"]
+          def homologate(name):
+              out = subprocess.run(["python3", script, name, channel],
+                                   capture_output=True, text=True).stdout.strip()
+              return out or name
           with open("latest.json") as f:
               manifest = json.load(f)
-          def normalize(url):
-              for old in ("Orbit%20Desktop_", "Orbit Desktop_", "Orbit.Desktop_"):
-                  url = url.replace(old, "orbit_desktop_")
-              return url
           for platform in manifest.get("platforms", {}).values():
               if "url" in platform:
-                  platform["url"] = normalize(platform["url"])
+                  base, _, fname = platform["url"].rpartition("/")
+                  decoded = urllib.parse.unquote(fname)
+                  platform["url"] = f"{base}/{homologate(decoded)}"
           try:
               with open("../release_notes.md") as f:
                   manifest["notes"] = f.read().strip()

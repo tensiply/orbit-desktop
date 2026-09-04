@@ -87,12 +87,13 @@ fetch-orbit:
 	@ORBIT_VER=$$(cat ORBIT_CLI_VERSION); \
 	TRIPLE=$$(rustc -vV | sed -n 's/host: //p'); \
 	case "$$TRIPLE" in \
-	  x86_64-*-linux-*)      ASSET=orbit-linux-x86_64 ;; \
-	  aarch64-*-linux-*)     ASSET=orbit-linux-aarch64 ;; \
-	  x86_64-apple-darwin)   ASSET=orbit-macos-x86_64 ;; \
-	  aarch64-apple-darwin)  ASSET=orbit-macos-aarch64 ;; \
+	  x86_64-*-linux-*)      SLUG=linux-x86_64 ;; \
+	  aarch64-*-linux-*)     SLUG=linux-aarch64 ;; \
+	  x86_64-apple-darwin)   SLUG=macos-x86_64 ;; \
+	  aarch64-apple-darwin)  SLUG=macos-aarch64 ;; \
 	  *) echo "unsupported host triple: $$TRIPLE"; exit 1 ;; \
 	esac; \
+	ASSET=orbit-stable-$${ORBIT_VER#v}-$$SLUG; \
 	echo "Fetching orbit $$ORBIT_VER ($$ASSET) -> src-tauri/binaries/orbit-$$TRIPLE"; \
 	gh release download "$$ORBIT_VER" --repo tensiply/orbit --pattern "$$ASSET" \
 	  --output "src-tauri/binaries/orbit-$$TRIPLE" --clobber; \
