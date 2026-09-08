@@ -252,13 +252,14 @@ export function WorkspacesStep() {
 
   const hasWorkspaces = registeredWorkspaces.length > 0
 
-  const [wsPath,     setWsPath]     = useState('')
-  const [wsName,     setWsName]     = useState('')
-  const [adding,     setAdding]     = useState(false)
-  const [wsLines,    setWsLines]    = useState<string[]>([])
-  const [wsError,    setWsError]    = useState<string | null>(null)
-  const [addedName,  setAddedName]  = useState<string | null>(null)
-  const [showForm,   setShowForm]   = useState(!hasWorkspaces)
+  const [wsPath,       setWsPath]       = useState('')
+  const [wsName,       setWsName]       = useState('')
+  const [adding,       setAdding]       = useState(false)
+  const [wsLines,      setWsLines]      = useState<string[]>([])
+  const [wsError,      setWsError]      = useState<string | null>(null)
+  const [addedName,    setAddedName]    = useState<string | null>(null)
+  const [showForm,     setShowForm]     = useState(!hasWorkspaces)
+  const [correctedFrom, setCorrectedFrom] = useState<string | null>(null)
 
   // When workspaces load after adding one, keep form collapsed
   useEffect(() => {
@@ -267,7 +268,16 @@ export function WorkspacesStep() {
 
   const pickFolder = async () => {
     const selected = await openFolder({ directory: true, multiple: false, recursive: false })
-    if (typeof selected === 'string' && selected) setWsPath(selected)
+    if (typeof selected === 'string' && selected) {
+      try {
+        const resolved = await tauriService.resolveOrbitRoot(selected)
+        setWsPath(resolved.resolved_path)
+        setCorrectedFrom(resolved.was_corrected ? selected : null)
+      } catch {
+        setWsPath(selected)
+        setCorrectedFrom(null)
+      }
+    }
   }
 
   const addWorkspace = async () => {
@@ -282,6 +292,7 @@ export function WorkspacesStep() {
       setAddedName(wsName.trim() || wsPath.split('/').pop() || wsPath.trim())
       setWsPath('')
       setWsName('')
+      setCorrectedFrom(null)
       await Promise.all([checkSetup(), loadWorkspaces(), loadScopeTree()])
     } catch (e) {
       setWsError(String(e))
@@ -348,14 +359,14 @@ export function WorkspacesStep() {
 
           <div className="space-y-1.5">
             <Label htmlFor="ws-path" className="text-xs font-medium">
-              Directory path <span className="text-destructive">*</span>
+              Governance folder <span className="text-destructive">*</span>
             </Label>
             <div className="flex gap-2">
               <Input
                 id="ws-path"
                 value={wsPath}
-                onChange={(e) => setWsPath(e.target.value)}
-                placeholder="~/projects"
+                onChange={(e) => { setWsPath(e.target.value); setCorrectedFrom(null) }}
+                placeholder="~/Tensiply/AI"
                 className="h-8 text-xs font-mono"
                 disabled={adding}
               />
@@ -370,6 +381,18 @@ export function WorkspacesStep() {
                 <FolderOpen size={14} />
               </Button>
             </div>
+            <p className="text-[11px] text-muted-foreground/60 leading-relaxed">
+              Select the <code className="text-[10px]">AI</code> folder of your workspace — the directory that contains{' '}
+              <code className="text-[10px]">orbit.json</code> and <code className="text-[10px]">tenants/</code>, not the workspace root.
+            </p>
+            {correctedFrom && (
+              <div className="flex items-start gap-2 rounded-md bg-primary/8 px-3 py-2">
+                <CheckCircle2 size={13} className="text-primary shrink-0 mt-0.5" />
+                <p className="text-[11px] text-primary leading-relaxed">
+                  Auto-detected orbit root in <code className="text-[10px]">/AI</code> — using that instead of the parent folder.
+                </p>
+              </div>
+            )}
           </div>
 
           <div className="space-y-1.5">

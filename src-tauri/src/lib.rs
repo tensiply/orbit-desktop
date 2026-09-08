@@ -171,6 +171,7 @@ pub fn run() {
             updates::check_updates,
             updates::setup_check,
             updates::orbit_workspace_add,
+            updates::resolve_orbit_root,
             // Dev tools (no-op in release builds)
             open_devtools,
         ])

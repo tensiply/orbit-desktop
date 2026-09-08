@@ -10,6 +10,12 @@ use crate::infrastructure::orbit_sidecar::orbit_program;
 // ── Types ──────────────────────────────────────────────────────────────────────
 
 #[derive(Debug, Serialize)]
+pub struct ResolvedOrbitRoot {
+    pub resolved_path: String,
+    pub was_corrected: bool,
+}
+
+#[derive(Debug, Serialize)]
 pub struct CliInfo {
     pub installed: bool,
     pub version: Option<String>,
@@ -124,6 +130,28 @@ pub async fn orbit_workspace_add(
         ));
     }
     Ok(())
+}
+
+/// Given a folder path, detect whether it is already an orbit governance root
+/// (`orbit.json` present) or whether an `AI/` subfolder is the actual root.
+/// Returns the resolved path and a flag indicating whether it was auto-corrected.
+#[tauri::command]
+pub fn resolve_orbit_root(path: String) -> ResolvedOrbitRoot {
+    let p = std::path::Path::new(&path);
+
+    if p.join("orbit.json").is_file() {
+        return ResolvedOrbitRoot { resolved_path: path, was_corrected: false };
+    }
+
+    let ai = p.join("AI");
+    if ai.join("orbit.json").is_file() {
+        return ResolvedOrbitRoot {
+            resolved_path: ai.to_string_lossy().to_string(),
+            was_corrected: true,
+        };
+    }
+
+    ResolvedOrbitRoot { resolved_path: path, was_corrected: false }
 }
 
 /// Check whether a newer desktop release is available via GitHub releases.

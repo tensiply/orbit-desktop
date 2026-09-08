@@ -127,6 +127,9 @@ export const tauriService = {
   orbitWorkspaceAdd: (path: string, name?: string): Promise<void> =>
     invoke('orbit_workspace_add', { path, name: name ?? null }),
 
+  resolveOrbitRoot: (path: string): Promise<{ resolved_path: string; was_corrected: boolean }> =>
+    invoke('resolve_orbit_root', { path }),
+
   checkUpdates: (): Promise<UpdateCheck> =>
     invoke('check_updates'),
 
