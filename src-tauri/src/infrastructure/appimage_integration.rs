@@ -8,7 +8,22 @@
 
 use std::path::{Path, PathBuf};
 
+// Channel-scoped identity so a canary/dev AppImage registers its own launcher
+// entry instead of colliding with (or being skipped by) the stable one.
+#[cfg(all(feature = "canary", not(feature = "dev")))]
+const APP_ID: &str = "com.tensiply.orbit-desktop.canary";
+#[cfg(all(feature = "canary", not(feature = "dev")))]
+const APP_NAME: &str = "Orbit Desktop CANARY";
+
+#[cfg(feature = "dev")]
+const APP_ID: &str = "com.tensiply.orbit-desktop.dev";
+#[cfg(feature = "dev")]
+const APP_NAME: &str = "Orbit Desktop DEV";
+
+#[cfg(not(any(feature = "dev", feature = "canary")))]
 const APP_ID: &str = "com.tensiply.orbit-desktop";
+#[cfg(not(any(feature = "dev", feature = "canary")))]
+const APP_NAME: &str = "Orbit Desktop";
 
 /// Best-effort: install a launcher entry when running as an AppImage. Never
 /// fails the app — logs and returns on any problem.
@@ -40,7 +55,7 @@ fn try_integrate() -> std::io::Result<()> {
     let entry = format!(
         "[Desktop Entry]\n\
          Type=Application\n\
-         Name=Orbit Desktop\n\
+         Name={APP_NAME}\n\
          GenericName=AI Development Toolkit\n\
          Comment=AI-assisted development — scope-aware, daemon-based, multi-engine\n\
          Exec=\"{appimage}\" %U\n\
@@ -50,7 +65,7 @@ fn try_integrate() -> std::io::Result<()> {
          Categories=Development;IDE;\n\
          Keywords=ai;development;claude;gemini;orbit;tensiply;\n\
          StartupNotify=true\n\
-         StartupWMClass=Orbit Desktop\n"
+         StartupWMClass={APP_NAME}\n"
     );
     std::fs::write(&desktop, entry)?;
 
