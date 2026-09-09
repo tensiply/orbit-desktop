@@ -140,7 +140,10 @@ pub fn resolve_orbit_root(path: String) -> ResolvedOrbitRoot {
     let p = std::path::Path::new(&path);
 
     if p.join("orbit.json").is_file() {
-        return ResolvedOrbitRoot { resolved_path: path, was_corrected: false };
+        return ResolvedOrbitRoot {
+            resolved_path: path,
+            was_corrected: false,
+        };
     }
 
     let ai = p.join("AI");
@@ -151,7 +154,10 @@ pub fn resolve_orbit_root(path: String) -> ResolvedOrbitRoot {
         };
     }
 
-    ResolvedOrbitRoot { resolved_path: path, was_corrected: false }
+    ResolvedOrbitRoot {
+        resolved_path: path,
+        was_corrected: false,
+    }
 }
 
 /// Check whether a newer desktop release is available via GitHub releases.
