@@ -40,6 +40,7 @@ pub struct UpdateCheck {
     pub desktop: ComponentUpdate,
 }
 
+#[cfg(not(feature = "canary"))]
 #[derive(Debug, Deserialize)]
 struct GithubRelease {
     tag_name: String,
@@ -202,7 +203,8 @@ pub async fn check_updates(app: AppHandle) -> Result<UpdateCheck, String> {
 // the latest non-prerelease GitHub release.
 #[cfg(feature = "canary")]
 async fn fetch_desktop_latest(client: &reqwest::Client) -> Option<String> {
-    let url = "https://github.com/tensiply/orbit-desktop/releases/download/canary-latest/latest.json";
+    let url =
+        "https://github.com/tensiply/orbit-desktop/releases/download/canary-latest/latest.json";
     client
         .get(url)
         .send()
@@ -229,6 +231,7 @@ fn build_client(timeout_secs: u64) -> Result<reqwest::Client, String> {
         .map_err(|e| e.to_string())
 }
 
+#[cfg(not(feature = "canary"))]
 async fn fetch_latest_github_release(
     client: &reqwest::Client,
     owner: &str,
