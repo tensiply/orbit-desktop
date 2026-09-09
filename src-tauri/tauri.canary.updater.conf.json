@@ -1,0 +1,9 @@
+{
+  "plugins": {
+    "updater": {
+      "endpoints": [
+        "https://github.com/tensiply/orbit-desktop/releases/download/canary-latest/latest.json"
+      ]
+    }
+  }
+}
