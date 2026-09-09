@@ -160,6 +160,12 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           TAG: ${{ needs.prepare.outputs.tag }}
         run: |
+          gh release view canary-latest --repo tensiply/orbit-desktop > /dev/null 2>&1 || \
+            gh release create canary-latest \
+              --repo tensiply/orbit-desktop \
+              --prerelease \
+              --title "Canary Latest" \
+              --notes "Floating tag — always reflects the latest canary build. Do not modify manually."
           mkdir -p artifacts-updater
           gh release download "${TAG}" \
             --dir artifacts-updater \
