@@ -149,9 +149,31 @@ jobs:
           releaseDraft: false
           prerelease: true
           # Canary branding (productName/identifier) + the bundle sidecar +
-          # the `canary` cargo feature. No updater config: canary users pull new
-          # pre-releases directly.
-          args: ${{ matrix.args }} -c src-tauri/tauri.canary.conf.json -c src-tauri/tauri.bundle.conf.json --features canary
+          # the `canary` cargo feature. The canary updater config overrides the
+          # endpoint to the canary-latest tag so in-app updates work.
+          args: ${{ matrix.args }} -c src-tauri/tauri.canary.conf.json -c src-tauri/tauri.bundle.conf.json -c src-tauri/tauri.canary.updater.conf.json --features canary
+
+      # Pin the freshly-built latest.json to the fixed `canary-latest` tag so
+      # the in-app updater always finds it at a stable URL.
+      - name: Pin latest.json to canary-latest tag
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG: ${{ needs.prepare.outputs.tag }}
+        run: |
+          gh release view canary-latest --repo tensiply/orbit-desktop > /dev/null 2>&1 || \
+            gh release create canary-latest \
+              --repo tensiply/orbit-desktop \
+              --prerelease \
+              --title "Canary Latest" \
+              --notes "Floating tag — always reflects the latest canary build. Do not modify manually."
+          mkdir -p artifacts-updater
+          gh release download "${TAG}" \
+            --dir artifacts-updater \
+            --pattern "latest.json" \
+            --skip-existing || true
+          if [ -f artifacts-updater/latest.json ]; then
+            gh release upload canary-latest artifacts-updater/latest.json --clobber
+          fi
 
       # Homologate the tauri bundle names to
       # orbit-desktop-canary-<version>-<arch>.<ext> (amd64 -> x86_64).
