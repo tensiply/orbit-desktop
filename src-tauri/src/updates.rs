@@ -40,9 +40,15 @@ pub struct UpdateCheck {
     pub desktop: ComponentUpdate,
 }
 
+#[cfg(not(feature = "canary"))]
 #[derive(Debug, Deserialize)]
 struct GithubRelease {
     tag_name: String,
+}
+
+#[derive(Debug, Deserialize)]
+struct UpdaterManifest {
+    version: String,
 }
 
 // ── Commands ───────────────────────────────────────────────────────────────────
@@ -170,9 +176,7 @@ pub async fn check_updates(app: AppHandle) -> Result<UpdateCheck, String> {
     let cli_current = cli_check().await?.version;
 
     let client = build_client(60)?;
-    let desktop_latest = fetch_latest_github_release(&client, "tensiply", "orbit-desktop")
-        .await
-        .ok();
+    let desktop_latest = fetch_desktop_latest(&client).await;
 
     let desktop_has_update = match &desktop_latest {
         Some(lat) => is_older(&desktop_version, lat),
@@ -195,6 +199,30 @@ pub async fn check_updates(app: AppHandle) -> Result<UpdateCheck, String> {
 
 // ── Helpers ────────────────────────────────────────────────────────────────────
 
+// Canary builds compare against canary-latest; stable builds compare against
+// the latest non-prerelease GitHub release.
+#[cfg(feature = "canary")]
+async fn fetch_desktop_latest(client: &reqwest::Client) -> Option<String> {
+    let url =
+        "https://github.com/tensiply/orbit-desktop/releases/download/canary-latest/latest.json";
+    client
+        .get(url)
+        .send()
+        .await
+        .ok()?
+        .json::<UpdaterManifest>()
+        .await
+        .ok()
+        .map(|m| m.version)
+}
+
+#[cfg(not(feature = "canary"))]
+async fn fetch_desktop_latest(client: &reqwest::Client) -> Option<String> {
+    fetch_latest_github_release(client, "tensiply", "orbit-desktop")
+        .await
+        .ok()
+}
+
 fn build_client(timeout_secs: u64) -> Result<reqwest::Client, String> {
     reqwest::Client::builder()
         .user_agent("orbit-desktop")
@@ -203,6 +231,7 @@ fn build_client(timeout_secs: u64) -> Result<reqwest::Client, String> {
         .map_err(|e| e.to_string())
 }
 
+#[cfg(not(feature = "canary"))]
 async fn fetch_latest_github_release(
     client: &reqwest::Client,
     owner: &str,

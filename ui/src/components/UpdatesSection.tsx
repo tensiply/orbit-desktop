@@ -105,19 +105,21 @@ export function UpdatesSection() {
         </Button>
       </div>
 
-      {/* CLI row — bundled with the app, read-only */}
-      <div className="flex items-start gap-4 px-6 py-4 border-b border-foreground/5">
-        <div className="flex items-center gap-2 w-28 shrink-0 mt-0.5">
-          <span className="text-foreground/40"><Terminal size={13} /></span>
-          <span className="text-xs font-medium text-foreground">Orbit CLI</span>
+      {/* CLI row — bundled with the app, hidden when a desktop update is pending */}
+      {!desktopHasUpdate && (
+        <div className="flex items-start gap-4 px-6 py-4 border-b border-foreground/5">
+          <div className="flex items-center gap-2 w-28 shrink-0 mt-0.5">
+            <span className="text-foreground/40"><Terminal size={13} /></span>
+            <span className="text-xs font-medium text-foreground">Orbit CLI</span>
+          </div>
+          <div className="flex-1 min-w-0 flex items-center gap-1.5 flex-wrap">
+            <span className="text-xs font-mono text-foreground/60">{cliCurrent ?? '—'}</span>
+            <span className="text-[9px] px-1.5 py-px rounded-full bg-foreground/8 text-foreground/40 font-medium">
+              bundled
+            </span>
+          </div>
         </div>
-        <div className="flex-1 min-w-0 flex items-center gap-1.5 flex-wrap">
-          <span className="text-xs font-mono text-foreground/60">{cliCurrent ?? '—'}</span>
-          <span className="text-[9px] px-1.5 py-px rounded-full bg-foreground/8 text-foreground/40 font-medium">
-            bundled
-          </span>
-        </div>
-      </div>
+      )}
 
       {/* Desktop row */}
       <ComponentRow
