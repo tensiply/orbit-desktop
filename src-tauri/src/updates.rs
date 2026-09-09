@@ -213,12 +213,25 @@ async fn fetch_latest_github_release(
     Ok(release.tag_name.trim_start_matches('v').to_string())
 }
 
+fn parse_semver(s: &str) -> Option<(u64, u64, u64)> {
+    let s = s.trim_start_matches('v');
+    // Accept "major.minor.patch" ignoring any pre-release suffix after "-"
+    let core = s.split('-').next()?;
+    let mut parts = core.splitn(3, '.');
+    let major = parts.next()?.parse().ok()?;
+    let minor = parts.next()?.parse().ok()?;
+    let patch = parts.next().unwrap_or("0").parse().ok()?;
+    Some((major, minor, patch))
+}
+
 fn is_older(current: &str, latest: &str) -> bool {
     let cur = current
         .trim_start_matches('v')
         .split_whitespace()
         .last()
         .unwrap_or(current);
-    let lat = latest.trim_start_matches('v');
-    cur != lat
+    match (parse_semver(cur), parse_semver(latest)) {
+        (Some(c), Some(l)) => c < l,
+        _ => false,
+    }
 }
