@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { getName } from '@tauri-apps/api/app'
+import { getName, getVersion } from '@tauri-apps/api/app'
 import { Loader2, BookOpen, User, Settings2, Monitor, Terminal as TerminalIcon, Cpu, ShieldCheck, Download, Package, Keyboard, FileText, Image, FileCode, Network } from 'lucide-react'
 import { useAppStore } from '../store'
 import { workspaceFromWorkDir } from '../domain/scope'
@@ -187,12 +187,14 @@ export function Sidebar({ width, collapsed }: { width: number; collapsed?: boole
   const [searchTerm,     setSearchTerm]     = useState('')
   const [fileKindFilter, setFileKindFilter] = useState<AnyFileEntry['kind'] | null>(null)
   const [appChannel,     setAppChannel]     = useState<'DEV' | 'CANARY' | null>(null)
+  const [appVersion,     setAppVersion]     = useState<string | null>(null)
 
   useEffect(() => {
     getName().then((name) => {
       if (name.endsWith('DEV')) setAppChannel('DEV')
       else if (name.endsWith('CANARY')) setAppChannel('CANARY')
     }).catch(() => void 0)
+    getVersion().then(setAppVersion).catch(() => void 0)
   }, [])
 
   const { launchWithEngine } = useScopeSession()
@@ -369,10 +371,14 @@ export function Sidebar({ width, collapsed }: { width: number; collapsed?: boole
         <div data-tauri-drag-region data-orbit-zone="orbit.desktop.sidebar.header" className="h-10 flex items-center px-3 gap-2 shrink-0">
           <span className="text-sm font-semibold text-sidebar-foreground tracking-tight">Orbit Desktop</span>
           {appChannel === 'DEV' && (
-            <span className="text-sm font-semibold text-destructive tracking-tight opacity-60">dev</span>
+            <span className="text-sm font-semibold text-destructive tracking-tight opacity-60">
+              dev{appVersion ? ` ${appVersion}` : ''}
+            </span>
           )}
           {appChannel === 'CANARY' && (
-            <span className="text-sm font-semibold text-sidebar-foreground tracking-tight opacity-60">canary</span>
+            <span className="text-sm font-semibold text-sidebar-foreground tracking-tight opacity-60">
+              canary{appVersion ? ` ${appVersion}` : ''}
+            </span>
           )}
         </div>
 
