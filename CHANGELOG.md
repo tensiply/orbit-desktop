@@ -7,6 +7,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.4.0] — 2026-09-09
+
+### Added
+
+- **Pipeline status badge in session header** — shows a colored dot (green/yellow/red) for CI/CD pipelines configured in `orbit.json` at the current scope. Polls every 60 seconds. Click to expand a panel with per-pipeline run details: branch, commit, triggered by, steps, errors, and a link to the run. Supports GitHub Actions and Jenkins.
+- **Workspace setup auto-detection** — setup wizard now auto-detects the orbit governance root from the current working directory.
+
+### Fixed
+
+- Canary channel badge shown in sidebar header; title capitalized.
+- Update check now uses semver comparison instead of string equality.
+- Canary in-app updater: correct endpoint, signing key, and `latest.json` generation.
+- Canary AppImage launcher entry respects channel isolation.
+
 ## [0.3.0] — 2026-09-04
 
 ### Features
