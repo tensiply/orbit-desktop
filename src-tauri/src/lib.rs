@@ -57,7 +57,10 @@ pub fn run() {
 
     // Non-stable builds isolate the daemon, socket, and data under a
     // channel-specific home so they never share orbitd with the stable install.
-    // Spawned orbit children inherit these env vars. Respect explicit overrides.
+    // A packaged channel build is unambiguously that channel, so it forces its
+    // own home — an inherited ORBIT_CHANNEL/ORBIT_HOME (e.g. launched from a
+    // terminal inside another channel's session) must not redirect it. Spawned
+    // orbit children then inherit the forced values.
     #[cfg(feature = "dev")]
     let channel: Option<(&str, &str)> = Some(("dev", ".orbit-dev"));
     #[cfg(all(feature = "canary", not(feature = "dev")))]
@@ -66,13 +69,9 @@ pub fn run() {
     let channel: Option<(&str, &str)> = None;
 
     if let Some((name, home)) = channel {
-        if std::env::var_os("ORBIT_CHANNEL").is_none() {
-            std::env::set_var("ORBIT_CHANNEL", name);
-        }
-        if std::env::var_os("ORBIT_HOME").is_none() {
-            if let Some(dirs) = directories::BaseDirs::new() {
-                std::env::set_var("ORBIT_HOME", dirs.home_dir().join(home));
-            }
+        std::env::set_var("ORBIT_CHANNEL", name);
+        if let Some(dirs) = directories::BaseDirs::new() {
+            std::env::set_var("ORBIT_HOME", dirs.home_dir().join(home));
         }
     }
 
