@@ -47,6 +47,9 @@ struct GithubRelease {
 }
 
 #[cfg(feature = "canary")]
+// Under `--all-features` (CI), `dev` and `canary` are both on and the dev branch
+// of check_updates wins, leaving this canary-only type unused — allow it there.
+#[cfg_attr(feature = "dev", allow(dead_code))]
 #[derive(Debug, Deserialize)]
 struct UpdaterManifest {
     version: String,
@@ -179,10 +182,18 @@ pub async fn check_updates(app: AppHandle) -> Result<UpdateCheck, String> {
     #[cfg(feature = "dev")]
     {
         let _ = app;
-        return Ok(UpdateCheck {
-            cli: ComponentUpdate { current: cli_current, latest: None, has_update: false },
-            desktop: ComponentUpdate { current: None, latest: None, has_update: false },
-        });
+        Ok(UpdateCheck {
+            cli: ComponentUpdate {
+                current: cli_current,
+                latest: None,
+                has_update: false,
+            },
+            desktop: ComponentUpdate {
+                current: None,
+                latest: None,
+                has_update: false,
+            },
+        })
     }
 
     #[cfg(not(feature = "dev"))]
@@ -195,7 +206,11 @@ pub async fn check_updates(app: AppHandle) -> Result<UpdateCheck, String> {
             None => false,
         };
         Ok(UpdateCheck {
-            cli: ComponentUpdate { current: cli_current, latest: None, has_update: false },
+            cli: ComponentUpdate {
+                current: cli_current,
+                latest: None,
+                has_update: false,
+            },
             desktop: ComponentUpdate {
                 current: Some(desktop_version),
                 latest: desktop_latest,
