@@ -9,7 +9,6 @@ use serde_json::{json, Value};
 use std::{
     collections::HashMap,
     convert::Infallible,
-    path::PathBuf,
     sync::Arc,
     time::{Duration, SystemTime, UNIX_EPOCH},
 };
@@ -20,8 +19,14 @@ use uuid::Uuid;
 
 use crate::debug_buffer::SharedDebugBuffer;
 
-const BASE_PORT: u16 = 17777;
-const MAX_PORT: u16 = 17800;
+/// Debug/MCP port block for the running channel: the channel's fixed base port
+/// (`Channel::debug_port_base`) plus a small fallback range within its own
+/// 10-port block. Channels never collide, and the primary instance of a channel
+/// always gets the base port — so the address is predictable per channel.
+fn port_block() -> std::ops::RangeInclusive<u16> {
+    let base = orbit_core::channel::Channel::current().debug_port_base();
+    base..=base + 9
+}
 
 // (event_type, data) pairs sent to SSE clients
 type SseMsg = (String, String);
@@ -39,7 +44,10 @@ pub async fn run(buffer: SharedDebugBuffer, app: AppHandle) {
     let port = match bind_port().await {
         Some(p) => p,
         None => {
-            tracing::warn!("debug MCP server: no free port in {BASE_PORT}–{MAX_PORT}, skipping");
+            tracing::warn!(
+                "debug MCP server: no free port in channel block {:?}, skipping",
+                port_block()
+            );
             return;
         }
     };
@@ -77,7 +85,7 @@ pub async fn run(buffer: SharedDebugBuffer, app: AppHandle) {
 }
 
 async fn bind_port() -> Option<u16> {
-    for port in BASE_PORT..=MAX_PORT {
+    for port in port_block() {
         if tokio::net::TcpListener::bind(format!("127.0.0.1:{port}"))
             .await
             .is_ok()
@@ -89,12 +97,13 @@ async fn bind_port() -> Option<u16> {
 }
 
 fn write_discovery_file(port: u16) -> anyhow::Result<()> {
-    let home = directories::BaseDirs::new()
-        .map(|b| b.home_dir().to_path_buf())
-        .unwrap_or_else(|| PathBuf::from("/"));
-    let data_dir = home.join(".orbit/data");
+    // Channel-scoped: each channel writes into its own home
+    // (`~/.orbit{,-canary,-dev}/data`) so their discovery files never overwrite
+    // each other. The `channel` field lets a reader confirm which one this is.
+    let data_dir = orbit_core::data_paths::orbit_data_root();
     std::fs::create_dir_all(&data_dir)?;
     let payload = json!({
+        "channel": orbit_core::channel::Channel::current().as_str(),
         "port": port,
         "pid": std::process::id(),
         "started_at": SystemTime::now().duration_since(UNIX_EPOCH)
@@ -208,7 +217,8 @@ async fn handle_rpc(state: &ServerState, body: &Value) -> Value {
                 "protocolVersion": "2024-11-05",
                 "serverInfo": {
                     "name": "orbit-desktop-debug",
-                    "version": env!("CARGO_PKG_VERSION")
+                    "version": env!("CARGO_PKG_VERSION"),
+                    "channel": orbit_core::channel::Channel::current().as_str()
                 },
                 "capabilities": { "tools": {} }
             }

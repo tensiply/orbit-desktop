@@ -50,29 +50,32 @@ fn open_devtools(_window: tauri::WebviewWindow) {}
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
-    #[cfg(all(feature = "dev", target_os = "linux"))]
-    let _ = std::fs::write("/proc/self/comm", "orbit-dev");
-    #[cfg(all(feature = "canary", not(feature = "dev"), target_os = "linux"))]
-    let _ = std::fs::write("/proc/self/comm", "orbit-canary");
+    use orbit_core::channel::Channel;
 
-    // Non-stable builds isolate the daemon, socket, and data under a
-    // channel-specific home so they never share orbitd with the stable install.
-    // A packaged channel build is unambiguously that channel, so it forces its
-    // own home — an inherited ORBIT_CHANNEL/ORBIT_HOME (e.g. launched from a
-    // terminal inside another channel's session) must not redirect it. Spawned
-    // orbit children then inherit the forced values.
+    // Compile-time channel of this desktop build — the single source of truth for
+    // its identity, home, process name and debug port (all derived from `Channel`
+    // in orbit-core, shared with the CLI and daemon).
     #[cfg(feature = "dev")]
-    let channel: Option<(&str, &str)> = Some(("dev", ".orbit-dev"));
+    let channel: Option<Channel> = Some(Channel::Dev);
     #[cfg(all(feature = "canary", not(feature = "dev")))]
-    let channel: Option<(&str, &str)> = Some(("canary", ".orbit-canary"));
+    let channel: Option<Channel> = Some(Channel::Canary);
     #[cfg(not(any(feature = "dev", feature = "canary")))]
-    let channel: Option<(&str, &str)> = None;
+    let channel: Option<Channel> = None;
 
-    if let Some((name, home)) = channel {
-        std::env::set_var("ORBIT_CHANNEL", name);
+    // A packaged channel build is unambiguously that channel, so it forces its
+    // own channel/home — an inherited ORBIT_CHANNEL/ORBIT_HOME (e.g. launched
+    // from a terminal inside another channel's session) must not redirect it.
+    // Spawned orbit children then inherit the forced values.
+    if let Some(ch) = channel {
+        std::env::set_var("ORBIT_CHANNEL", ch.as_str());
         if let Some(dirs) = directories::BaseDirs::new() {
-            std::env::set_var("ORBIT_HOME", dirs.home_dir().join(home));
+            std::env::set_var(
+                "ORBIT_HOME",
+                dirs.home_dir().join(format!(".orbit{}", ch.home_suffix())),
+            );
         }
+        #[cfg(target_os = "linux")]
+        let _ = std::fs::write("/proc/self/comm", ch.process_name());
     }
 
     let buffer = debug_buffer::new_shared();
