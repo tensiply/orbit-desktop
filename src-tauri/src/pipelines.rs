@@ -97,9 +97,16 @@ pub async fn get_pipelines(
 ) -> Result<Vec<PipelineStatus>, String> {
     let user_cfg = UserConfig::load();
     let ai_root = user_cfg.ai_root_expanded();
-    let workspace_slug = ai_root.file_name().map(|n| n.to_string_lossy().into_owned());
+    let workspace_slug = ai_root
+        .file_name()
+        .map(|n| n.to_string_lossy().into_owned());
 
-    let configs = collect_configs(&ai_root, tenant.as_deref(), project.as_deref(), repository.as_deref());
+    let configs = collect_configs(
+        &ai_root,
+        tenant.as_deref(),
+        project.as_deref(),
+        repository.as_deref(),
+    );
 
     if configs.is_empty() {
         return Ok(vec![]);
@@ -156,7 +163,12 @@ fn orbit_json_paths(
         paths.push(ai_root.join("tenants").join(t).join("orbit.json"));
         if let Some(p) = project {
             paths.push(
-                ai_root.join("tenants").join(t).join("projects").join(p).join("orbit.json"),
+                ai_root
+                    .join("tenants")
+                    .join(t)
+                    .join("projects")
+                    .join(p)
+                    .join("orbit.json"),
             );
             if let Some(r) = repository {
                 paths.push(
@@ -176,9 +188,15 @@ fn orbit_json_paths(
 }
 
 fn read_pipelines_from_file(path: &std::path::Path) -> Vec<PipelineConfig> {
-    let Ok(text) = fs::read_to_string(path) else { return vec![] };
-    let Ok(val) = serde_json::from_str::<Value>(&text) else { return vec![] };
-    let Some(arr) = val.get("pipelines").and_then(|v| v.as_array()) else { return vec![] };
+    let Ok(text) = fs::read_to_string(path) else {
+        return vec![];
+    };
+    let Ok(val) = serde_json::from_str::<Value>(&text) else {
+        return vec![];
+    };
+    let Some(arr) = val.get("pipelines").and_then(|v| v.as_array()) else {
+        return vec![];
+    };
     arr.iter()
         .filter_map(|v| serde_json::from_value::<PipelineConfig>(v.clone()).ok())
         .collect()
@@ -215,7 +233,10 @@ async fn fetch_github(
     token: Option<&str>,
     now: u64,
 ) -> Result<PipelineStatus> {
-    let repo = cfg.repo.as_deref().ok_or_else(|| anyhow::anyhow!("missing 'repo'"))?;
+    let repo = cfg
+        .repo
+        .as_deref()
+        .ok_or_else(|| anyhow::anyhow!("missing 'repo'"))?;
     let branch = cfg.branch.as_deref().unwrap_or("main");
 
     let api_url = format!(
@@ -223,13 +244,18 @@ async fn fetch_github(
         repo, branch
     );
 
-    let mut req = client.get(&api_url).header("Accept", "application/vnd.github+json");
+    let mut req = client
+        .get(&api_url)
+        .header("Accept", "application/vnd.github+json");
     if let Some(t) = token {
         req = req.header("Authorization", format!("Bearer {t}"));
     }
 
     let resp: Value = req.send().await?.error_for_status()?.json().await?;
-    let run_val = resp["workflow_runs"].as_array().and_then(|a| a.first()).cloned();
+    let run_val = resp["workflow_runs"]
+        .as_array()
+        .and_then(|a| a.first())
+        .cloned();
 
     let latest_run = if let Some(r) = run_val.as_ref() {
         let status_str = r["status"].as_str().unwrap_or("unknown");
@@ -241,7 +267,9 @@ async fn fetch_github(
             run_name: r["name"].as_str().unwrap_or(&cfg.name).to_owned(),
             status: run_status,
             branch: r["head_branch"].as_str().map(str::to_owned),
-            commit_sha: r["head_sha"].as_str().map(|s| s[..8.min(s.len())].to_owned()),
+            commit_sha: r["head_sha"]
+                .as_str()
+                .map(|s| s[..8.min(s.len())].to_owned()),
             commit_message: r["head_commit"]["message"].as_str().map(str::to_owned),
             triggered_by: r["triggering_actor"]["login"].as_str().map(str::to_owned),
             started_at: r["created_at"].as_str().and_then(parse_rfc3339),
@@ -260,7 +288,12 @@ async fn fetch_github(
         None
     };
 
-    Ok(PipelineStatus { config: cfg.clone(), latest_run, fetched_at: now, error: None })
+    Ok(PipelineStatus {
+        config: cfg.clone(),
+        latest_run,
+        fetched_at: now,
+        error: None,
+    })
 }
 
 async fn fetch_github_jobs(
@@ -273,12 +306,16 @@ async fn fetch_github_jobs(
         "https://api.github.com/repos/{}/actions/runs/{}/jobs",
         repo, run_id
     );
-    let mut req = client.get(&url).header("Accept", "application/vnd.github+json");
+    let mut req = client
+        .get(&url)
+        .header("Accept", "application/vnd.github+json");
     if let Some(t) = token {
         req = req.header("Authorization", format!("Bearer {t}"));
     }
     let resp: Value = req.send().await?.error_for_status()?.json().await?;
-    let Some(jobs) = resp["jobs"].as_array() else { return Ok(vec![]) };
+    let Some(jobs) = resp["jobs"].as_array() else {
+        return Ok(vec![]);
+    };
 
     let mut steps = Vec::new();
     for job in jobs {
@@ -286,10 +323,7 @@ async fn fetch_github_jobs(
         if let Some(job_steps) = job["steps"].as_array() {
             for s in job_steps {
                 steps.push(PipelineStep {
-                    name: format!(
-                        "{job_name} / {}",
-                        s["name"].as_str().unwrap_or("step")
-                    ),
+                    name: format!("{job_name} / {}", s["name"].as_str().unwrap_or("step")),
                     status: gh_run_status(
                         s["status"].as_str().unwrap_or("unknown"),
                         s["conclusion"].as_str(),
@@ -312,8 +346,14 @@ async fn fetch_jenkins(
     token: Option<&str>,
     now: u64,
 ) -> Result<PipelineStatus> {
-    let base = cfg.url.as_deref().ok_or_else(|| anyhow::anyhow!("missing 'url'"))?;
-    let job = cfg.job.as_deref().ok_or_else(|| anyhow::anyhow!("missing 'job'"))?;
+    let base = cfg
+        .url
+        .as_deref()
+        .ok_or_else(|| anyhow::anyhow!("missing 'url'"))?;
+    let job = cfg
+        .job
+        .as_deref()
+        .ok_or_else(|| anyhow::anyhow!("missing 'job'"))?;
 
     let job_path: String = job
         .split('/')
@@ -413,7 +453,9 @@ fn parse_rfc3339(s: &str) -> Option<u64> {
     }
     for m in 1..month {
         days += DAYS_IN_MONTH[(m - 1) as usize];
-        if m == 2 && is_leap(year) { days += 1; }
+        if m == 2 && is_leap(year) {
+            days += 1;
+        }
     }
     days += day - 1;
     let secs = days * 86400 + hour * 3600 + min * 60 + sec;
