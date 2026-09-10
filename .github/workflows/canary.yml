@@ -156,30 +156,10 @@ jobs:
           # endpoint to the canary-latest tag so in-app updates work.
           args: ${{ matrix.args }} -c src-tauri/tauri.canary.conf.json -c src-tauri/tauri.bundle.conf.json -c src-tauri/tauri.updater.conf.json -c src-tauri/tauri.canary.updater.conf.json --features canary
 
-      # Pin the freshly-built latest.json to the fixed `canary-latest` tag so
-      # the in-app updater always finds it at a stable URL.
-      - name: Pin latest.json to canary-latest tag
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          TAG: ${{ needs.prepare.outputs.tag }}
-        run: |
-          gh release view canary-latest --repo tensiply/orbit-desktop > /dev/null 2>&1 || \
-            gh release create canary-latest \
-              --repo tensiply/orbit-desktop \
-              --prerelease \
-              --title "Canary Latest" \
-              --notes "Floating tag — always reflects the latest canary build. Do not modify manually."
-          mkdir -p artifacts-updater
-          gh release download "${TAG}" \
-            --dir artifacts-updater \
-            --pattern "latest.json" \
-            --skip-existing || true
-          if [ -f artifacts-updater/latest.json ]; then
-            gh release upload canary-latest artifacts-updater/latest.json --clobber
-          fi
-
       # Homologate the tauri bundle names to
       # orbit-desktop-canary-<version>-<arch>.<ext> (amd64 -> x86_64).
+      # Also rewrites latest.json URLs to match the renamed assets so
+      # the in-app updater resolves the correct download paths.
       - name: Normalize asset filenames
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -198,3 +178,47 @@ jobs:
               echo "renamed: $f -> $new"
             fi
           done
+          if [ -f latest.json ]; then
+            CHANNEL="$CHANNEL" python3 - <<'PY'
+          import json, os, subprocess, urllib.parse
+          script = os.path.join(os.environ["GITHUB_WORKSPACE"], ".github/scripts/homologate_asset.py")
+          channel = os.environ["CHANNEL"]
+          def homologate(name):
+              out = subprocess.run(["python3", script, name, channel],
+                                   capture_output=True, text=True).stdout.strip()
+              return out or name
+          with open("latest.json") as f:
+              manifest = json.load(f)
+          for platform in manifest.get("platforms", {}).values():
+              if "url" in platform:
+                  base, _, fname = platform["url"].rpartition("/")
+                  decoded = urllib.parse.unquote(fname)
+                  platform["url"] = f"{base}/{homologate(decoded)}"
+          with open("latest.json", "w") as f:
+              json.dump(manifest, f, indent=2)
+          PY
+            gh release upload "${TAG}" latest.json --clobber
+            echo "rewrote latest.json urls"
+          fi
+
+      # Pin the updated latest.json (with homologated URLs) to the fixed
+      # `canary-latest` tag so the in-app updater always finds it at a stable URL.
+      - name: Pin latest.json to canary-latest tag
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG: ${{ needs.prepare.outputs.tag }}
+        run: |
+          gh release view canary-latest --repo tensiply/orbit-desktop > /dev/null 2>&1 || \
+            gh release create canary-latest \
+              --repo tensiply/orbit-desktop \
+              --prerelease \
+              --title "Canary Latest" \
+              --notes "Floating tag — always reflects the latest canary build. Do not modify manually."
+          mkdir -p artifacts-updater
+          gh release download "${TAG}" \
+            --dir artifacts-updater \
+            --pattern "latest.json" \
+            --clobber
+          if [ -f artifacts-updater/latest.json ]; then
+            gh release upload canary-latest artifacts-updater/latest.json --clobber
+          fi
