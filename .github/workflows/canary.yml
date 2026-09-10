@@ -123,15 +123,18 @@ jobs:
         working-directory: ui
         run: npm run build
 
-      # The bundled orbit CLI runs as a sidecar. The canary desktop exports
-      # ORBIT_CHANNEL=canary + ORBIT_HOME=~/.orbit-canary, which the spawned CLI
-      # inherits — so the pinned CLI behaves as canary and stays isolated.
-      - name: Fetch bundled orbit CLI
+      # The bundled orbit CLI runs as a sidecar. The canary desktop always
+      # bundles the latest orbit canary CLI so canary-on-canary testing is exact.
+      - name: Fetch bundled orbit CLI (latest canary)
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          ORBIT_VER=$(cat ORBIT_CLI_VERSION)
-          ASSET="orbit-stable-${ORBIT_VER#v}-${{ matrix.orbit_slug }}"
+          ORBIT_VER=$(gh release list --repo tensiply/orbit --limit 50 \
+            --json tagName,isPrerelease \
+            --jq '[.[] | select(.isPrerelease)] | first | .tagName')
+          echo "Latest orbit canary: ${ORBIT_VER}"
+          VER="${ORBIT_VER#v}"
+          ASSET="orbit-canary-${VER}-${{ matrix.orbit_slug }}"
           mkdir -p src-tauri/binaries
           gh release download "${ORBIT_VER}" --repo tensiply/orbit \
             --pattern "${ASSET}" \
