@@ -10,6 +10,7 @@ mod debug_server;
 mod documents;
 mod images;
 mod makefile;
+mod pipelines;
 mod plugins;
 mod pty;
 mod scopes;
@@ -167,6 +168,8 @@ pub fn run() {
             tasks::task_delete,
             // Makefile
             makefile::makefile_targets,
+            // Pipelines
+            pipelines::get_pipelines,
             // Updates & CLI
             updates::check_updates,
             updates::setup_check,

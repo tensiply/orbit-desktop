@@ -159,6 +159,52 @@ export type AnyFileEntry =
 export type ArchLayout = Record<string, [number, number]>
 export type ArchRoutes = Record<string, Record<string, number>>
 
+// ── Pipeline types ─────────────────────────────────────────────────────────────
+
+export type PipelineProvider = 'github_actions' | 'jenkins'
+
+export type RunStatus = 'success' | 'failure' | 'running' | 'pending' | 'cancelled' | 'unknown'
+
+export interface PipelineConfig {
+  name: string
+  provider: PipelineProvider
+  repo?: string
+  branch?: string
+  workflow?: string
+  url?: string
+  job?: string
+  token_secret?: string
+}
+
+export interface PipelineStep {
+  name: string
+  status: RunStatus
+  started_at?: number
+  completed_at?: number
+  message?: string
+}
+
+export interface PipelineRun {
+  id: string
+  run_name: string
+  status: RunStatus
+  branch?: string
+  commit_sha?: string
+  commit_message?: string
+  triggered_by?: string
+  started_at?: number
+  completed_at?: number
+  url?: string
+  steps: PipelineStep[]
+}
+
+export interface PipelineStatus {
+  config: PipelineConfig
+  latest_run?: PipelineRun
+  fetched_at: number
+  error?: string
+}
+
 // ── Updates / CLI types ────────────────────────────────────────────────────────
 
 export interface CliInfo {

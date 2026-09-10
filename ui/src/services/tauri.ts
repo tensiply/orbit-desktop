@@ -4,6 +4,7 @@ import type {
   ArchCatalogDto, ArchEntityDto, SaveEntityArgs, ArchLayout, ArchRoutes,
   HarnessReport, PluginInfo,
   SetupStatus, UpdateCheck, ImageEntry, SvgEntry, DocEntry,
+  PipelineStatus,
 } from '../types'
 
 export const tauriService = {
@@ -135,4 +136,11 @@ export const tauriService = {
 
   makefileTargets: (path: string): Promise<string[]> =>
     invoke('makefile_targets', { path }),
+
+  getPipelines: (
+    tenant: string | null,
+    project: string | null,
+    repository: string | null,
+  ): Promise<PipelineStatus[]> =>
+    invoke('get_pipelines', { tenant, project, repository }),
 }
