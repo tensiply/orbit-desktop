@@ -67,7 +67,7 @@ export function DesktopUIView() {
           <div className="grid grid-cols-2 gap-x-6 gap-y-1.5">
             {[
               ['orbit.desktop.sidebar',                       'Sidebar completo'],
-              ['orbit.desktop.sidebar.header',                '"orbit" + drag region'],
+              ['orbit.desktop.sidebar.header',                '"Orbit" + channel badge + drag region'],
               ['orbit.desktop.sidebar.rail',                  'Columna de iconos'],
               ['orbit.desktop.sidebar.rail.{view}',           'Botón individual del rail'],
               ['orbit.desktop.sidebar.panel',                 'Columna de contenido'],
@@ -167,7 +167,7 @@ export function DesktopUIView() {
         {/* ── Sidebar ──────────────────────────────────────────── */}
         <Section title="sidebar — Sidebar">
           <Zone name="orbit.desktop.sidebar" label="Sidebar completo" sub="Ancho redimensionable: 180–480 px, default 360 px. Se puede ocultar.">
-            <Zone name="orbit.desktop.sidebar.header" label='Barra "orbit"' sub="Texto 'orbit' + región de drag de ventana. Altura h-10." dim />
+            <Zone name="orbit.desktop.sidebar.header" label='Barra "Orbit"' sub="Texto 'Orbit' + badge de canal (DEV/CANARY) + región de drag. Altura h-10." dim />
             <Zone name="orbit.desktop.sidebar.rail" label="Columna de iconos" sub="Ancho fijo 52 px. Navegación principal. Botones de arriba a abajo:">
               <div className="flex flex-col gap-1">
                 {[
