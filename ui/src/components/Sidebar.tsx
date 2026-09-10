@@ -372,7 +372,7 @@ export function Sidebar({ width, collapsed }: { width: number; collapsed?: boole
           <span className="text-sm font-semibold text-sidebar-foreground tracking-tight">Orbit Desktop</span>
           {appChannel === 'DEV' && (
             <span className="text-sm font-semibold text-destructive tracking-tight opacity-60">
-              dev{appVersion ? ` ${appVersion}` : ''}
+              dev
             </span>
           )}
           {appChannel === 'CANARY' && (

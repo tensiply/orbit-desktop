@@ -100,10 +100,7 @@ export function DesktopStep() {
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2 flex-wrap">
-          {current
-            ? <StatusBadge ok={true} label="Running" />
-            : <span className="text-xs text-muted-foreground">No data</span>
-          }
+          <StatusBadge ok={true} label="Running" />
           {current && (
             <code className="text-xs font-mono text-muted-foreground">{current}</code>
           )}

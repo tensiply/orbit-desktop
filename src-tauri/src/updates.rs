@@ -46,6 +46,7 @@ struct GithubRelease {
     tag_name: String,
 }
 
+#[cfg(feature = "canary")]
 #[derive(Debug, Deserialize)]
 struct UpdaterManifest {
     version: String,
@@ -171,37 +172,44 @@ pub fn resolve_orbit_root(path: String) -> ResolvedOrbitRoot {
 /// only and never flags a separate update.
 #[tauri::command]
 pub async fn check_updates(app: AppHandle) -> Result<UpdateCheck, String> {
-    let desktop_version = app.package_info().version.to_string();
-
     let cli_current = cli_check().await?.version;
 
-    let client = build_client(60)?;
-    let desktop_latest = fetch_desktop_latest(&client).await;
+    // Dev builds are run from source — no releases are published for them,
+    // so version comparison is meaningless.
+    #[cfg(feature = "dev")]
+    {
+        let _ = app;
+        return Ok(UpdateCheck {
+            cli: ComponentUpdate { current: cli_current, latest: None, has_update: false },
+            desktop: ComponentUpdate { current: None, latest: None, has_update: false },
+        });
+    }
 
-    let desktop_has_update = match &desktop_latest {
-        Some(lat) => is_older(&desktop_version, lat),
-        None => false,
-    };
-
-    Ok(UpdateCheck {
-        cli: ComponentUpdate {
-            current: cli_current,
-            latest: None,
-            has_update: false,
-        },
-        desktop: ComponentUpdate {
-            current: Some(desktop_version),
-            latest: desktop_latest,
-            has_update: desktop_has_update,
-        },
-    })
+    #[cfg(not(feature = "dev"))]
+    {
+        let desktop_version = app.package_info().version.to_string();
+        let client = build_client(60)?;
+        let desktop_latest = fetch_desktop_latest(&client).await;
+        let desktop_has_update = match &desktop_latest {
+            Some(lat) => is_older(&desktop_version, lat),
+            None => false,
+        };
+        Ok(UpdateCheck {
+            cli: ComponentUpdate { current: cli_current, latest: None, has_update: false },
+            desktop: ComponentUpdate {
+                current: Some(desktop_version),
+                latest: desktop_latest,
+                has_update: desktop_has_update,
+            },
+        })
+    }
 }
 
 // ── Helpers ────────────────────────────────────────────────────────────────────
 
 // Canary builds compare against canary-latest; stable builds compare against
-// the latest non-prerelease GitHub release.
-#[cfg(feature = "canary")]
+// the latest non-prerelease GitHub release. Dev builds don't publish releases.
+#[cfg(all(feature = "canary", not(feature = "dev")))]
 async fn fetch_desktop_latest(client: &reqwest::Client) -> Option<String> {
     let url =
         "https://github.com/tensiply/orbit-desktop/releases/download/canary-latest/latest.json";
@@ -216,13 +224,14 @@ async fn fetch_desktop_latest(client: &reqwest::Client) -> Option<String> {
         .map(|m| m.version)
 }
 
-#[cfg(not(feature = "canary"))]
+#[cfg(all(not(feature = "canary"), not(feature = "dev")))]
 async fn fetch_desktop_latest(client: &reqwest::Client) -> Option<String> {
     fetch_latest_github_release(client, "tensiply", "orbit-desktop")
         .await
         .ok()
 }
 
+#[cfg(not(feature = "dev"))]
 fn build_client(timeout_secs: u64) -> Result<reqwest::Client, String> {
     reqwest::Client::builder()
         .user_agent("orbit-desktop")
@@ -231,7 +240,7 @@ fn build_client(timeout_secs: u64) -> Result<reqwest::Client, String> {
         .map_err(|e| e.to_string())
 }
 
-#[cfg(not(feature = "canary"))]
+#[cfg(all(not(feature = "canary"), not(feature = "dev")))]
 async fn fetch_latest_github_release(
     client: &reqwest::Client,
     owner: &str,
@@ -242,6 +251,7 @@ async fn fetch_latest_github_release(
     Ok(release.tag_name.trim_start_matches('v').to_string())
 }
 
+#[cfg(not(feature = "dev"))]
 fn parse_semver(s: &str) -> Option<(u64, u64, u64)> {
     let s = s.trim_start_matches('v');
     // Accept "major.minor.patch" ignoring any pre-release suffix after "-"
@@ -253,6 +263,7 @@ fn parse_semver(s: &str) -> Option<(u64, u64, u64)> {
     Some((major, minor, patch))
 }
 
+#[cfg(not(feature = "dev"))]
 fn is_older(current: &str, latest: &str) -> bool {
     let cur = current
         .trim_start_matches('v')
