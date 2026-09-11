@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Check, X } from 'lucide-react'
+import { Check, X, Loader2 } from 'lucide-react'
 import type { PipelineStatus, RunStatus } from '../types'
 
 // ── pipeline card ────────────────────────────────────────────────────────────
@@ -96,10 +96,11 @@ export function StatusCircle({ status, label }: { status: RunStatus; label: stri
   return (
     <span
       title={label}
-      className={`inline-flex h-4 w-4 items-center justify-center rounded-full border shrink-0 bg-transparent opacity-70 transition-opacity hover:opacity-100 ${circleColor(status)} ${status === 'running' ? 'animate-pulse' : ''}`}
+      className={`inline-flex h-4 w-4 items-center justify-center rounded-full border shrink-0 bg-transparent opacity-70 transition-opacity hover:opacity-100 ${circleColor(status)}`}
     >
       {status === 'success' && <Check size={10} strokeWidth={3} />}
       {(status === 'failure' || status === 'cancelled') && <X size={10} strokeWidth={3} />}
+      {status === 'running' && <Loader2 size={10} strokeWidth={3} className="animate-spin" />}
     </span>
   )
 }
