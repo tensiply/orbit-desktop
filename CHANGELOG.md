@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.4.0] — 2026-09-11
+
 ### Added
 
 - **Pipeline status badge in session header** — shows a colored dot (green/yellow/red) for CI/CD pipelines configured in `orbit.json` at the current scope. Polls every 60 seconds. Click to expand a panel with per-pipeline run details: branch, commit, triggered by, steps, errors, and a link to the run. Supports GitHub Actions and Jenkins.
