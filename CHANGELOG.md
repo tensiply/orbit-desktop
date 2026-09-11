@@ -7,12 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-## [0.4.0] — 2026-09-09
-
 ### Added
 
 - **Pipeline status badge in session header** — shows a colored dot (green/yellow/red) for CI/CD pipelines configured in `orbit.json` at the current scope. Polls every 60 seconds. Click to expand a panel with per-pipeline run details: branch, commit, triggered by, steps, errors, and a link to the run. Supports GitHub Actions and Jenkins.
 - **Workspace setup auto-detection** — setup wizard now auto-detects the orbit governance root from the current working directory.
+
+### Changed
+
+- **Packaged build uses its own channel home** — the installed app forces its channel's home (`~/.orbit`, `~/.orbit-canary`, `~/.orbit-dev`) instead of any inherited environment, so channels never share daemon or session state.
 
 ### Fixed
 
@@ -20,6 +22,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Update check now uses semver comparison instead of string equality.
 - Canary in-app updater: correct endpoint, signing key, and `latest.json` generation.
 - Canary AppImage launcher entry respects channel isolation.
+- PATH is hydrated from the login shell on startup, so the app launched from a desktop shortcut inherits the full environment.
+- TERM is set for tmux attach and shell PTYs, fixing terminal rendering.
+- The daemon self-heals by restarting when an IPC call fails.
+- `ptyOpen` errors now surface as user-visible notifications.
+- AppImage desktop shortcut is refreshed on every launch, not just the first run.
 
 ## [0.3.0] — 2026-09-04
 
