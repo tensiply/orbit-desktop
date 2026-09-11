@@ -43,10 +43,16 @@ pub async fn pty_open(
             // instead of switching the caller's existing tmux client.
             c.env("TMUX", "");
             c.env("TMUX_PANE", "");
+            // A GUI launch (desktop shortcut) has no TERM, so tmux attach fails
+            // with "terminal does not support clear". xterm.js emulates an
+            // xterm-256color terminal — set it explicitly instead of relying on
+            // an inherited TERM.
+            c.env("TERM", "xterm-256color");
             c
         } else {
             let shell = std::env::var("SHELL").unwrap_or_else(|_| "/bin/bash".into());
             let mut c = CommandBuilder::new(shell);
+            c.env("TERM", "xterm-256color");
             // Suppress oh-my-zsh themes and p10k instant-prompt so the shell
             // starts clean inside orbit without uninstalling anything.
             c.env("ZSH_THEME", "");
