@@ -9,4 +9,5 @@ pub mod orbit_plugin_repo;
 pub mod orbit_sidecar;
 pub mod orbit_workspace_repo;
 pub mod pty_registry;
+pub mod shell_path;
 pub mod xdg_folder_opener;

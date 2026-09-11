@@ -78,6 +78,12 @@ pub fn run() {
         let _ = std::fs::write("/proc/self/comm", ch.process_name());
     }
 
+    // Launched from a desktop shortcut, the app inherits the graphical session's
+    // reduced PATH — it lacks entries added in the user's shell rc (linuxbrew,
+    // nvm, etc.), so the daemon can't find engine binaries like `claude`. Resolve
+    // the login shell's real PATH and adopt it, the way editors like VSCode do.
+    crate::infrastructure::shell_path::hydrate_path();
+
     let buffer = debug_buffer::new_shared();
 
     let fmt_layer = tracing_subscriber::fmt::layer().with_filter(
