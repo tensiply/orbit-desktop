@@ -84,7 +84,7 @@ export function DesktopUIView() {
               ['orbit.desktop.principal.titlebar.controls',   'Minimize / Maximize / Close'],
               ['orbit.desktop.principal.card',                'Card central'],
               ['orbit.desktop.principal.card.tabs',           'Barra de pestañas'],
-              ['orbit.desktop.principal.card.session-header', 'Breadcrumb de sesión activa'],
+              ['orbit.desktop.principal.card.tab-header',     'Cabecero unificado: breadcrumb + acciones del tab'],
               ['orbit.desktop.principal.card.content',        'Área de contenido del tab'],
               ['orbit.desktop.drawer.terminal',               'Terminal drawer (derecha)'],
               ['orbit.desktop.drawer.arch-editor',            'Arch editor drawer (derecha)'],
@@ -144,7 +144,7 @@ export function DesktopUIView() {
                     <span className="text-[6px] font-mono text-foreground/25">.tabs</span>
                   </div>
                   <div className="border border-foreground/8 rounded px-1.5 py-0.5 bg-foreground/3">
-                    <span className="text-[6px] font-mono text-foreground/25">.session-header</span>
+                    <span className="text-[6px] font-mono text-foreground/25">.tab-header</span>
                   </div>
                   <div className="flex-1 border border-foreground/8 rounded px-1.5 py-1 bg-foreground/3">
                     <span className="text-[6px] font-mono text-foreground/25">.content</span>
@@ -210,7 +210,7 @@ export function DesktopUIView() {
             </Zone>
             <Zone name="orbit.desktop.principal.card" label="Card central" sub="Fondo rounded-2xl. Ocupa todo el espacio entre el sidebar y los drawers.">
               <Zone name="orbit.desktop.principal.card.tabs" label="Barra de pestañas (TabBar)" sub="Altura h-[36px]. Cada pestaña tiene icono, título truncado y botón ×." dim />
-              <Zone name="orbit.desktop.principal.card.session-header" label="Cabecera de sesión (SessionHeader)" sub="Solo visible en tabs de tipo terminal. Icono de engine + breadcrumb de scope completo. h-8." dim />
+              <Zone name="orbit.desktop.principal.card.tab-header" label="Cabecero de tab (TabHeader)" sub="Cabecero unificado de todas las tabs: icono de tipo/engine + breadcrumb de scope + acciones (HeaderAction). h-8." dim />
               <Zone name="orbit.desktop.principal.card.content" label="Área de contenido" sub="Renderiza el componente del tab activo." dim>
                 <div className="flex flex-col gap-1">
                   {[
@@ -256,7 +256,7 @@ export function DesktopUIView() {
                 [['orbit.desktop.sidebar', 'orbit.desktop.sidebar.rail', 'orbit.desktop.sidebar.panel', 'orbit.desktop.sidebar.panel.*'],        'components/Sidebar.tsx'],
                 [['orbit.desktop.principal.titlebar', 'orbit.desktop.principal.titlebar.workspace', 'orbit.desktop.principal.titlebar.controls'], 'components/TitleBar.tsx'],
                 [['orbit.desktop.principal.card.tabs'],                                                 'components/TabBar.tsx'],
-                [['orbit.desktop.principal.card.session-header'],                                      'components/SessionHeader.tsx'],
+                [['orbit.desktop.principal.card.tab-header'],                                          'components/header/TabHeader.tsx · SessionHeader.tsx'],
                 [['orbit.desktop.principal.card.content (terminal)'],                                  'components/Terminal.tsx'],
                 [['orbit.desktop.drawer.terminal'],                                                     'components/TerminalDrawer.tsx'],
                 [['orbit.desktop.drawer.arch-editor'],                                                  'components/ArchEditDrawer.tsx'],

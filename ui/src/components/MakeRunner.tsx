@@ -1,13 +1,14 @@
 import { useEffect, useState } from 'react'
-import { Play } from 'lucide-react'
+import { Play, ChevronDown } from 'lucide-react'
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from './ui/select'
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuRadioGroup,
+  DropdownMenuRadioItem,
+  DropdownMenuTrigger,
+} from './ui/dropdown-menu'
 import { Button } from './ui/button'
+import { HeaderAction, headerActionIconClass } from './header'
 import { tauriService } from '../services/tauri'
 import type { Session } from '../types'
 
@@ -20,25 +21,21 @@ function storageKey(workDir: string) {
 interface Props {
   session: Session
   tabId: string
+  targets: string[]
 }
 
-export function MakeRunner({ session, tabId }: Props) {
-  const [targets, setTargets] = useState<string[]>([])
+export function MakeRunner({ session, tabId, targets }: Props) {
   const [selected, setSelected] = useState<string>('')
   const [open, setOpen] = useState(false)
 
   useEffect(() => {
-    setTargets([])
-    setSelected('')
-
-    tauriService.makefileTargets(session.work_dir).then((ts) => {
-      setTargets(ts)
-      if (ts.length > 0) {
-        const saved = localStorage.getItem(storageKey(session.work_dir))
-        setSelected(saved && ts.includes(saved) ? saved : ts[0])
-      }
-    })
-  }, [session.work_dir])
+    if (targets.length === 0) {
+      setSelected('')
+      return
+    }
+    const saved = localStorage.getItem(storageKey(session.work_dir))
+    setSelected(saved && targets.includes(saved) ? saved : targets[0])
+  }, [targets, session.work_dir])
 
   useEffect(() => {
     const onOpen = () => setOpen(true)
@@ -69,31 +66,39 @@ export function MakeRunner({ session, tabId }: Props) {
   if (targets.length === 0) return null
 
   return (
-    <div className="flex items-center gap-1 shrink-0">
-      <Select open={open} onOpenChange={handleOpenChange} value={selected} onValueChange={handleSelect}>
-        <SelectTrigger
-          className="h-5 gap-1 rounded border-0 bg-transparent px-1.5 py-0 text-[10px] font-medium text-foreground/40 shadow-none ring-0 focus:ring-0 hover:bg-muted/50 hover:text-foreground/70 [&>span]:max-w-[120px] [&>span]:truncate data-[placeholder]:text-foreground/25"
-        >
-          <SelectValue />
-        </SelectTrigger>
-        <SelectContent className="text-xs">
-          {targets.map((t) => (
-            <SelectItem key={t} value={t} className="text-xs py-1">
-              {t}
-            </SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
-
-      <Button
-        variant="ghost"
-        size="icon"
+    <div className="flex items-center gap-1.5 shrink-0">
+      {/* Run */}
+      <HeaderAction
+        icon={<Play />}
+        label="Run make target (Ctrl+P)"
         onClick={() => { void run() }}
-        title="Run make target (Ctrl+P)"
-        className="h-5 w-5 text-foreground/35 hover:text-foreground/70"
+      />
+
+      {/* Selected target — label */}
+      <span
+        title={selected}
+        className="text-[10px] font-medium text-foreground/50 max-w-[140px] truncate select-none"
       >
-        <Play className="h-2.5 w-2.5 fill-current" />
-      </Button>
+        {selected}
+      </span>
+
+      {/* Open target selector — same ghost button as Play */}
+      <DropdownMenu open={open} onOpenChange={handleOpenChange}>
+        <DropdownMenuTrigger asChild>
+          <Button variant="ghost" aria-label="Choose make target" title="Choose make target" className={headerActionIconClass}>
+            <ChevronDown />
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end" className="min-w-[8rem]">
+          <DropdownMenuRadioGroup value={selected} onValueChange={handleSelect}>
+            {targets.map((t) => (
+              <DropdownMenuRadioItem key={t} value={t} className="text-xs">
+                {t}
+              </DropdownMenuRadioItem>
+            ))}
+          </DropdownMenuRadioGroup>
+        </DropdownMenuContent>
+      </DropdownMenu>
     </div>
   )
 }
