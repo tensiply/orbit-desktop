@@ -11,6 +11,7 @@ import { createTasksSlice } from './store/slices/tasks'
 import { createScopeSlice } from './store/slices/scope'
 import { createArchDrawerSlice } from './store/slices/archDrawer'
 import { createHarnessDrawerSlice } from './store/slices/harnessDrawer'
+import { createPipelineDrawerSlice } from './store/slices/pipelineDrawer'
 import { createUpdatesSlice } from './store/slices/updates'
 import { createNotificationsSlice } from './store/slices/notifications'
 import type { AppStore } from './store/types'
@@ -29,6 +30,7 @@ export const useAppStore = create<AppStore>()(
       ...createScopeSlice(...a),
       ...createArchDrawerSlice(...a),
       ...createHarnessDrawerSlice(...a),
+      ...createPipelineDrawerSlice(...a),
       ...createUpdatesSlice(...a),
       ...createNotificationsSlice(...a),
     }),

@@ -138,9 +138,10 @@ export const tauriService = {
     invoke('makefile_targets', { path }),
 
   getPipelines: (
+    workspace: string | null,
     tenant: string | null,
     project: string | null,
     repository: string | null,
   ): Promise<PipelineStatus[]> =>
-    invoke('get_pipelines', { tenant, project, repository }),
+    invoke('get_pipelines', { workspace, tenant, project, repository }),
 }
