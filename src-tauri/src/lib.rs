@@ -38,13 +38,15 @@ use infrastructure::{
 };
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt, Layer};
 
-#[cfg(debug_assertions)]
+// DevTools ships in debug builds and in the dev/canary pre-release channels
+// (their features enable `tauri/devtools`); stable release strips it.
+#[cfg(any(debug_assertions, feature = "dev", feature = "canary"))]
 #[tauri::command]
 fn open_devtools(window: tauri::WebviewWindow) {
     window.open_devtools();
 }
 
-#[cfg(not(debug_assertions))]
+#[cfg(not(any(debug_assertions, feature = "dev", feature = "canary")))]
 #[tauri::command]
 fn open_devtools(_window: tauri::WebviewWindow) {}
 
