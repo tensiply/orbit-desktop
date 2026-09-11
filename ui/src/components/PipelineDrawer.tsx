@@ -2,13 +2,15 @@ import { RefreshCw } from 'lucide-react'
 import { Drawer } from './ui/drawer'
 import { useAppStore } from '../store'
 import { PipelineCard } from './pipelineUi'
+import { USE_PIPELINE_MOCKS, MOCK_PIPELINES } from './pipelineMocks'
 
 export function PipelineDrawer() {
   const open       = useAppStore((s) => s.pipelineDrawerOpen)
-  const pipelines  = useAppStore((s) => s.pipelines)
+  const storePipelines = useAppStore((s) => s.pipelines)
   const loading    = useAppStore((s) => s.pipelinesLoading)
   const close      = useAppStore((s) => s.closePipelineDrawer)
   const refresh    = useAppStore((s) => s.refreshPipelines)
+  const pipelines  = USE_PIPELINE_MOCKS ? MOCK_PIPELINES : storePipelines
 
   return (
     <Drawer

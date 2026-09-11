@@ -16,7 +16,7 @@ export function PipelineCard({ ps }: { ps: PipelineStatus }) {
         onClick={() => hasSteps && setExpanded((v) => !v)}
         className={`flex w-full items-center gap-2 text-left ${hasSteps ? '' : 'cursor-default'}`}
       >
-        <StatusDot status={status} />
+        <StatusCircle status={status} label={`${ps.config.name} — ${status}`} />
         <span className="font-medium text-foreground/80 flex-1 truncate">{ps.config.name}</span>
         <span className="text-foreground/35 text-[10px]">{providerLabel(ps.config.provider)}</span>
         {hasSteps && (
