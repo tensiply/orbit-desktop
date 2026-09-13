@@ -56,12 +56,12 @@ export function SessionHeader() {
       icon={<EngineIcon engine={engine} size={11} />}
       parts={parts}
       globalMode={session.global_mode}
-      actions={<SessionActions session={session} tabId={activeTab.id} />}
+      actions={<SessionActions session={session} />}
     />
   )
 }
 
-function SessionActions({ session, tabId }: { session: Session; tabId: string }) {
+function SessionActions({ session }: { session: Session }) {
   const makeTargets        = useMakefileTargets(session.work_dir)
   const pipelines          = usePipelines(session)
   const openPipelineDrawer = useAppStore((s) => s.openPipelineDrawer)
@@ -77,7 +77,7 @@ function SessionActions({ session, tabId }: { session: Session; tabId: string })
       id: 'make',
       order: 20,
       when: makeTargets.length > 0,
-      node: <MakeRunner session={session} tabId={tabId} targets={makeTargets} />,
+      node: <MakeRunner session={session} targets={makeTargets} />,
     },
   ]
 

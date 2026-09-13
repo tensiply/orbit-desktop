@@ -3,6 +3,7 @@ ui/dist/
 ui/src/bindings/
 src-tauri/target/
 target/
+target-dev/
 .cargo/config.toml
 
 # ts-rs stray export dir when TS_RS_EXPORT_DIR is unset (use `make gen-bindings`)
@@ -10,3 +11,6 @@ target/
 
 # Bundled orbit CLI sidecar — downloaded during the release build (see ORBIT_CLI_VERSION)
 /src-tauri/binaries/
+
+# Execution Drawer command logs (make output captured for the session to read)
+.orbit/executions/

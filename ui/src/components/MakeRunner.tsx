@@ -9,7 +9,7 @@ import {
 } from './ui/dropdown-menu'
 import { Button } from './ui/button'
 import { HeaderAction, headerActionIconClass } from './header'
-import { tauriService } from '../services/tauri'
+import { useAppStore } from '../store'
 import type { Session } from '../types'
 
 const STORAGE_PREFIX = 'orbit-make-target:'
@@ -20,13 +20,13 @@ function storageKey(workDir: string) {
 
 interface Props {
   session: Session
-  tabId: string
   targets: string[]
 }
 
-export function MakeRunner({ session, tabId, targets }: Props) {
+export function MakeRunner({ session, targets }: Props) {
   const [selected, setSelected] = useState<string>('')
   const [open, setOpen] = useState(false)
+  const runInExecutionDrawer = useAppStore((s) => s.runInExecutionDrawer)
 
   useEffect(() => {
     if (targets.length === 0) {
@@ -47,7 +47,7 @@ export function MakeRunner({ session, tabId, targets }: Props) {
       window.removeEventListener('orbit:make-run', onRun)
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selected, tabId])
+  }, [selected])
 
   const handleSelect = (value: string) => {
     setSelected(value)
@@ -59,8 +59,8 @@ export function MakeRunner({ session, tabId, targets }: Props) {
   }
 
   async function run() {
-    if (!selected || !tabId) return
-    await tauriService.ptyWrite(tabId, `make ${selected}\n`)
+    if (!selected) return
+    await runInExecutionDrawer(session.work_dir, `make ${selected}`)
   }
 
   if (targets.length === 0) return null

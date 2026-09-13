@@ -137,6 +137,12 @@ export const tauriService = {
   makefileTargets: (path: string): Promise<string[]> =>
     invoke('makefile_targets', { path }),
 
+  execRun: (execId: string, workDir: string, command: string, artifactPath: string): Promise<void> =>
+    invoke('exec_run', { execId, workDir, command, artifactPath }),
+
+  execKill: (execId: string): Promise<void> =>
+    invoke('exec_kill', { execId }),
+
   getPipelines: (
     workspace: string | null,
     tenant: string | null,
