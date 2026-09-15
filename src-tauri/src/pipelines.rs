@@ -1,5 +1,9 @@
 use anyhow::Result;
-use orbit_core::{secrets, user_config::UserConfig};
+use orbit_core::{
+    secrets,
+    user_config::{self, UserConfig},
+    workspace_registry::WorkspaceRegistry,
+};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use std::{fs, path::PathBuf};
@@ -91,12 +95,12 @@ pub struct PipelineStatus {
 
 #[tauri::command]
 pub async fn get_pipelines(
+    workspace: Option<String>,
     tenant: Option<String>,
     project: Option<String>,
     repository: Option<String>,
 ) -> Result<Vec<PipelineStatus>, String> {
-    let user_cfg = UserConfig::load();
-    let ai_root = user_cfg.ai_root_expanded();
+    let ai_root = resolve_ai_root(workspace.as_deref());
     let workspace_slug = ai_root
         .file_name()
         .map(|n| n.to_string_lossy().into_owned());
@@ -139,6 +143,21 @@ pub async fn get_pipelines(
 }
 
 // ── config collection ─────────────────────────────────────────────────────────
+
+/// Resolve the active workspace's `ai_root`. Prefers the registry entry matching
+/// the session workspace (by slug or name), falls back to the default entry, and
+/// finally to the personal `UserConfig`. This is what lets pipeline configs be
+/// found under a workspace whose root is not the default `~/AI`.
+fn resolve_ai_root(workspace: Option<&str>) -> PathBuf {
+    let registry = WorkspaceRegistry::load();
+    let entry = workspace
+        .and_then(|w| registry.get(w))
+        .or_else(|| registry.default_entry());
+    match entry {
+        Some(e) => user_config::expand_tilde(&e.ai_root),
+        None => UserConfig::load().ai_root_expanded(),
+    }
+}
 
 fn collect_configs(
     ai_root: &std::path::Path,

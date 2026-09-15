@@ -11,6 +11,7 @@ import { ShortcutsView } from './components/ShortcutsView'
 import { TerminalDrawer } from './components/TerminalDrawer'
 import { ArchEditDrawer } from './components/ArchEditDrawer'
 import { HarnessDrawer } from './components/HarnessDrawer'
+import { PipelineDrawer } from './components/PipelineDrawer'
 import { UIKitView } from './components/UIKitView'
 import { ColorsView } from './components/ColorsView'
 import { SettingsView } from './components/SettingsView'
@@ -300,6 +301,7 @@ export default function App() {
             {/* Drawer cards — siblings, same height, gap from parent */}
             <HarnessDrawer />
             <ArchEditDrawer />
+            <PipelineDrawer />
             <TerminalDrawer />
           </div>
         </main>
