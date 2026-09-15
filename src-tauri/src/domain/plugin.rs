@@ -10,5 +10,7 @@ pub struct PluginInfo {
     pub description: String,
     pub category: String,
     pub installed: bool,
+    /// Whether the plugin ships an MCP server at all (independent of enablement).
+    pub has_mcp: bool,
     pub mcp_enabled: bool,
 }

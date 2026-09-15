@@ -13,6 +13,7 @@ import { createArchDrawerSlice } from './store/slices/archDrawer'
 import { createHarnessDrawerSlice } from './store/slices/harnessDrawer'
 import { createUpdatesSlice } from './store/slices/updates'
 import { createNotificationsSlice } from './store/slices/notifications'
+import { createPluginsSlice } from './store/slices/plugins'
 import type { AppStore } from './store/types'
 
 export const useAppStore = create<AppStore>()(
@@ -31,6 +32,7 @@ export const useAppStore = create<AppStore>()(
       ...createHarnessDrawerSlice(...a),
       ...createUpdatesSlice(...a),
       ...createNotificationsSlice(...a),
+      ...createPluginsSlice(...a),
     }),
     {
       name: 'orbit-ui-prefs',
