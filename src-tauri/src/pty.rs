@@ -5,7 +5,7 @@ use tauri::{AppHandle, Emitter, State};
 use uuid::Uuid;
 
 use crate::domain::{ports::pty_repository::PtyRepository, pty::PtyDataEvent};
-use crate::infrastructure::pty_registry::{PtyHandle, PtyRegistry};
+use crate::infrastructure::pty_registry::{IpcCmd, PtyHandle, PtyRegistry};
 
 /// The user's default interactive shell: `$SHELL` (fallback `/bin/bash`) on
 /// unix, `%COMSPEC%` (fallback `cmd.exe`) on Windows.
@@ -21,9 +21,11 @@ fn default_shell_command() -> CommandBuilder {
     CommandBuilder::new(shell)
 }
 
-/// Open a PTY and return the tab_id.
-/// If `tmux_session` is Some, attaches to that tmux session.
-/// Otherwise opens the user's default shell.
+/// Open a terminal tab and return its tab_id. Selection:
+/// - `tmux_session` non-empty → attach to that tmux session (unix).
+/// - else `session_id` present → attach to the daemon-owned PTY over IPC
+///   (Windows, or opt-in unix via `ORBIT_DAEMON_PTY`).
+/// - else → open the user's default shell.
 ///
 /// PTY creation and the reader-thread setup stay here (presentation) because
 /// the reader emits Tauri events — that coupling to AppHandle is intentional.
@@ -33,9 +35,23 @@ pub async fn pty_open(
     app: AppHandle,
     registry: State<'_, PtyRegistry>,
     tmux_session: Option<String>,
+    session_id: Option<String>,
     cwd: Option<String>,
 ) -> Result<String, String> {
     let tab_id = Uuid::new_v4().to_string();
+
+    // A daemon-owned session carries a session id but no tmux name — attach over
+    // IPC rather than spawning a local PTY. (The daemon owns the engine's PTY.)
+    let tmux_session = tmux_session.filter(|s| !s.is_empty());
+    if tmux_session.is_none() {
+        if let Some(sid) = session_id {
+            attach_daemon_pty(app, registry.inner().clone(), tab_id.clone(), sid)
+                .await
+                .map_err(|e| e.to_string())?;
+            return Ok(tab_id);
+        }
+    }
+
     let tid = tab_id.clone();
     let reg = registry.inner().clone();
 
@@ -132,7 +148,7 @@ pub async fn pty_open(
 
         reg.insert(
             tid,
-            PtyHandle {
+            PtyHandle::Local {
                 writer,
                 master: pair.master,
                 _child: child,
@@ -145,6 +161,50 @@ pub async fn pty_open(
     .map_err(|e| e.to_string())?;
 
     Ok(tab_id)
+}
+
+/// Attach to a daemon-owned PTY session over IPC and bridge it to a terminal
+/// tab. A pump task owns the async `AttachChannel`: it forwards PTY output to
+/// the frontend as `pty-data` events and drains input/resize/detach commands
+/// (posted synchronously by the registry) into the channel.
+async fn attach_daemon_pty(
+    app: AppHandle,
+    reg: PtyRegistry,
+    tab_id: String,
+    session_id: String,
+) -> Result<()> {
+    let mut channel = orbit_client::ipc::open_attach(&session_id, 80, 24)
+        .await
+        .map_err(|e| anyhow::anyhow!("attach session {session_id}: {e}"))?;
+
+    let (tx, mut rx) = tokio::sync::mpsc::unbounded_channel::<IpcCmd>();
+    let tid = tab_id.clone();
+    tokio::spawn(async move {
+        loop {
+            tokio::select! {
+                out = channel.recv_output() => match out {
+                    Ok(Some(bytes)) => {
+                        let data = String::from_utf8_lossy(&bytes).into_owned();
+                        let _ = app.emit(
+                            "pty-data",
+                            PtyDataEvent { tab_id: tid.clone(), data },
+                        );
+                    }
+                    // Session ended or the stream broke — stop pumping.
+                    Ok(None) | Err(_) => break,
+                },
+                cmd = rx.recv() => match cmd {
+                    Some(IpcCmd::Input(b)) => { let _ = channel.send_input(&b).await; }
+                    Some(IpcCmd::Resize(c, r)) => { let _ = channel.resize(c, r).await; }
+                    // Explicit detach, or every sender dropped (tab closed).
+                    Some(IpcCmd::Detach) | None => { let _ = channel.detach().await; break; }
+                }
+            }
+        }
+    });
+
+    reg.insert(tab_id, PtyHandle::Ipc { tx });
+    Ok(())
 }
 
 #[tauri::command]
