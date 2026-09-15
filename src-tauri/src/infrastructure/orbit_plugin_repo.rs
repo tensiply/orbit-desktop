@@ -11,12 +11,14 @@ impl PluginRepository for OrbitPluginRepo {
             .into_iter()
             .map(|p| {
                 let installed = p.is_installed();
-                let mcp_enabled = !p.mcp.is_empty() && state.is_enabled(&p.name);
+                let has_mcp = !p.mcp.is_empty();
+                let mcp_enabled = has_mcp && state.is_enabled(&p.name);
                 PluginInfo {
                     name: p.name,
                     description: p.description,
                     category: p.category,
                     installed,
+                    has_mcp,
                     mcp_enabled,
                 }
             })

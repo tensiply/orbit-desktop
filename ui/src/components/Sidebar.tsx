@@ -29,6 +29,8 @@ import { ViewModeToggle, ScopeNavigator } from './sidebar/ScopePanel'
 import { SessionList, NewSessionButton } from './sidebar/SessionPanel'
 import { FilesPanel, DocsPanel, FileUploader } from './sidebar/DocumentPanel'
 import { TasksPanel } from './sidebar/TaskPanel'
+import { PluginsPanel } from './sidebar/PluginsPanel'
+import { McpsPanel } from './sidebar/McpsPanel'
 import { DropdownMenuItem } from './ui/dropdown-menu'
 import { Badge } from './ui/badge'
 import type { ActiveSettingsCategory } from '../store/slices/settings'
@@ -167,6 +169,7 @@ export function Sidebar({ width, collapsed }: { width: number; collapsed?: boole
   const tasksLoading         = useAppStore((s) => s.tasksLoading)
   const fetchTasks           = useAppStore((s) => s.fetchTasks)
   const openTask             = useAppStore((s) => s.openTask)
+  const fetchPlugins         = useAppStore((s) => s.fetchPlugins)
   const openFeaturePage      = useAppStore((s) => s.openFeaturePage)
   const registeredWorkspaces = useAppStore((s) => s.registeredWorkspaces)
   const scopeViewMode          = useAppStore((s) => s.scopeViewMode)
@@ -217,6 +220,10 @@ export function Sidebar({ width, collapsed }: { width: number; collapsed?: boole
       openFeaturePage('tasks')
     }
   }, [navView, taskWorkspace])
+
+  useEffect(() => {
+    if (navView === 'plugins' || navView === 'mcps') void fetchPlugins()
+  }, [navView])
 
   useEffect(() => {
     if (scopeViewMode === 'scope') void loadScopeTree()
@@ -528,7 +535,9 @@ export function Sidebar({ width, collapsed }: { width: number; collapsed?: boole
                   onOpenSetup={openSetupWizard}
                 />
               )}
-              {navView !== 'terminal' && navView !== 'docs' && navView !== 'documents' && navView !== 'tasks' && navView !== 'settings' && (
+              {navView === 'plugins' && <PluginsPanel />}
+              {navView === 'mcps' && <McpsPanel />}
+              {navView !== 'terminal' && navView !== 'docs' && navView !== 'documents' && navView !== 'tasks' && navView !== 'settings' && navView !== 'plugins' && navView !== 'mcps' && (
                 <p className="text-[10px] text-sidebar-foreground/25 px-2 pt-1">Coming soon</p>
               )}
             </SidebarPanel>
