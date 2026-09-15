@@ -488,6 +488,7 @@ export function Sidebar({ width, collapsed }: { width: number; collapsed?: boole
                   {inScopeMode && (
                     <ScopeNavigator
                       selectedFolderName={selectedFolderName}
+                      folderMenu="folder"
                     />
                   )}
                   {searchNode}

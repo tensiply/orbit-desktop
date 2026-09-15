@@ -78,7 +78,7 @@ export function McpsPanel() {
 
   return (
     <>
-      <ScopeNavigator selectedFolderName={null} />
+      <ScopeNavigator selectedFolderName={null} folderMenu="none" />
       <div className="flex-1 overflow-y-auto min-h-0 px-1 pt-1 pb-2">
         {loading && plugins.length === 0 && (
           <p className="text-[10px] text-sidebar-foreground/25 px-3 pt-1 italic">Loading…</p>
