@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **Daemon-owned PTY terminals** — Terminal tabs can now attach to a daemon-owned session over IPC (`session_attach`) instead of only local tmux, so AI sessions work where tmux doesn't exist (Windows, or opt-in unix via `ORBIT_DAEMON_PTY`). `pty_open` takes an optional `session_id`: a session with no tmux name attaches over IPC, with an async pump task forwarding PTY output to the terminal and input/resize/detach back to the daemon; the daemon keeps the PTY alive after the tab closes.
+
 ### Changed
 
 - **Cross-platform client paths (Windows groundwork)** — The bundled `orbit` sidecar resolves as `orbit.exe` on Windows (via `EXE_SUFFIX`); the terminal's default shell is `%COMSPEC%` on Windows (`$SHELL` on unix) with the zsh/oh-my-zsh tweaks skipped there; PATH injection into the terminal uses the platform separator (`;` on Windows) via `join_paths`; and `HOME`-less fallbacks use the OS temp dir instead of a literal `/tmp`.

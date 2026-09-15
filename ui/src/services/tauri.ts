@@ -8,8 +8,12 @@ import type {
 } from '../types'
 
 export const tauriService = {
-  ptyOpen: (tmuxSession: string | null, cwd?: string | null): Promise<string> =>
-    invoke('pty_open', { tmuxSession, cwd: cwd ?? null }),
+  ptyOpen: (
+    tmuxSession: string | null,
+    sessionId?: string | null,
+    cwd?: string | null,
+  ): Promise<string> =>
+    invoke('pty_open', { tmuxSession, sessionId: sessionId ?? null, cwd: cwd ?? null }),
 
   ptyClose: (tabId: string): Promise<void> =>
     invoke('pty_close', { tabId }),
