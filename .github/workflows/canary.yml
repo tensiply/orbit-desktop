@@ -55,9 +55,6 @@ jobs:
     needs: prepare
     permissions:
       contents: write
-    # Windows is experimental until ORBIT_CLI_VERSION / the canary orbit release
-    # publishes a windows-x86_64 sidecar — keep it non-blocking meanwhile.
-    continue-on-error: ${{ matrix.experimental || false }}
     # Run all steps under bash so the shell scripting works on the Windows runner.
     defaults:
       run:
@@ -77,7 +74,6 @@ jobs:
             args: "-c src-tauri/tauri.windows.conf.json"
             orbit_slug: windows-x86_64
             sidecar_triple: x86_64-pc-windows-msvc
-            experimental: true
     runs-on: ${{ matrix.platform }}
     steps:
       - uses: actions/checkout@v4
