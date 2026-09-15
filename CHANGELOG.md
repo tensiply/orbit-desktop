@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- **Cross-platform client paths (Windows groundwork)** — The bundled `orbit` sidecar resolves as `orbit.exe` on Windows (via `EXE_SUFFIX`); the terminal's default shell is `%COMSPEC%` on Windows (`$SHELL` on unix) with the zsh/oh-my-zsh tweaks skipped there; PATH injection into the terminal uses the platform separator (`;` on Windows) via `join_paths`; and `HOME`-less fallbacks use the OS temp dir instead of a literal `/tmp`.
+
 ## [0.4.0] — 2026-09-11
 
 ### Added
