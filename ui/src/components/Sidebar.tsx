@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { getName, getVersion } from '@tauri-apps/api/app'
 import { Loader2, BookOpen, User, Settings2, Monitor, Terminal as TerminalIcon, Cpu, ShieldCheck, Download, Package, Keyboard, FileText, Image, FileCode, Network } from 'lucide-react'
 import { useAppStore } from '../store'
-import { workspaceFromWorkDir } from '../domain/scope'
+import { workspaceFromWorkDir, scopeArgsFromPath } from '../domain/scope'
 import { useScopeSession } from '../hooks/useScopeSession'
 import {
   computeSidebarItems,
@@ -222,8 +222,12 @@ export function Sidebar({ width, collapsed }: { width: number; collapsed?: boole
   }, [navView, taskWorkspace])
 
   useEffect(() => {
-    if (navView === 'plugins' || navView === 'mcps') void fetchPlugins()
-  }, [navView])
+    if (navView === 'plugins' || navView === 'mcps') {
+      void loadScopeTree()
+      const fullPath = selectedWorkspace ? [selectedWorkspace, ...scopePath] : scopePath
+      void fetchPlugins(scopeArgsFromPath(fullPath))
+    }
+  }, [navView, scopePath, selectedWorkspace])
 
   useEffect(() => {
     if (scopeViewMode === 'scope') void loadScopeTree()

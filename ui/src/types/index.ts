@@ -23,6 +23,7 @@ export type { HarnessPluginContext } from '../bindings/HarnessPluginContext'
 export type { HarnessScopeInfo }     from '../bindings/HarnessScopeInfo'
 export type { HarnessReport }        from '../bindings/HarnessReport'
 export type { PluginInfo }      from '../bindings/PluginInfo'
+export type { ScopeArgs }       from '../bindings/ScopeArgs'
 export type { DaemonStatus }    from '../bindings/DaemonStatus'
 
 // ── UI-only types — no Rust equivalent ────────────────────────────────────────
