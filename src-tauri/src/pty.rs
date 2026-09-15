@@ -7,6 +7,20 @@ use uuid::Uuid;
 use crate::domain::{ports::pty_repository::PtyRepository, pty::PtyDataEvent};
 use crate::infrastructure::pty_registry::{PtyHandle, PtyRegistry};
 
+/// The user's default interactive shell: `$SHELL` (fallback `/bin/bash`) on
+/// unix, `%COMSPEC%` (fallback `cmd.exe`) on Windows.
+#[cfg(unix)]
+fn default_shell_command() -> CommandBuilder {
+    let shell = std::env::var("SHELL").unwrap_or_else(|_| "/bin/bash".into());
+    CommandBuilder::new(shell)
+}
+
+#[cfg(windows)]
+fn default_shell_command() -> CommandBuilder {
+    let shell = std::env::var("COMSPEC").unwrap_or_else(|_| "cmd.exe".into());
+    CommandBuilder::new(shell)
+}
+
 /// Open a PTY and return the tab_id.
 /// If `tmux_session` is Some, attaches to that tmux session.
 /// Otherwise opens the user's default shell.
@@ -50,18 +64,26 @@ pub async fn pty_open(
             c.env("TERM", "xterm-256color");
             c
         } else {
-            let shell = std::env::var("SHELL").unwrap_or_else(|_| "/bin/bash".into());
-            let mut c = CommandBuilder::new(shell);
+            let mut c = default_shell_command();
             c.env("TERM", "xterm-256color");
             // Suppress oh-my-zsh themes and p10k instant-prompt so the shell
-            // starts clean inside orbit without uninstalling anything.
-            c.env("ZSH_THEME", "");
-            c.env("POWERLEVEL9K_INSTANT_PROMPT", "off");
+            // starts clean inside orbit without uninstalling anything. These are
+            // zsh/bash-only, so they're pointless on the Windows shell.
+            #[cfg(unix)]
+            {
+                c.env("ZSH_THEME", "");
+                c.env("POWERLEVEL9K_INSTANT_PROMPT", "off");
+            }
             c.env("ORBIT_TERMINAL", "1");
-            // Make the bundled orbit CLI available to commands typed in the terminal.
+            // Make the bundled orbit CLI available to commands typed in the
+            // terminal. Prepend the sidecar dir using the platform PATH separator.
             if let Some(dir) = crate::infrastructure::orbit_sidecar::sidecar_dir() {
-                let path = std::env::var("PATH").unwrap_or_default();
-                c.env("PATH", format!("{}:{path}", dir.display()));
+                let existing = std::env::var_os("PATH").unwrap_or_default();
+                let mut entries = vec![dir];
+                entries.extend(std::env::split_paths(&existing));
+                if let Ok(joined) = std::env::join_paths(entries) {
+                    c.env("PATH", joined);
+                }
             }
             if let Some(ref dir) = cwd {
                 c.cwd(dir);
