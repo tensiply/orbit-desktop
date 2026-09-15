@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - **Daemon-owned PTY terminals** — Terminal tabs can now attach to a daemon-owned session over IPC (`session_attach`) instead of only local tmux, so AI sessions work where tmux doesn't exist (Windows, or opt-in unix via `ORBIT_DAEMON_PTY`). `pty_open` takes an optional `session_id`: a session with no tmux name attaches over IPC, with an async pump task forwarding PTY output to the terminal and input/resize/detach back to the daemon; the daemon keeps the PTY alive after the tab closes.
+- **Windows installers (NSIS + MSI)** — `release.yml` and `canary.yml` now carry a `windows-latest` build that bundles the `orbit.exe` sidecar and produces NSIS `.exe` + MSI installers (WebView2 via the default download bootstrapper), homologated to `orbit-desktop-<channel>-<ver>-x86_64.{exe,msi}`. The homologate script maps Tauri's `x64` token to `x86_64` and drops the `-setup`/`_en-US` infixes; `make bundle` builds the NSIS+MSI overlay on Windows. The Windows job is `experimental` (non-blocking) until `ORBIT_CLI_VERSION` points at an orbit release that ships a `windows-x86_64` sidecar.
 
 ### Changed
 
