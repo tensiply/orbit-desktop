@@ -88,7 +88,7 @@ export type ScopeFolderMenu = 'session' | 'folder' | 'none'
 
 export function ScopeNavigator({
   selectedFolderName,
-  folderMenu = 'session',
+  folderMenu = 'none',
 }: {
   selectedFolderName:  string | null
   folderMenu?:         ScopeFolderMenu
@@ -214,7 +214,8 @@ export function ScopeNavigator({
                 </button>
               )
 
-              // Plugins/MCPs have no folder-scoped actions yet → plain button.
+              // Menu is opt-in per view (default 'none'): only sessions and
+              // files expose folder actions. Everything else → plain button.
               if (folderMenu === 'none') {
                 return <li key={name}>{folderButton}</li>
               }
