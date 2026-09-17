@@ -206,7 +206,13 @@ export function ScopeNavigator({
                 <button
                   ref={(el) => { if (el) buttonRefs.current.set(name, el); else buttonRefs.current.delete(name) }}
                   onClick={() => navigateIn(name)}
-                  onContextMenu={(e) => e.stopPropagation()}
+                  onContextMenu={
+                    // No menu for this view → also suppress the native webview
+                    // menu (Tauri "Inspect element"). Radix handles it otherwise.
+                    folderMenu === 'none'
+                      ? (e) => { e.preventDefault(); e.stopPropagation() }
+                      : (e) => e.stopPropagation()
+                  }
                   className={`group flex items-center justify-between w-full px-2 py-1.5 rounded-md text-xs text-sidebar-foreground/55 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-inset focus-visible:ring-foreground/30 ${isSelected ? RING_CLASS : ''}`}
                 >
                   <span className="truncate">{name}</span>
