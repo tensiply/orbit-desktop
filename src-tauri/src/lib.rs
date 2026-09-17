@@ -140,6 +140,7 @@ pub fn run() {
             plugins::plugin_list,
             plugins::plugin_enable,
             plugins::plugin_disable,
+            plugins::plugin_install,
             // Documents
             documents::document_list,
             documents::document_import,

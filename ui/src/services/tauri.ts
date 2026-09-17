@@ -126,6 +126,9 @@ export const tauriService = {
   pluginDisable: (name: string, level: string | null, scope: ScopeArgs): Promise<void> =>
     invoke('plugin_disable', { name, level, scope }),
 
+  pluginInstall: (name: string): Promise<void> =>
+    invoke('plugin_install', { name }),
+
   setupCheck: (): Promise<SetupStatus> =>
     invoke('setup_check'),
 

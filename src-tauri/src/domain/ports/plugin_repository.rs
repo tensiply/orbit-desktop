@@ -9,4 +9,6 @@ pub trait PluginRepository: Send + Sync {
     /// tenant/project/repo the level resolves against.
     fn enable(&self, name: &str, level: Option<&str>, scope: &ScopeArgs) -> Result<(), String>;
     fn disable(&self, name: &str, level: Option<&str>, scope: &ScopeArgs) -> Result<(), String>;
+    /// Install the plugin's tool (global, `orbit plugins install --yes`).
+    fn install(&self, name: &str) -> Result<(), String>;
 }

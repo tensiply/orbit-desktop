@@ -40,3 +40,14 @@ pub async fn plugin_disable(
         .await
         .map_err(|e| e.to_string())?
 }
+
+#[tauri::command]
+pub async fn plugin_install(
+    name: String,
+    repo: State<'_, Arc<dyn PluginRepository>>,
+) -> Result<(), String> {
+    let repo = Arc::clone(&*repo);
+    tokio::task::spawn_blocking(move || repo.install(&name))
+        .await
+        .map_err(|e| e.to_string())?
+}

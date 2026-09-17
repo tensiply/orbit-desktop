@@ -94,4 +94,18 @@ impl PluginRepository for OrbitPluginRepo {
     fn disable(&self, name: &str, level: Option<&str>, scope: &ScopeArgs) -> Result<(), String> {
         Self::run_plugins_cmd("disable", name, level, scope)
     }
+
+    fn install(&self, name: &str) -> Result<(), String> {
+        // Install is global (the tool binary) — no scope. `--yes` picks the best
+        // available method non-interactively.
+        let out = Command::new(orbit_program())
+            .args(["plugins", "install", name, "--yes"])
+            .output()
+            .map_err(|e| format!("failed to run orbit plugins install: {e}"))?;
+        if out.status.success() {
+            Ok(())
+        } else {
+            Err(String::from_utf8_lossy(&out.stderr).trim().to_string())
+        }
+    }
 }
