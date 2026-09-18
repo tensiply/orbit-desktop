@@ -10,3 +10,8 @@ target/
 
 # Bundled orbit CLI sidecar — downloaded during the release build (see ORBIT_CLI_VERSION)
 /src-tauri/binaries/
+
+# Local engine/runtime state and dev-channel build output
+/.opencode/
+/.orbit/
+/target-dev/
