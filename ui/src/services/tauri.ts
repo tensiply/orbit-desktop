@@ -2,7 +2,7 @@ import { invoke } from '@tauri-apps/api/core'
 import type {
   Session, LaunchScope, LaunchedInfo, WorkspaceInfo, ScopeTreeWorkspace,
   ArchCatalogDto, ArchEntityDto, SaveEntityArgs, ArchLayout, ArchRoutes,
-  HarnessReport, PluginInfo,
+  HarnessReport, PluginInfo, ScopeArgs,
   SetupStatus, UpdateCheck, ImageEntry, SvgEntry, DocEntry,
   PipelineStatus,
 } from '../types'
@@ -117,14 +117,17 @@ export const tauriService = {
   sessionClean: (): Promise<number> =>
     invoke('session_clean'),
 
-  pluginList: (): Promise<PluginInfo[]> =>
-    invoke('plugin_list'),
+  pluginList: (scope: ScopeArgs): Promise<PluginInfo[]> =>
+    invoke('plugin_list', { scope }),
 
-  pluginEnable: (name: string, scope: string): Promise<void> =>
-    invoke('plugin_enable', { name, scope }),
+  pluginEnable: (name: string, level: string | null, scope: ScopeArgs): Promise<void> =>
+    invoke('plugin_enable', { name, level, scope }),
 
-  pluginDisable: (name: string, scope: string): Promise<void> =>
-    invoke('plugin_disable', { name, scope }),
+  pluginDisable: (name: string, level: string | null, scope: ScopeArgs): Promise<void> =>
+    invoke('plugin_disable', { name, level, scope }),
+
+  pluginInstall: (name: string): Promise<void> =>
+    invoke('plugin_install', { name }),
 
   setupCheck: (): Promise<SetupStatus> =>
     invoke('setup_check'),
