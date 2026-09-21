@@ -7,6 +7,7 @@ mod daemon;
 mod debug_buffer;
 mod debug_layer;
 mod debug_server;
+mod deps;
 mod documents;
 mod images;
 mod makefile;
@@ -53,6 +54,17 @@ fn open_devtools(_window: tauri::WebviewWindow) {}
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     use orbit_core::channel::Channel;
+
+    // WebKitGTK's DMABUF renderer freezes the web content when the window is
+    // occluded/backgrounded for a while and then refocused — the GTK window stays
+    // alive (native close button works) but the webview stops repainting. It bites
+    // hardest on Wayland + Mesa (Intel/AMD) and is made worse by a transparent
+    // window. Disabling the DMABUF renderer is the standard workaround; set it
+    // before GTK/WebView init. Only on Linux, and only if the user hasn't chosen.
+    #[cfg(target_os = "linux")]
+    if std::env::var_os("WEBKIT_DISABLE_DMABUF_RENDERER").is_none() {
+        std::env::set_var("WEBKIT_DISABLE_DMABUF_RENDERER", "1");
+    }
 
     // Compile-time channel of this desktop build — the single source of truth for
     // its identity, home, process name and debug port (all derived from `Channel`
@@ -182,6 +194,7 @@ pub fn run() {
             // Pipelines
             pipelines::get_pipelines,
             // Updates & CLI
+            deps::deps_check,
             updates::check_updates,
             updates::setup_check,
             updates::orbit_workspace_add,
