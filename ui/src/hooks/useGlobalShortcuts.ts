@@ -485,11 +485,20 @@ export function useGlobalShortcuts() {
     // redirect it to the active terminal so the app never sits idle.
     const onFocusOut = () => {
       requestAnimationFrame(() => {
+        // Only redirect focus while the window still holds OS focus. On alt-tab
+        // the window loses focus and activeElement falls back to body; refocusing
+        // the terminal here would yank OS focus back and start a focus war (freeze).
+        if (!document.hasFocus()) return
         const el = document.activeElement
         if (!el || el === document.body || el === document.documentElement) {
           if (document.querySelector('[role="dialog"], [role="alertdialog"]')) return
+          // Read sidebarFocused from the store, not the closure: Ctrl+Q (focus_sessions)
+          // blurs the terminal — firing this focusout — and then focuses the sidebar in the
+          // same tick. The stale closure value would still be false and yank DOM focus back
+          // to the xterm textarea, so arrow keys hit targetIsInput and never reach sidebar nav.
+          if (useAppStore.getState().sidebarFocused) return
           const tabId = focusedPanel === 'drawer' ? drawerTabId : activeTabId
-          if (tabId && !sidebarFocused) sendTerminalCmd(tabId, 'focus')
+          if (tabId) sendTerminalCmd(tabId, 'focus')
         }
       })
     }
