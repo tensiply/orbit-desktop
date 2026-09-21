@@ -109,8 +109,12 @@ async fn ensure_orbit_config(app: &AppHandle) -> Result<(), String> {
     let _ = app.emit("setup_output", "Initializing orbit config…");
     let status = Command::new(orbit_program())
         .args([
-            "setup", "-y",
-            "--no-install", "--no-plugins", "--no-mcps", "--no-hooks",
+            "setup",
+            "-y",
+            "--no-install",
+            "--no-plugins",
+            "--no-mcps",
+            "--no-hooks",
         ])
         .stdout(Stdio::null())
         .stderr(Stdio::null())
