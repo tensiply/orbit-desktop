@@ -3,7 +3,7 @@ import type {
   Session, LaunchScope, LaunchedInfo, WorkspaceInfo, ScopeTreeWorkspace,
   ArchCatalogDto, ArchEntityDto, SaveEntityArgs, ArchLayout, ArchRoutes,
   HarnessReport, PluginInfo, ScopeArgs,
-  SetupStatus, UpdateCheck, ImageEntry, SvgEntry, DocEntry,
+  SetupStatus, UpdateCheck, DepsReport, ImageEntry, SvgEntry, DocEntry,
   PipelineStatus,
 } from '../types'
 
@@ -140,6 +140,9 @@ export const tauriService = {
 
   checkUpdates: (): Promise<UpdateCheck> =>
     invoke('check_updates'),
+
+  depsCheck: (): Promise<DepsReport> =>
+    invoke('deps_check'),
 
   makefileTargets: (path: string): Promise<string[]> =>
     invoke('makefile_targets', { path }),

@@ -1,11 +1,11 @@
 import { useState, useEffect, Fragment } from 'react'
 import {
-  Package, Monitor, Cpu, FolderOpen, Check, ChevronLeft, ChevronRight,
+  Package, Monitor, Cpu, FolderOpen, FileCog, Check, ChevronLeft, ChevronRight,
 } from 'lucide-react'
 import { useAppStore } from '../store'
 import { Dialog, DialogContent, DialogTitle, DialogDescription } from './ui/dialog'
 import { Button } from './ui/button'
-import { DesktopStep, EnginesStep, WorkspacesStep } from './SetupOrbitView'
+import { DesktopStep, DependenciesStep, EnginesStep, WorkspacesStep } from './SetupOrbitView'
 import { cn } from '@/lib/utils'
 
 // ── Step definitions ───────────────────────────────────────────────────────────
@@ -28,6 +28,15 @@ const STEPS = [
     description: "Engines are the AI models that power your sessions. Set a default so Orbit knows which one to launch. Each engine's CLI must be installed separately on your system.",
     required:    false,
     component:   EnginesStep,
+  },
+  {
+    id:          'dependencies',
+    label:       'Files',
+    icon:        <FileCog size={14} />,
+    headline:    'File generation tools',
+    description: 'Generating documents and images relies on a few host tools. Check which are installed — missing ones only disable their formats; everything else still works.',
+    required:    false,
+    component:   DependenciesStep,
   },
   {
     id:          'workspaces',

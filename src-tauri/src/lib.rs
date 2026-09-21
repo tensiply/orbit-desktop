@@ -7,6 +7,7 @@ mod daemon;
 mod debug_buffer;
 mod debug_layer;
 mod debug_server;
+mod deps;
 mod documents;
 mod images;
 mod makefile;
@@ -192,6 +193,8 @@ pub fn run() {
             makefile::makefile_targets,
             // Pipelines
             pipelines::get_pipelines,
+            // File-generation host-tool checks
+            deps::deps_check,
             // Updates & CLI
             updates::check_updates,
             updates::setup_check,
