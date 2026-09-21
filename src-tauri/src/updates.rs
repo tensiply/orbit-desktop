@@ -6,6 +6,7 @@ use tokio::process::Command;
 
 use crate::domain::ports::workspace_repository::WorkspaceRepository;
 use crate::infrastructure::orbit_sidecar::orbit_program;
+use orbit_core::data_paths;
 
 // ── Types ──────────────────────────────────────────────────────────────────────
 
@@ -94,6 +95,41 @@ pub async fn setup_check(
     })
 }
 
+/// The bundled CLI refuses `workspace add` (exit 1, "No config found") until a
+/// config exists. A fresh channel home — e.g. `~/.orbit-canary` on a new canary
+/// install — has none, so bootstrap it non-interactively before driving the CLI.
+/// Stable homes already have `config.toml`, so this is a no-op there.
+async fn ensure_orbit_config(app: &AppHandle) -> Result<(), String> {
+    use std::process::Stdio;
+
+    if data_paths::orbit_home().join("config.toml").exists() {
+        return Ok(());
+    }
+
+    let _ = app.emit("setup_output", "Initializing orbit config…");
+    let status = Command::new(orbit_program())
+        .args([
+            "setup",
+            "-y",
+            "--no-install",
+            "--no-plugins",
+            "--no-mcps",
+            "--no-hooks",
+        ])
+        .stdout(Stdio::null())
+        .stderr(Stdio::null())
+        .status()
+        .await
+        .map_err(|e| format!("failed to start orbit setup: {e}"))?;
+    if !status.success() {
+        return Err(format!(
+            "orbit setup failed (exit {})",
+            status.code().unwrap_or(-1)
+        ));
+    }
+    Ok(())
+}
+
 /// Run `orbit workspace add <path> [--name <name>]` via the bundled CLI and
 /// stream output through the `setup_output` Tauri event.
 #[tauri::command]
@@ -103,6 +139,8 @@ pub async fn orbit_workspace_add(
     app: AppHandle,
 ) -> Result<(), String> {
     use std::process::Stdio;
+
+    ensure_orbit_config(&app).await?;
 
     let mut args: Vec<String> = vec!["workspace".into(), "add".into(), path];
     if let Some(n) = name {
