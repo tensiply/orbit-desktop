@@ -9,6 +9,7 @@ mod debug_layer;
 mod debug_server;
 mod deps;
 mod documents;
+mod exec;
 mod images;
 mod makefile;
 mod pipelines;
@@ -124,6 +125,7 @@ pub fn run() {
         .manage(recorder)
         .manage(OrbitIpcClient)
         .manage(PtyRegistry::new())
+        .manage(exec::ExecRegistry::default())
         .manage(Arc::new(FsScopeRepo) as Arc<dyn ScopeRepository>)
         .manage(Arc::new(FsDocumentStore) as Arc<dyn DocumentStore>)
         .manage(Arc::new(OrbitEngineHarness) as Arc<dyn HarnessInspector>)
@@ -191,6 +193,9 @@ pub fn run() {
             tasks::task_delete,
             // Makefile
             makefile::makefile_targets,
+            // Execution (streaming command runner)
+            exec::exec_run,
+            exec::exec_kill,
             // Pipelines
             pipelines::get_pipelines,
             // File-generation host-tool checks

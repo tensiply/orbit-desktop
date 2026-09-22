@@ -12,8 +12,10 @@ import {
   type NodeTypes,
   type EdgeTypes,
 } from '@xyflow/react'
-import { RefreshCw, Plus, AlertTriangle, FolderOpen, Network, LayoutGrid, Pencil, Save, Loader2, Search, X } from 'lucide-react'
+import { RefreshCw, Plus, AlertTriangle, FolderOpen, Network, LayoutGrid, Pencil, Save, Search, X } from 'lucide-react'
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group'
+import { TabHeader, HeaderAction, HeaderActions } from './header'
+import type { HeaderActionSpec } from './header'
 import { cn } from '@/lib/utils'
 import { tauriService } from '../services/tauri'
 import type { ArchEntityDto, ArchLayout, ArchRoutes } from '../types'
@@ -625,74 +627,83 @@ export function ArchitectureView({ workspace, tenant }: Props) {
 
   // ── Slots: toolbar + filterBar + empty ───────────────────────────────────
 
-  const toolbar = (
-    <>
-      <span className="text-foreground/25 shrink-0">
-        <Network size={16} />
-      </span>
-
-      <div className="flex items-center gap-0.5 flex-1 min-w-0 overflow-hidden">
-        {[workspace, tenant].map((part, i) => (
-          <span key={i} className="flex items-center gap-0.5 shrink-0">
-            {i > 0 && <span className="text-[10px] text-foreground/18 mx-0.5">›</span>}
-            <span className={`text-[10px] font-medium ${i === 1 ? 'text-foreground/55' : 'text-foreground/28'}`}>
-              {part}
-            </span>
-          </span>
-        ))}
-      </div>
-
-      <div className="flex items-center gap-1 shrink-0">
-        {lastSaved && (
-          <span className="text-[10px] text-foreground/25 tabular-nums select-none">
-            {relativeTime(lastSaved)}
-          </span>
-        )}
-        {brokenEdges.length > 0 && (
-          <span
-            title={`${brokenEdges.length} broken connection${brokenEdges.length > 1 ? 's' : ''}: ${brokenEdges.map((b) => `${b.source} → ${b.target}`).join(', ')}`}
-            className="flex items-center gap-1 h-6 px-2 rounded-md border border-amber-400/50 bg-amber-50/80 dark:bg-amber-900/30 text-[10px] text-amber-600 dark:text-amber-400 cursor-default"
-          >
-            <AlertTriangle size={10} />{brokenEdges.length}
-          </span>
-        )}
-        <button
+  const actions: HeaderActionSpec[] = [
+    {
+      id: 'last-saved',
+      group: 'status',
+      order: 10,
+      when: !!lastSaved,
+      node: (
+        <span className="text-[10px] text-foreground/25 tabular-nums select-none px-1">
+          {lastSaved && relativeTime(lastSaved)}
+        </span>
+      ),
+    },
+    {
+      id: 'broken-edges',
+      group: 'status',
+      order: 11,
+      when: brokenEdges.length > 0,
+      node: (
+        <span
+          title={`${brokenEdges.length} broken connection${brokenEdges.length > 1 ? 's' : ''}: ${brokenEdges.map((b) => `${b.source} → ${b.target}`).join(', ')}`}
+          className="flex items-center gap-1 py-1 px-2 rounded-md text-[10px] text-amber-600 dark:text-amber-400 cursor-default"
+        >
+          <AlertTriangle size={14} />{brokenEdges.length}
+        </span>
+      ),
+    },
+    {
+      id: 'add',
+      group: 'canvas',
+      order: 20,
+      node: (
+        <HeaderAction
+          icon={<Plus />}
+          label="Add entity"
+          showLabel
           onClick={() => openArchDrawer('new', workspace, tenant, allEntities)}
-          title="Add entity"
-          className="flex items-center gap-1 h-6 px-2 rounded-md border border-sidebar-border/40 text-[10px] text-foreground/50 hover:text-foreground/80 hover:bg-sidebar-accent/40 hover:border-sidebar-border/70 transition-colors"
-        >
-          <Plus size={10} />Add
-        </button>
-        {allEntities.length > 0 && (
-          <button
-            onClick={handleAutoLayout}
-            title="Re-layout all nodes"
-            className="flex items-center justify-center h-6 w-6 rounded-md border border-sidebar-border/40 text-foreground/40 hover:text-foreground/80 hover:bg-sidebar-accent/40 hover:border-sidebar-border/70 transition-colors"
-          >
-            <LayoutGrid size={10} />
-          </button>
-        )}
-        <button
-          onClick={handleSave}
-          title="Save current layout"
-          disabled={saving}
-          className="flex items-center justify-center h-6 w-6 rounded-md border border-sidebar-border/40 text-foreground/40 hover:text-foreground/80 hover:bg-sidebar-accent/40 hover:border-sidebar-border/70 transition-colors disabled:opacity-30"
-        >
-          {saving
-            ? <Loader2 size={10} className="animate-spin" />
-            : <Save size={10} />
-          }
-        </button>
-        <button
-          onClick={() => void handleRefresh()}
-          title="Reload entities and recalculate edges"
+        />
+      ),
+    },
+    {
+      id: 'auto-layout',
+      group: 'canvas',
+      order: 21,
+      when: allEntities.length > 0,
+      node: (
+        <HeaderAction icon={<LayoutGrid />} label="Re-layout all nodes" onClick={handleAutoLayout} />
+      ),
+    },
+    {
+      id: 'save',
+      group: 'canvas',
+      order: 22,
+      node: (
+        <HeaderAction icon={<Save />} label="Save current layout" loading={saving} onClick={handleSave} />
+      ),
+    },
+    {
+      id: 'refresh',
+      group: 'canvas',
+      order: 23,
+      node: (
+        <HeaderAction
+          icon={<RefreshCw className={refreshing ? 'animate-spin' : ''} />}
+          label="Reload entities and recalculate edges"
           disabled={refreshing}
-          className="flex items-center justify-center h-6 w-6 rounded-md border border-sidebar-border/40 text-foreground/40 hover:text-foreground/80 hover:bg-sidebar-accent/40 hover:border-sidebar-border/70 transition-colors disabled:opacity-30"
-        >
-          <RefreshCw size={10} className={refreshing ? 'animate-spin' : ''} />
-        </button>
-      </div>
-    </>
+          onClick={() => void handleRefresh()}
+        />
+      ),
+    },
+  ]
+
+  const header = (
+    <TabHeader
+      icon={<Network size={16} />}
+      parts={[workspace, tenant]}
+      actions={<HeaderActions items={actions} />}
+    />
   )
 
   const filterBar = allEntities.length > 0 ? (
@@ -847,7 +858,7 @@ export function ArchitectureView({ workspace, tenant }: Props) {
         onNodeContextMenu={handleNodeContextMenu}
         onPaneClick={() => { setFocusedNodeId(null); closeCtxMenu(); closeArchDrawer() }}
         onMove={closeCtxMenu}
-        toolbar={toolbar}
+        header={header}
         filterBar={filterBar}
         loading={loading && nodes.length === 0}
         error={loadError}

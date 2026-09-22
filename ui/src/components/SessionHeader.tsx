@@ -8,6 +8,10 @@ import {
 } from '../icons'
 import { MakeRunner } from './MakeRunner'
 import { PipelineBadge } from './PipelineBadge'
+import { TabHeader, HeaderActions } from './header'
+import type { HeaderActionSpec } from './header'
+import { useMakefileTargets } from '../hooks/useMakefileTargets'
+import { usePipelines } from '../hooks/usePipelines'
 
 function workspaceFromWorkDir(workDir: string): string | null {
   const parts = workDir.split('/').filter(Boolean)
@@ -48,41 +52,34 @@ export function SessionHeader() {
   const parts  = fullScopeParts(session)
 
   return (
-    <div data-orbit-zone="orbit.desktop.principal.card.session-header" className="flex items-center gap-3 px-4 h-8 shrink-0 border-b border-sidebar-border/40 bg-card">
-      {/* Engine icon */}
-      <span className="text-foreground/25 shrink-0">
-        <EngineIcon engine={engine} size={11} />
-      </span>
-
-      {/* Scope breadcrumb */}
-      <div className="flex items-center gap-0.5 flex-1 min-w-0 overflow-hidden">
-        {session.global_mode ? (
-          <span className="text-[10px] font-medium text-foreground/40">Global</span>
-        ) : parts.length > 0 ? (
-          parts.map((part, i) => (
-            <span key={i} className="flex items-center gap-0.5 shrink-0">
-              {i > 0 && (
-                <span className="text-[10px] text-foreground/18 mx-0.5">›</span>
-              )}
-              <span
-                className={`text-[10px] font-medium ${
-                  i === parts.length - 1 ? 'text-foreground/55' : 'text-foreground/28'
-                }`}
-              >
-                {part}
-              </span>
-            </span>
-          ))
-        ) : (
-          <span className="text-[10px] text-foreground/25">—</span>
-        )}
-      </div>
-
-      {/* Make runner — only visible when a Makefile is found in the session scope */}
-      <MakeRunner session={session} tabId={activeTab.id} />
-
-      {/* Pipeline status badge — only visible when pipelines are configured */}
-      <PipelineBadge session={session} />
-    </div>
+    <TabHeader
+      icon={<EngineIcon engine={engine} size={11} />}
+      parts={parts}
+      globalMode={session.global_mode}
+      actions={<SessionActions session={session} />}
+    />
   )
+}
+
+function SessionActions({ session }: { session: Session }) {
+  const makeTargets        = useMakefileTargets(session.work_dir)
+  const pipelines          = usePipelines(session)
+  const openPipelineDrawer = useAppStore((s) => s.openPipelineDrawer)
+
+  const items: HeaderActionSpec[] = [
+    {
+      id: 'pipelines',
+      order: 10,
+      when: pipelines.length > 0,
+      node: <PipelineBadge pipelines={pipelines} onClick={openPipelineDrawer} />,
+    },
+    {
+      id: 'make',
+      order: 20,
+      when: makeTargets.length > 0,
+      node: <MakeRunner session={session} targets={makeTargets} />,
+    },
+  ]
+
+  return <HeaderActions items={items} />
 }

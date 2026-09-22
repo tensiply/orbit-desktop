@@ -741,7 +741,7 @@ export function UIKitView() {
               <span className="text-[10px] text-foreground/30">principal.card.tabs — h-[36px] bg-sidebar</span>
             </div>
             <div className="h-8 bg-sidebar border-b border-sidebar-border/30 flex items-center px-3 shrink-0">
-              <span className="text-[10px] text-foreground/30">principal.card.session-header — h-8</span>
+              <span className="text-[10px] text-foreground/30">principal.card.tab-header — h-8</span>
             </div>
             <div className="flex-1 bg-background flex items-center justify-center">
               <span className="text-[10px] text-foreground/20">principal.card.content — flex-1</span>

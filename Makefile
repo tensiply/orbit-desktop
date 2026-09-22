@@ -177,4 +177,7 @@ snap:
 
 ## Show this help
 help:
-	@grep -E '^## ' Makefile | sed 's/^## //'
+	@awk 'BEGIN {FS = ":"} \
+		/^## / { d = d ? d " " substr($$0, 4) : substr($$0, 4); next } \
+		/^[a-zA-Z0-9_-]+:/ { if (d) { printf "  \033[36m%-20s\033[0m %s\n", $$1, d; d = "" } next } \
+		{ d = "" }' Makefile

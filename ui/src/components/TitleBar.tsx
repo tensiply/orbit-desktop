@@ -1,6 +1,7 @@
 import { useMemo, useState, useEffect, useRef } from 'react'
 import { STATUS_COLORS } from '../theme'
 import { getCurrentWindow } from '@tauri-apps/api/window'
+import { getName, getVersion } from '@tauri-apps/api/app'
 import { Minus, Square, X, ChevronDown, Check, Layers } from 'lucide-react'
 import { useAppStore } from '../store'
 import {
@@ -119,6 +120,35 @@ function WorkspacePicker() {
   )
 }
 
+function AppTitle() {
+  const [appChannel, setAppChannel] = useState<'DEV' | 'CANARY' | null>(null)
+  const [appVersion, setAppVersion] = useState<string | null>(null)
+
+  useEffect(() => {
+    getName().then((name) => {
+      if (name.endsWith('DEV')) setAppChannel('DEV')
+      else if (name.endsWith('CANARY')) setAppChannel('CANARY')
+    }).catch(() => void 0)
+    getVersion().then(setAppVersion).catch(() => void 0)
+  }, [])
+
+  return (
+    <div data-orbit-zone="orbit.desktop.principal.titlebar.title" className="flex items-center gap-2 pl-3 mr-auto">
+      <span className="text-sm font-semibold text-sidebar-foreground tracking-tight">Orbit Desktop</span>
+      {appChannel === 'DEV' && (
+        <span className="text-sm font-semibold text-destructive tracking-tight opacity-60">
+          dev
+        </span>
+      )}
+      {appChannel === 'CANARY' && (
+        <span className="text-sm font-semibold text-sidebar-foreground tracking-tight opacity-60">
+          canary{appVersion ? ` ${appVersion}` : ''}
+        </span>
+      )}
+    </div>
+  )
+}
+
 export function TitleBar() {
   return (
     <div
@@ -126,6 +156,8 @@ export function TitleBar() {
       data-orbit-zone="orbit.desktop.principal.titlebar"
       className="h-10 flex items-center justify-end select-none shrink-0 bg-sidebar"
     >
+      <AppTitle />
+
       <WorkspacePicker />
 
       {/* Notifications history — beside the workspace selector */}

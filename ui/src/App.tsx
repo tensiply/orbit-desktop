@@ -11,6 +11,8 @@ import { ShortcutsView } from './components/ShortcutsView'
 import { TerminalDrawer } from './components/TerminalDrawer'
 import { ArchEditDrawer } from './components/ArchEditDrawer'
 import { HarnessDrawer } from './components/HarnessDrawer'
+import { PipelineDrawer } from './components/PipelineDrawer'
+import { ExecutionDrawer } from './components/ExecutionDrawer'
 import { UIKitView } from './components/UIKitView'
 import { ColorsView } from './components/ColorsView'
 import { SettingsView } from './components/SettingsView'
@@ -162,9 +164,13 @@ export default function App() {
           </ContextMenuItem>
         </ContextMenuContent>
         <ContextMenuTrigger asChild>
-          <div className={`flex h-screen w-screen text-foreground overflow-hidden bg-sidebar ${sidebarHidden ? 'gap-2' : ''}`}>
+          <div className="flex flex-col h-screen w-screen text-foreground overflow-hidden bg-sidebar">
         <ResizeHandles />
 
+        <TitleBar />
+
+        {/* Body — sidebar | content */}
+        <div className={`flex flex-1 min-h-0 overflow-hidden ${sidebarHidden ? 'gap-2' : ''}`}>
         <Sidebar width={sidebarWidth} collapsed={sidebarHidden} />
         {!sidebarHidden && (
           <div
@@ -175,8 +181,6 @@ export default function App() {
 
         {/* Main column */}
         <main data-orbit-zone="orbit.desktop.principal" className="flex-1 flex flex-col min-w-0 pt-0">
-          <TitleBar />
-
           {/* Inset content — two sibling cards with gap */}
           <div className="flex-1 min-h-0 flex gap-2 pr-2 pb-2">
             {/* Main card */}
@@ -302,9 +306,12 @@ export default function App() {
             {/* Drawer cards — siblings, same height, gap from parent */}
             <HarnessDrawer />
             <ArchEditDrawer />
+            <PipelineDrawer />
+            <ExecutionDrawer />
             <TerminalDrawer />
           </div>
         </main>
+          </div>
           </div>
         </ContextMenuTrigger>
       </ContextMenu>

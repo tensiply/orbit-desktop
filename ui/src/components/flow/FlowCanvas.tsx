@@ -39,9 +39,9 @@ export interface FlowCanvasProps {
   onPaneClick?: () => void
   onMove?: () => void
 
-  /** Rendered inside the top header bar. Receives the full flex row — use
-   *  fragments with their own flex/gap/grow classes. */
-  toolbar?: React.ReactNode
+  /** The tab header row. Pass a fully-composed `<TabHeader>` — it supplies its
+   *  own bar styling, so FlowCanvas renders it as-is. */
+  header?: React.ReactNode
 
   /** Rendered inside the filter strip below the header.
    *  Pass undefined to hide the strip entirely. */
@@ -81,7 +81,7 @@ export function FlowCanvas({
   onNodeContextMenu,
   onPaneClick,
   onMove,
-  toolbar,
+  header,
   filterBar,
   loading,
   error,
@@ -94,12 +94,8 @@ export function FlowCanvas({
   return (
     <div className="flex flex-col h-full bg-card text-sidebar-foreground text-sm overflow-hidden">
 
-      {/* Header bar — always visible; content injected via toolbar slot */}
-      {toolbar != null && (
-        <div className="flex items-center gap-3 px-4 h-8 shrink-0 border-b border-sidebar-border/40 bg-card">
-          {toolbar}
-        </div>
-      )}
+      {/* Header bar — the caller passes a composed <TabHeader>. */}
+      {header}
 
       {/* Filter strip — hidden when filterBar is undefined */}
       {filterBar != null && (
