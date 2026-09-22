@@ -59,9 +59,14 @@ pub fn run() {
     // WebKitGTK's DMABUF renderer freezes the web content when the window is
     // occluded/backgrounded for a while and then refocused — the GTK window stays
     // alive (native close button works) but the webview stops repainting. It bites
-    // hardest on Wayland + Mesa (Intel/AMD) and is made worse by a transparent
-    // window. Disabling the DMABUF renderer is the standard workaround; set it
-    // before GTK/WebView init. Only on Linux, and only if the user hasn't chosen.
+    // hardest on Wayland + Mesa (Intel/AMD). Disabling the DMABUF renderer is the
+    // standard workaround; set it before GTK/WebView init. Only on Linux, and only
+    // if the user hasn't chosen.
+    //
+    // This pairs with `transparent: false` in tauri.conf.json: a *transparent*
+    // WebKitGTK window on the unaccelerated (DMABUF-disabled) path never repaints
+    // its background and stays frozen after occlusion, so the two must go together.
+    // The UI paints an opaque full-window background, so opacity costs nothing.
     #[cfg(target_os = "linux")]
     if std::env::var_os("WEBKIT_DISABLE_DMABUF_RENDERER").is_none() {
         std::env::set_var("WEBKIT_DISABLE_DMABUF_RENDERER", "1");

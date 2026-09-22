@@ -7,6 +7,7 @@ import { useAppStore } from '../store'
 import { tauriService } from '../services/tauri'
 import type { TerminalCmd } from '../lib/terminalBus'
 import { markPtyInput, markPtyResize } from '../lib/ptyActivity'
+import { guardImeCommits } from '../lib/imeCommit'
 import { TERMINAL_THEME_DARK, TERMINAL_THEME_LIGHT, cssVarToHex } from '../theme'
 
 interface Props {
@@ -44,6 +45,12 @@ export function TerminalPane({ tabId, active, panelFocused, onCwdChange }: Props
     term.loadAddon(fit)
     term.loadAddon(new WebLinksAddon())
     term.open(el)
+
+    // WebKitGTK (Linux) routes accented keys through IBus as orphaned
+    // composition commits, which xterm.js sends two or three times. Deliver
+    // them exactly once. Runs in the capture phase, so wire it after open()
+    // once the textarea exists.
+    const unguardIme = guardImeCommits(el, term)
 
     termRef.current = term
     fitRef.current  = fit
@@ -113,6 +120,7 @@ export function TerminalPane({ tabId, active, panelFocused, onCwdChange }: Props
     return () => {
       ro.disconnect()
       if (fitTimer !== null) clearTimeout(fitTimer)
+      unguardIme()
       unlisten?.()
       term.dispose()
       termRef.current = null
