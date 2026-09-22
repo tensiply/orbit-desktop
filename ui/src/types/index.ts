@@ -228,3 +228,16 @@ export interface UpdateCheck {
   cli: ComponentUpdate
   desktop: ComponentUpdate
 }
+
+export interface DepStatus {
+  key: string
+  label: string
+  found: boolean
+  version: string | null
+  hint: string
+  features: string[]
+}
+
+export interface DepsReport {
+  deps: DepStatus[]
+}

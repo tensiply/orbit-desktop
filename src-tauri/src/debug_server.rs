@@ -347,6 +347,25 @@ fn tool_definitions() -> Value {
                     }
                 }
             }
+        },
+        {
+            "name": "open_file",
+            "description": "Open a generated file (document, image, or SVG) in a new Orbit Desktop tab. Called by `orbit document|image|svg create` after generation so the result surfaces immediately in the UI.",
+            "inputSchema": {
+                "type": "object",
+                "properties": {
+                    "kind": {
+                        "type": "string",
+                        "description": "File kind to open",
+                        "enum": ["doc", "image", "svg"]
+                    },
+                    "id": {
+                        "type": "string",
+                        "description": "Entry ID from the orbit index (e.g. DOC-000001, IMG-000001, SVG-000001)"
+                    }
+                },
+                "required": ["kind", "id"]
+            }
         }
     ])
 }
@@ -424,6 +443,23 @@ async fn call_tool(state: &ServerState, name: &str, args: &Value) -> Value {
             match state.app.emit("debug:notify", payload) {
                 Ok(_) => {
                     json!({ "ok": true, "event": "debug:notify", "dismiss": dismiss, "title": title })
+                }
+                Err(e) => json!({ "error": e.to_string() }),
+            }
+        }
+
+        "open_file" => {
+            let kind = args.get("kind").and_then(|v| v.as_str()).unwrap_or("");
+            let id = args.get("id").and_then(|v| v.as_str()).unwrap_or("");
+            if id.is_empty() || !matches!(kind, "doc" | "image" | "svg") {
+                return json!({
+                    "error": "open_file requires `kind` (doc|image|svg) and a non-empty `id`"
+                });
+            }
+            let payload = json!({ "kind": kind, "id": id });
+            match state.app.emit("desktop:open-file", payload) {
+                Ok(_) => {
+                    json!({ "ok": true, "event": "desktop:open-file", "kind": kind, "id": id })
                 }
                 Err(e) => json!({ "error": e.to_string() }),
             }
