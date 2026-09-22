@@ -181,6 +181,84 @@ export function DesktopStep() {
   )
 }
 
+// ── DependenciesStep ─────────────────────────────────────────────────────────────
+
+export function DependenciesStep() {
+  const depsReport   = useAppStore((s) => s.depsReport)
+  const depsChecking = useAppStore((s) => s.depsChecking)
+  const checkDeps    = useAppStore((s) => s.checkDeps)
+
+  useEffect(() => {
+    if (depsReport === null) void checkDeps()
+  }, [depsReport, checkDeps])
+
+  const deps = depsReport?.deps ?? []
+  const isLoading = depsReport === null && depsChecking
+
+  if (isLoading) {
+    return (
+      <div className="space-y-2">
+        <Skeleton className="h-14 w-full" />
+        <Skeleton className="h-14 w-full" />
+        <Skeleton className="h-14 w-full" />
+      </div>
+    )
+  }
+
+  return (
+    <div className="space-y-4">
+      <div className="flex items-start justify-between gap-2">
+        <p className="text-xs text-muted-foreground leading-relaxed">
+          Optional host tools that unlock specific output formats. Missing ones only
+          disable their formats — HTML, CSV, XLSX and SVG always work without them.
+        </p>
+        <button
+          onClick={() => void checkDeps()}
+          disabled={depsChecking}
+          className="text-muted-foreground/40 hover:text-muted-foreground transition-colors shrink-0"
+          title="Re-check"
+        >
+          <RefreshCw size={12} className={depsChecking ? 'animate-spin' : ''} />
+        </button>
+      </div>
+
+      <div className="space-y-2">
+        {deps.map((dep) => (
+          <div
+            key={dep.key}
+            className={cn(
+              'rounded-lg border px-4 py-3',
+              dep.found
+                ? 'border-border/40 bg-muted/20'
+                : 'border-amber-500/20 bg-amber-500/5',
+            )}
+          >
+            <div className="flex items-center justify-between gap-2">
+              <div className="flex items-center gap-2 min-w-0">
+                <StatusBadge ok={dep.found} label={dep.found ? 'Installed' : 'Missing'} />
+                <span className="text-sm font-medium truncate">{dep.label}</span>
+                {dep.version && (
+                  <code className="text-[10px] font-mono text-muted-foreground/70 truncate">
+                    {dep.version}
+                  </code>
+                )}
+              </div>
+              <span className="text-[10px] text-muted-foreground/60 shrink-0">
+                {dep.features.join(', ')}
+              </span>
+            </div>
+            {!dep.found && (
+              <p className="text-[11px] text-muted-foreground mt-1.5 leading-relaxed">
+                {dep.hint}
+              </p>
+            )}
+          </div>
+        ))}
+      </div>
+    </div>
+  )
+}
+
 // ── EnginesStep ────────────────────────────────────────────────────────────────
 
 export function EnginesStep() {

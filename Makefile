@@ -7,6 +7,13 @@ CANARY_LINK   := canary-orbit-desktop
 SRC_TAURI   := src-tauri
 ICONS_DIR   := src-tauri/icons
 
+# `bundle` config overlays: externalBin sidecar everywhere, plus NSIS+MSI targets
+# on Windows (where the base deb/appimage targets don't apply).
+BUNDLE_ARGS := -c src-tauri/tauri.bundle.conf.json
+ifeq ($(OS),Windows_NT)
+BUNDLE_ARGS += -c src-tauri/tauri.windows.conf.json
+endif
+
 .PHONY: dev check-dev-orbit build bundle fetch-orbit sync-orbit-cli install uninstall dev-build dev-install dev-uninstall canary-build canary-install canary-uninstall clean dev-local icons windows-assets flatpak snap help
 
 ## Fail early if dev-orbit is missing — the dev app spawns it to start the daemon
@@ -86,23 +93,27 @@ fetch-orbit:
 	@mkdir -p src-tauri/binaries
 	@ORBIT_VER=$$(cat ORBIT_CLI_VERSION); \
 	TRIPLE=$$(rustc -vV | sed -n 's/host: //p'); \
+	EXT=; \
 	case "$$TRIPLE" in \
 	  x86_64-*-linux-*)      SLUG=linux-x86_64 ;; \
 	  aarch64-*-linux-*)     SLUG=linux-aarch64 ;; \
 	  x86_64-apple-darwin)   SLUG=macos-x86_64 ;; \
 	  aarch64-apple-darwin)  SLUG=macos-aarch64 ;; \
+	  x86_64-pc-windows-*)   SLUG=windows-x86_64; EXT=.exe ;; \
 	  *) echo "unsupported host triple: $$TRIPLE"; exit 1 ;; \
 	esac; \
-	ASSET=orbit-stable-$${ORBIT_VER#v}-$$SLUG; \
-	echo "Fetching orbit $$ORBIT_VER ($$ASSET) -> src-tauri/binaries/orbit-$$TRIPLE"; \
+	ASSET=orbit-stable-$${ORBIT_VER#v}-$$SLUG$$EXT; \
+	OUT=src-tauri/binaries/orbit-$$TRIPLE$$EXT; \
+	echo "Fetching orbit $$ORBIT_VER ($$ASSET) -> $$OUT"; \
 	gh release download "$$ORBIT_VER" --repo tensiply/orbit --pattern "$$ASSET" \
-	  --output "src-tauri/binaries/orbit-$$TRIPLE" --clobber; \
-	chmod +x "src-tauri/binaries/orbit-$$TRIPLE"
+	  --output "$$OUT" --clobber; \
+	[ -n "$$EXT" ] || chmod +x "$$OUT"
 
-## Build distribution packages (deb, AppImage) with the bundled orbit sidecar
+## Build distribution packages with the bundled orbit sidecar (deb + AppImage on
+## Linux; NSIS + MSI on Windows via the tauri.windows.conf.json overlay).
 bundle: fetch-orbit
 	cd ui && npm install
-	npx @tauri-apps/cli@2 build -c src-tauri/tauri.bundle.conf.json
+	npx @tauri-apps/cli@2 build $(BUNDLE_ARGS)
 
 ## Install binary + desktop entry + icons (app appears in launcher)
 install: build

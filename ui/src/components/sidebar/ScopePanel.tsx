@@ -83,10 +83,15 @@ export function ViewModeToggle() {
   )
 }
 
+/** Which context-menu actions a scope folder exposes, per host view. */
+export type ScopeFolderMenu = 'session' | 'folder' | 'none'
+
 export function ScopeNavigator({
   selectedFolderName,
+  folderMenu = 'none',
 }: {
   selectedFolderName:  string | null
+  folderMenu?:         ScopeFolderMenu
 }) {
   const scopeTree          = useAppStore((s) => s.scopeTree)
   const scopeTreeLoading   = useAppStore((s) => s.scopeTreeLoading)
@@ -197,56 +202,72 @@ export function ScopeNavigator({
           <ul className="space-y-0.5">
             {children.map((name) => {
               const isSelected = selectedFolderName === name
+              const folderButton = (
+                <button
+                  ref={(el) => { if (el) buttonRefs.current.set(name, el); else buttonRefs.current.delete(name) }}
+                  onClick={() => navigateIn(name)}
+                  onContextMenu={
+                    // No menu for this view → also suppress the native webview
+                    // menu (Tauri "Inspect element"). Radix handles it otherwise.
+                    folderMenu === 'none'
+                      ? (e) => { e.preventDefault(); e.stopPropagation() }
+                      : (e) => e.stopPropagation()
+                  }
+                  className={`group flex items-center justify-between w-full px-2 py-1.5 rounded-md text-xs text-sidebar-foreground/55 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-inset focus-visible:ring-foreground/30 ${isSelected ? RING_CLASS : ''}`}
+                >
+                  <span className="truncate">{name}</span>
+                  <ChevronRight size={11} className="shrink-0 text-sidebar-foreground/20 group-hover:text-sidebar-accent-foreground/50 transition-colors" />
+                </button>
+              )
+
+              // Menu is opt-in per view (default 'none'): only sessions and
+              // files expose folder actions. Everything else → plain button.
+              if (folderMenu === 'none') {
+                return <li key={name}>{folderButton}</li>
+              }
+
               return (
                 <li key={name}>
                   <ContextMenu onOpenChange={(open) => { if (open) blurSidebar() }}>
-                    <ContextMenuTrigger asChild>
-                      <button
-                        ref={(el) => { if (el) buttonRefs.current.set(name, el); else buttonRefs.current.delete(name) }}
-                        onClick={() => navigateIn(name)}
-                        onContextMenu={(e) => e.stopPropagation()}
-                        className={`group flex items-center justify-between w-full px-2 py-1.5 rounded-md text-xs text-sidebar-foreground/55 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-inset focus-visible:ring-foreground/30 ${isSelected ? RING_CLASS : ''}`}
-                      >
-                        <span className="truncate">{name}</span>
-                        <ChevronRight size={11} className="shrink-0 text-sidebar-foreground/20 group-hover:text-sidebar-accent-foreground/50 transition-colors" />
-                      </button>
-                    </ContextMenuTrigger>
+                    <ContextMenuTrigger asChild>{folderButton}</ContextMenuTrigger>
                     <ContextMenuContent className="w-48 text-xs" onCloseAutoFocus={(e) => e.preventDefault()}>
-                      <ContextMenuGroup>
-                        <ContextMenuLabel>Launch</ContextMenuLabel>
-                        <ContextMenuSub>
-                          <ContextMenuSubTrigger className="text-xs gap-2">
-                            <Plus size={13} />New session with…
-                          </ContextMenuSubTrigger>
-                          <ContextMenuSubContent className="w-40 text-xs">
-                            {ENGINES_MENU.map(({ id, label, Icon }) => (
-                              <ContextMenuItem
-                                key={id}
-                                className="text-xs gap-2"
-                                onClick={() => launchFolder(name, id)}
-                              >
-                                <Icon size={13} />{label}
-                              </ContextMenuItem>
-                            ))}
-                          </ContextMenuSubContent>
-                        </ContextMenuSub>
-                        <ContextMenuSub>
-                          <ContextMenuSubTrigger className="text-xs gap-2">
-                            <Wrench size={13} />View harness with…
-                          </ContextMenuSubTrigger>
-                          <ContextMenuSubContent className="w-40 text-xs">
-                            {ENGINES_MENU.map(({ id, label, Icon }) => (
-                              <ContextMenuItem
-                                key={id}
-                                className="text-xs gap-2"
-                                onClick={() => openHarnessForFolder(name, id)}
-                              >
-                                <Icon size={13} />{label}
-                              </ContextMenuItem>
-                            ))}
-                          </ContextMenuSubContent>
-                        </ContextMenuSub>
-                      </ContextMenuGroup>
+                      {folderMenu === 'session' && (
+                        <ContextMenuGroup>
+                          <ContextMenuLabel>Launch</ContextMenuLabel>
+                          <ContextMenuSub>
+                            <ContextMenuSubTrigger className="text-xs gap-2">
+                              <Plus size={13} />New session with…
+                            </ContextMenuSubTrigger>
+                            <ContextMenuSubContent className="w-40 text-xs">
+                              {ENGINES_MENU.map(({ id, label, Icon }) => (
+                                <ContextMenuItem
+                                  key={id}
+                                  className="text-xs gap-2"
+                                  onClick={() => launchFolder(name, id)}
+                                >
+                                  <Icon size={13} />{label}
+                                </ContextMenuItem>
+                              ))}
+                            </ContextMenuSubContent>
+                          </ContextMenuSub>
+                          <ContextMenuSub>
+                            <ContextMenuSubTrigger className="text-xs gap-2">
+                              <Wrench size={13} />View harness with…
+                            </ContextMenuSubTrigger>
+                            <ContextMenuSubContent className="w-40 text-xs">
+                              {ENGINES_MENU.map(({ id, label, Icon }) => (
+                                <ContextMenuItem
+                                  key={id}
+                                  className="text-xs gap-2"
+                                  onClick={() => openHarnessForFolder(name, id)}
+                                >
+                                  <Icon size={13} />{label}
+                                </ContextMenuItem>
+                              ))}
+                            </ContextMenuSubContent>
+                          </ContextMenuSub>
+                        </ContextMenuGroup>
+                      )}
                       <ContextMenuGroup>
                         <ContextMenuLabel>Folder</ContextMenuLabel>
                         <ContextMenuItem

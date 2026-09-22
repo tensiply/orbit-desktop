@@ -29,6 +29,7 @@ import { useSessionPoller } from './hooks/useSessionPoller'
 import { useSessionActivity } from './hooks/useSessionActivity'
 import { useGlobalShortcuts } from './hooks/useGlobalShortcuts'
 import { useSessionNotifications } from './hooks/useSessionNotifications'
+import { useOpenGeneratedFile } from './hooks/useOpenGeneratedFile'
 import { TooltipProvider } from './components/ui/tooltip'
 import { Toaster } from './components/ui/sonner'
 import {
@@ -146,6 +147,7 @@ export default function App() {
   useSessionActivity()
   useGlobalShortcuts()
   useSessionNotifications()
+  useOpenGeneratedFile()
 
   return (
     <TooltipProvider delayDuration={600}>

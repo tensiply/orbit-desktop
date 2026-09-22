@@ -12,5 +12,7 @@ target-dev/
 # Bundled orbit CLI sidecar — downloaded during the release build (see ORBIT_CLI_VERSION)
 /src-tauri/binaries/
 
-# Execution Drawer command logs (make output captured for the session to read)
-.orbit/executions/
+# Local engine/runtime state and dev-channel build output (covers .orbit/executions/)
+/.opencode/
+/.orbit/
+/target-dev/

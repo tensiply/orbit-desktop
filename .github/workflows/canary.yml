@@ -55,6 +55,10 @@ jobs:
     needs: prepare
     permissions:
       contents: write
+    # Run all steps under bash so the shell scripting works on the Windows runner.
+    defaults:
+      run:
+        shell: bash
     strategy:
       fail-fast: false
       matrix:
@@ -64,6 +68,12 @@ jobs:
             args: ""
             orbit_slug: linux-x86_64
             sidecar_triple: x86_64-unknown-linux-gnu
+
+          - platform: windows-latest
+            artifact_suffix: windows
+            args: "-c src-tauri/tauri.windows.conf.json"
+            orbit_slug: windows-x86_64
+            sidecar_triple: x86_64-pc-windows-msvc
     runs-on: ${{ matrix.platform }}
     steps:
       - uses: actions/checkout@v4
@@ -134,12 +144,14 @@ jobs:
             --jq '[.[] | select(.isPrerelease)] | first | .tagName')
           echo "Latest orbit canary: ${ORBIT_VER}"
           VER="${ORBIT_VER#v}"
-          ASSET="orbit-canary-${VER}-${{ matrix.orbit_slug }}"
+          EXT=""; [ "${{ runner.os }}" = "Windows" ] && EXT=".exe"
+          ASSET="orbit-canary-${VER}-${{ matrix.orbit_slug }}${EXT}"
+          OUT="src-tauri/binaries/orbit-${{ matrix.sidecar_triple }}${EXT}"
           mkdir -p src-tauri/binaries
           gh release download "${ORBIT_VER}" --repo tensiply/orbit \
             --pattern "${ASSET}" \
-            --output "src-tauri/binaries/orbit-${{ matrix.sidecar_triple }}"
-          chmod +x "src-tauri/binaries/orbit-${{ matrix.sidecar_triple }}"
+            --output "${OUT}"
+          [ "${{ runner.os }}" = "Windows" ] || chmod +x "${OUT}"
 
       - name: Build Tauri canary app
         uses: tauri-apps/tauri-action@v0

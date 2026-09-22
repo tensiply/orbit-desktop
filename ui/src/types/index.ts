@@ -23,6 +23,7 @@ export type { HarnessPluginContext } from '../bindings/HarnessPluginContext'
 export type { HarnessScopeInfo }     from '../bindings/HarnessScopeInfo'
 export type { HarnessReport }        from '../bindings/HarnessReport'
 export type { PluginInfo }      from '../bindings/PluginInfo'
+export type { ScopeArgs }       from '../bindings/ScopeArgs'
 export type { DaemonStatus }    from '../bindings/DaemonStatus'
 
 // ── UI-only types — no Rust equivalent ────────────────────────────────────────
@@ -226,4 +227,17 @@ export interface ComponentUpdate {
 export interface UpdateCheck {
   cli: ComponentUpdate
   desktop: ComponentUpdate
+}
+
+export interface DepStatus {
+  key: string
+  label: string
+  found: boolean
+  version: string | null
+  hint: string
+  features: string[]
+}
+
+export interface DepsReport {
+  deps: DepStatus[]
 }

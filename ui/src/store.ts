@@ -15,6 +15,7 @@ import { createPipelineDrawerSlice } from './store/slices/pipelineDrawer'
 import { createExecutionDrawerSlice } from './store/slices/executionDrawer'
 import { createUpdatesSlice } from './store/slices/updates'
 import { createNotificationsSlice } from './store/slices/notifications'
+import { createPluginsSlice } from './store/slices/plugins'
 import type { AppStore } from './store/types'
 
 export const useAppStore = create<AppStore>()(
@@ -35,6 +36,7 @@ export const useAppStore = create<AppStore>()(
       ...createExecutionDrawerSlice(...a),
       ...createUpdatesSlice(...a),
       ...createNotificationsSlice(...a),
+      ...createPluginsSlice(...a),
     }),
     {
       name: 'orbit-ui-prefs',

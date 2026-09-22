@@ -23,7 +23,7 @@ pub fn scope_open_folder(
     }
     let home = std::env::var("HOME")
         .map(std::path::PathBuf::from)
-        .unwrap_or_else(|_| std::path::PathBuf::from("/tmp"));
+        .unwrap_or_else(|_| std::env::temp_dir());
     let path = path_segments.iter().fold(home, |acc, seg| acc.join(seg));
     opener.open(&path)
 }
