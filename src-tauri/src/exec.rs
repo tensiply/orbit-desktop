@@ -58,10 +58,7 @@ pub async fn exec_run(
     let mut stdout = child.stdout.take().ok_or("no stdout pipe")?;
 
     let regmap = registry.0.clone();
-    regmap
-        .lock()
-        .unwrap()
-        .insert(exec_id.clone(), child);
+    regmap.lock().unwrap().insert(exec_id.clone(), child);
 
     std::thread::spawn(move || {
         // Truncate/create the artifact; a missing dir just means no file mirror.
