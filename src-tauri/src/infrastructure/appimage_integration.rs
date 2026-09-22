@@ -1,10 +1,10 @@
-//! First-run desktop integration for AppImage builds.
+//! Desktop integration for AppImage builds.
 //!
 //! An AppImage is a single portable file — it doesn't register itself with the
 //! desktop environment, so the app only shows up in the launcher if a `.desktop`
 //! entry points at it. When we detect we're running from an AppImage (the
-//! `APPIMAGE` env var is set to its path), we write a launcher entry + icon on
-//! first run, so the user doesn't have to start it from a terminal.
+//! `APPIMAGE` env var is set to its path), we write or update a launcher entry
+//! so the shortcut always points to the version currently being run.
 
 use std::path::{Path, PathBuf};
 
@@ -43,9 +43,29 @@ fn try_integrate() -> std::io::Result<()> {
     let data = data_home()?;
     let apps = data.join("applications");
     let desktop = apps.join(format!("{APP_ID}.desktop"));
+
     if desktop.exists() {
-        return Ok(()); // already integrated on a previous run
+        // Update Exec/TryExec lines so the shortcut always points to the
+        // version currently running — no full rewrite needed.
+        let content = std::fs::read_to_string(&desktop)?;
+        let updated = content
+            .lines()
+            .map(|l| {
+                if l.starts_with("Exec=") {
+                    format!("Exec=\"{appimage}\" %U")
+                } else if l.starts_with("TryExec=") {
+                    format!("TryExec={appimage}")
+                } else {
+                    l.to_string()
+                }
+            })
+            .collect::<Vec<_>>()
+            .join("\n");
+        std::fs::write(&desktop, updated + "\n")?;
+        tracing::debug!("updated AppImage launcher entry → {appimage}");
+        return Ok(());
     }
+
     std::fs::create_dir_all(&apps)?;
 
     // Prefer an installed icon name; fall back to the app id (launcher shows a

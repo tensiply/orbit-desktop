@@ -10,7 +10,8 @@ use std::path::PathBuf;
 /// Absolute path to the bundled `orbit` binary, if it exists next to the app.
 pub fn sidecar_path() -> Option<PathBuf> {
     let dir = std::env::current_exe().ok()?.parent()?.to_path_buf();
-    let bin = dir.join("orbit");
+    // `orbit` on unix, `orbit.exe` on Windows.
+    let bin = dir.join(format!("orbit{}", std::env::consts::EXE_SUFFIX));
     bin.exists().then_some(bin)
 }
 

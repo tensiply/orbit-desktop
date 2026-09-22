@@ -27,6 +27,7 @@ import { useSessionPoller } from './hooks/useSessionPoller'
 import { useSessionActivity } from './hooks/useSessionActivity'
 import { useGlobalShortcuts } from './hooks/useGlobalShortcuts'
 import { useSessionNotifications } from './hooks/useSessionNotifications'
+import { useOpenGeneratedFile } from './hooks/useOpenGeneratedFile'
 import { TooltipProvider } from './components/ui/tooltip'
 import { Toaster } from './components/ui/sonner'
 import {
@@ -102,9 +103,12 @@ export default function App() {
   const checkSetup                  = useAppStore((s) => s.checkSetup)
   const checkUpdates                = useAppStore((s) => s.checkUpdates)
   const setupStatus                 = useAppStore((s) => s.setupStatus)
+  const updateCheck                 = useAppStore((s) => s.updateCheck)
   const openSetupWizard             = useAppStore((s) => s.openSetupWizard)
   const setupWizardTriggeredOnce    = useAppStore((s) => s.setupWizardTriggeredOnce)
   const markSetupWizardTriggered    = useAppStore((s) => s.markSetupWizardTriggered)
+
+  const updateWizardOpenedRef = useRef(false)
 
   useEffect(() => { void loadWorkspaces() }, [])
 
@@ -129,10 +133,19 @@ export default function App() {
     }
   }, [setupStatus])
 
+  // Auto-open wizard when a desktop update is detected (once per session, independent of workspace check)
+  useEffect(() => {
+    if (updateCheck?.desktop.has_update && !updateWizardOpenedRef.current) {
+      updateWizardOpenedRef.current = true
+      openSetupWizard()
+    }
+  }, [updateCheck])
+
   useSessionPoller(5000)
   useSessionActivity()
   useGlobalShortcuts()
   useSessionNotifications()
+  useOpenGeneratedFile()
 
   return (
     <TooltipProvider delayDuration={600}>

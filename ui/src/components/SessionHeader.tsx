@@ -7,6 +7,7 @@ import {
   DefaultEngineIcon,
 } from '../icons'
 import { MakeRunner } from './MakeRunner'
+import { PipelineBadge } from './PipelineBadge'
 
 function workspaceFromWorkDir(workDir: string): string | null {
   const parts = workDir.split('/').filter(Boolean)
@@ -79,6 +80,9 @@ export function SessionHeader() {
 
       {/* Make runner — only visible when a Makefile is found in the session scope */}
       <MakeRunner session={session} tabId={activeTab.id} />
+
+      {/* Pipeline status badge — only visible when pipelines are configured */}
+      <PipelineBadge session={session} />
     </div>
   )
 }

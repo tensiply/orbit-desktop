@@ -55,6 +55,10 @@ jobs:
     needs: prepare
     permissions:
       contents: write
+    # Run all steps under bash so the shell scripting works on the Windows runner.
+    defaults:
+      run:
+        shell: bash
     strategy:
       fail-fast: false
       matrix:
@@ -64,6 +68,12 @@ jobs:
             args: ""
             orbit_slug: linux-x86_64
             sidecar_triple: x86_64-unknown-linux-gnu
+
+          - platform: windows-latest
+            artifact_suffix: windows
+            args: "-c src-tauri/tauri.windows.conf.json"
+            orbit_slug: windows-x86_64
+            sidecar_triple: x86_64-pc-windows-msvc
     runs-on: ${{ matrix.platform }}
     steps:
       - uses: actions/checkout@v4
@@ -123,20 +133,25 @@ jobs:
         working-directory: ui
         run: npm run build
 
-      # The bundled orbit CLI runs as a sidecar. The canary desktop exports
-      # ORBIT_CHANNEL=canary + ORBIT_HOME=~/.orbit-canary, which the spawned CLI
-      # inherits — so the pinned CLI behaves as canary and stays isolated.
-      - name: Fetch bundled orbit CLI
+      # The bundled orbit CLI runs as a sidecar. The canary desktop always
+      # bundles the latest orbit canary CLI so canary-on-canary testing is exact.
+      - name: Fetch bundled orbit CLI (latest canary)
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          ORBIT_VER=$(cat ORBIT_CLI_VERSION)
-          ASSET="orbit-stable-${ORBIT_VER#v}-${{ matrix.orbit_slug }}"
+          ORBIT_VER=$(gh release list --repo tensiply/orbit --limit 50 \
+            --json tagName,isPrerelease \
+            --jq '[.[] | select(.isPrerelease)] | first | .tagName')
+          echo "Latest orbit canary: ${ORBIT_VER}"
+          VER="${ORBIT_VER#v}"
+          EXT=""; [ "${{ runner.os }}" = "Windows" ] && EXT=".exe"
+          ASSET="orbit-canary-${VER}-${{ matrix.orbit_slug }}${EXT}"
+          OUT="src-tauri/binaries/orbit-${{ matrix.sidecar_triple }}${EXT}"
           mkdir -p src-tauri/binaries
           gh release download "${ORBIT_VER}" --repo tensiply/orbit \
             --pattern "${ASSET}" \
-            --output "src-tauri/binaries/orbit-${{ matrix.sidecar_triple }}"
-          chmod +x "src-tauri/binaries/orbit-${{ matrix.sidecar_triple }}"
+            --output "${OUT}"
+          [ "${{ runner.os }}" = "Windows" ] || chmod +x "${OUT}"
 
       - name: Build Tauri canary app
         uses: tauri-apps/tauri-action@v0
@@ -151,9 +166,10 @@ jobs:
           releaseDraft: false
           prerelease: true
           # Canary branding (productName/identifier) + the bundle sidecar +
-          # the `canary` cargo feature. The canary updater config overrides the
+          # the `canary` cargo feature. tauri.updater.conf.json enables
+          # createUpdaterArtifacts; tauri.canary.updater.conf.json overrides the
           # endpoint to the canary-latest tag so in-app updates work.
-          args: ${{ matrix.args }} -c src-tauri/tauri.canary.conf.json -c src-tauri/tauri.bundle.conf.json -c src-tauri/tauri.canary.updater.conf.json --features canary
+          args: ${{ matrix.args }} -c src-tauri/tauri.canary.conf.json -c src-tauri/tauri.bundle.conf.json -c src-tauri/tauri.updater.conf.json -c src-tauri/tauri.canary.updater.conf.json --features canary
 
       # Pin the freshly-built latest.json to the fixed `canary-latest` tag so
       # the in-app updater always finds it at a stable URL.
@@ -179,6 +195,8 @@ jobs:
 
       # Homologate the tauri bundle names to
       # orbit-desktop-canary-<version>-<arch>.<ext> (amd64 -> x86_64).
+      # Also rewrites latest.json URLs to match the renamed assets so
+      # the in-app updater resolves the correct download paths.
       - name: Normalize asset filenames
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -197,3 +215,47 @@ jobs:
               echo "renamed: $f -> $new"
             fi
           done
+          if [ -f latest.json ]; then
+            CHANNEL="$CHANNEL" python3 - <<'PY'
+          import json, os, subprocess, urllib.parse
+          script = os.path.join(os.environ["GITHUB_WORKSPACE"], ".github/scripts/homologate_asset.py")
+          channel = os.environ["CHANNEL"]
+          def homologate(name):
+              out = subprocess.run(["python3", script, name, channel],
+                                   capture_output=True, text=True).stdout.strip()
+              return out or name
+          with open("latest.json") as f:
+              manifest = json.load(f)
+          for platform in manifest.get("platforms", {}).values():
+              if "url" in platform:
+                  base, _, fname = platform["url"].rpartition("/")
+                  decoded = urllib.parse.unquote(fname)
+                  platform["url"] = f"{base}/{homologate(decoded)}"
+          with open("latest.json", "w") as f:
+              json.dump(manifest, f, indent=2)
+          PY
+            gh release upload "${TAG}" latest.json --clobber
+            echo "rewrote latest.json urls"
+          fi
+
+      # Pin the updated latest.json (with homologated URLs) to the fixed
+      # `canary-latest` tag so the in-app updater always finds it at a stable URL.
+      - name: Pin latest.json to canary-latest tag
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG: ${{ needs.prepare.outputs.tag }}
+        run: |
+          gh release view canary-latest --repo tensiply/orbit-desktop > /dev/null 2>&1 || \
+            gh release create canary-latest \
+              --repo tensiply/orbit-desktop \
+              --prerelease \
+              --title "Canary Latest" \
+              --notes "Floating tag — always reflects the latest canary build. Do not modify manually."
+          mkdir -p artifacts-updater
+          gh release download "${TAG}" \
+            --dir artifacts-updater \
+            --pattern "latest.json" \
+            --clobber
+          if [ -f artifacts-updater/latest.json ]; then
+            gh release upload canary-latest artifacts-updater/latest.json --clobber
+          fi

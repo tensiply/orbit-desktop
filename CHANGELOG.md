@@ -7,6 +7,38 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **Daemon-owned PTY terminals** — Terminal tabs can now attach to a daemon-owned session over IPC (`session_attach`) instead of only local tmux, so AI sessions work where tmux doesn't exist (Windows, or opt-in unix via `ORBIT_DAEMON_PTY`). `pty_open` takes an optional `session_id`: a session with no tmux name attaches over IPC, with an async pump task forwarding PTY output to the terminal and input/resize/detach back to the daemon; the daemon keeps the PTY alive after the tab closes.
+- **Windows installers (NSIS + MSI)** — `release.yml` and `canary.yml` now carry a `windows-latest` build that bundles the `orbit.exe` sidecar and produces NSIS `.exe` + MSI installers (WebView2 via the default download bootstrapper), homologated to `orbit-desktop-<channel>-<ver>-x86_64.{exe,msi}`. The homologate script maps Tauri's `x64` token to `x86_64` and drops the `-setup`/`_en-US` infixes; `make bundle` builds the NSIS+MSI overlay on Windows. The **canary** Windows build is a required (blocking) job — it bundles the always-available orbit canary sidecar, so every canary pre-release ships `.exe` + `.msi`. The **stable** Windows build stays `experimental` (non-blocking) until `ORBIT_CLI_VERSION` points at an orbit **stable** release that ships a `windows-x86_64` sidecar.
+
+### Changed
+
+- **Cross-platform client paths (Windows groundwork)** — The bundled `orbit` sidecar resolves as `orbit.exe` on Windows (via `EXE_SUFFIX`); the terminal's default shell is `%COMSPEC%` on Windows (`$SHELL` on unix) with the zsh/oh-my-zsh tweaks skipped there; PATH injection into the terminal uses the platform separator (`;` on Windows) via `join_paths`; and `HOME`-less fallbacks use the OS temp dir instead of a literal `/tmp`.
+
+## [0.4.0] — 2026-09-11
+
+### Added
+
+- **Pipeline status badge in session header** — shows a colored dot (green/yellow/red) for CI/CD pipelines configured in `orbit.json` at the current scope. Polls every 60 seconds. Click to expand a panel with per-pipeline run details: branch, commit, triggered by, steps, errors, and a link to the run. Supports GitHub Actions and Jenkins.
+- **Workspace setup auto-detection** — setup wizard now auto-detects the orbit governance root from the current working directory.
+
+### Changed
+
+- **Packaged build uses its own channel home** — the installed app forces its channel's home (`~/.orbit`, `~/.orbit-canary`, `~/.orbit-dev`) instead of any inherited environment, so channels never share daemon or session state.
+
+### Fixed
+
+- Canary channel badge shown in sidebar header; title capitalized.
+- Update check now uses semver comparison instead of string equality.
+- Canary in-app updater: correct endpoint, signing key, and `latest.json` generation.
+- Canary AppImage launcher entry respects channel isolation.
+- PATH is hydrated from the login shell on startup, so the app launched from a desktop shortcut inherits the full environment.
+- TERM is set for tmux attach and shell PTYs, fixing terminal rendering.
+- The daemon self-heals by restarting when an IPC call fails.
+- `ptyOpen` errors now surface as user-visible notifications.
+- AppImage desktop shortcut is refreshed on every launch, not just the first run.
+
 ## [0.3.0] — 2026-09-04
 
 ### Features

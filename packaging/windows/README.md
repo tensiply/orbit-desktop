@@ -2,35 +2,37 @@
 
 ## Build targets
 
-Tauri generates two Windows installers:
+Tauri generates two Windows installers (selected by `src-tauri/tauri.windows.conf.json`,
+which overlays `bundle.targets: ["nsis", "msi"]`):
 - **NSIS** (`.exe`) — recommended for direct download; lightweight, no admin required with `currentUser` mode
 - **WiX** (`.msi`) — for enterprise deployment / Group Policy / Microsoft Store
 
+WebView2 is provided via Tauri's default `downloadBootstrapper` install mode, embedded
+in both installers.
+
 ```bash
-# From project root (requires Windows or cross-compilation setup)
-cargo tauri build
+# On Windows, from the project root:
+make bundle          # fetches the orbit.exe sidecar, then builds NSIS + MSI
 
-# Outputs:
-#   src-tauri/target/release/bundle/nsis/Orbit_0.1.0_x64-setup.exe
-#   src-tauri/target/release/bundle/msi/Orbit_0.1.0_x64_en-US.msi
+# Raw Tauri outputs (before CI homologation):
+#   src-tauri/target/release/bundle/nsis/Orbit Desktop_<ver>_x64-setup.exe
+#   src-tauri/target/release/bundle/msi/Orbit Desktop_<ver>_x64_en-US.msi
 ```
 
-## Cross-compilation from Linux/macOS
+## CI flow
 
-Tauri Windows bundles require Windows to build NSIS/WiX. Use a CI runner or a Windows VM.
+`release.yml` (stable) and `canary.yml` (every push to main) both carry a
+`windows-latest` matrix entry that:
+1. fetches the bundled `orbit.exe` sidecar (`orbit-<channel>-<ver>-windows-x86_64.exe`)
+   from the `tensiply/orbit` release into `src-tauri/binaries/orbit-x86_64-pc-windows-msvc.exe`,
+2. builds the app with the `tauri.windows.conf.json` overlay (NSIS + MSI), and
+3. homologates the artifacts to `orbit-desktop-<channel>-<ver>-x86_64.{exe,msi}`
+   (see `.github/scripts/homologate_asset.py`; Tauri's `x64` arch token maps to `x86_64`).
 
-Recommended: GitHub Actions with `windows-latest` runner.
-
-```yaml
-# .github/workflows/release.yml (excerpt)
-- name: Build Windows
-  runs-on: windows-latest
-  steps:
-    - uses: actions/checkout@v4
-    - uses: dtolnay/rust-toolchain@stable
-    - uses: actions/setup-node@v4
-    - run: make bundle
-```
+The Windows job is currently `experimental: true` (non-blocking) because it depends on
+`ORBIT_CLI_VERSION` pointing at an orbit release that publishes a `windows-x86_64` sidecar.
+Drop `experimental` once that sidecar exists, mirroring how orbit promoted its own Windows
+build to a required gate.
 
 ## Code signing (required for SmartScreen bypass)
 
@@ -72,7 +74,7 @@ Microsoft Store distribution requires:
 
 Tauri generates MSIX with: `cargo tauri build --bundles msix`
 
-The `identifier` in `tauri.conf.json` (`dev.tensiply.orbit`) must match the Partner Center app identity.
+The `identifier` in `tauri.conf.json` (`com.tensiply.orbit-desktop`) must match the Partner Center app identity.
 
 ## NSIS installer customization
 

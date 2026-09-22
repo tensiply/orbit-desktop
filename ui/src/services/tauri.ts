@@ -2,13 +2,18 @@ import { invoke } from '@tauri-apps/api/core'
 import type {
   Session, LaunchScope, LaunchedInfo, WorkspaceInfo, ScopeTreeWorkspace,
   ArchCatalogDto, ArchEntityDto, SaveEntityArgs, ArchLayout, ArchRoutes,
-  HarnessReport, PluginInfo,
-  SetupStatus, UpdateCheck, ImageEntry, SvgEntry, DocEntry,
+  HarnessReport, PluginInfo, ScopeArgs,
+  SetupStatus, UpdateCheck, DepsReport, ImageEntry, SvgEntry, DocEntry,
+  PipelineStatus,
 } from '../types'
 
 export const tauriService = {
-  ptyOpen: (tmuxSession: string | null, cwd?: string | null): Promise<string> =>
-    invoke('pty_open', { tmuxSession, cwd: cwd ?? null }),
+  ptyOpen: (
+    tmuxSession: string | null,
+    sessionId?: string | null,
+    cwd?: string | null,
+  ): Promise<string> =>
+    invoke('pty_open', { tmuxSession, sessionId: sessionId ?? null, cwd: cwd ?? null }),
 
   ptyClose: (tabId: string): Promise<void> =>
     invoke('pty_close', { tabId }),
@@ -112,14 +117,17 @@ export const tauriService = {
   sessionClean: (): Promise<number> =>
     invoke('session_clean'),
 
-  pluginList: (): Promise<PluginInfo[]> =>
-    invoke('plugin_list'),
+  pluginList: (scope: ScopeArgs): Promise<PluginInfo[]> =>
+    invoke('plugin_list', { scope }),
 
-  pluginEnable: (name: string, scope: string): Promise<void> =>
-    invoke('plugin_enable', { name, scope }),
+  pluginEnable: (name: string, level: string | null, scope: ScopeArgs): Promise<void> =>
+    invoke('plugin_enable', { name, level, scope }),
 
-  pluginDisable: (name: string, scope: string): Promise<void> =>
-    invoke('plugin_disable', { name, scope }),
+  pluginDisable: (name: string, level: string | null, scope: ScopeArgs): Promise<void> =>
+    invoke('plugin_disable', { name, level, scope }),
+
+  pluginInstall: (name: string): Promise<void> =>
+    invoke('plugin_install', { name }),
 
   setupCheck: (): Promise<SetupStatus> =>
     invoke('setup_check'),
@@ -133,6 +141,16 @@ export const tauriService = {
   checkUpdates: (): Promise<UpdateCheck> =>
     invoke('check_updates'),
 
+  depsCheck: (): Promise<DepsReport> =>
+    invoke('deps_check'),
+
   makefileTargets: (path: string): Promise<string[]> =>
     invoke('makefile_targets', { path }),
+
+  getPipelines: (
+    tenant: string | null,
+    project: string | null,
+    repository: string | null,
+  ): Promise<PipelineStatus[]> =>
+    invoke('get_pipelines', { tenant, project, repository }),
 }

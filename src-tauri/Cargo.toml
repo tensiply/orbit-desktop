@@ -1,6 +1,6 @@
 [package]
 name = "orbit-desktop"
-version = "0.3.0"
+version = "0.4.0"
 edition = "2021"
 authors = ["Eloir Corona"]
 license = "MIT"
@@ -45,8 +45,10 @@ uuid = { version = "1", features = ["v4"] }
 ts-rs = "10"
 
 [features]
-dev = []
-canary = []
+# dev and canary are pre-release test builds — ship DevTools so the webview can
+# be inspected (release builds otherwise strip it).
+dev = ["tauri/devtools"]
+canary = ["tauri/devtools"]
 
 [profile.release]
 codegen-units = 1

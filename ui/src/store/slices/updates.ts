@@ -1,5 +1,5 @@
 import type { StateCreator } from 'zustand'
-import type { SetupStatus, UpdateCheck } from '../../types'
+import type { SetupStatus, UpdateCheck, DepsReport } from '../../types'
 import { tauriService } from '../../services/tauri'
 import { installDesktopUpdate } from '../../services/updater'
 import type { AppStore } from '../types'
@@ -16,11 +16,14 @@ export interface UpdatesSlice {
   updatesChecking: boolean
   desktopUpdating: boolean
   desktopUpdateError: string | null
+  depsReport: DepsReport | null
+  depsChecking: boolean
   setupWizardOpen: boolean
   setupWizardTriggeredOnce: boolean
 
   checkSetup: () => Promise<void>
   checkUpdates: () => Promise<void>
+  checkDeps: () => Promise<void>
   installDesktop: () => Promise<void>
   openSetupWizard: () => void
   closeSetupWizard: () => void
@@ -33,6 +36,8 @@ export const createUpdatesSlice: StateCreator<AppStore, [], [], UpdatesSlice> = 
   updatesChecking: false,
   desktopUpdating: false,
   desktopUpdateError: null,
+  depsReport: null,
+  depsChecking: false,
   setupWizardOpen: FORCE_WIZARD,
   setupWizardTriggeredOnce: false,
 
@@ -53,6 +58,16 @@ export const createUpdatesSlice: StateCreator<AppStore, [], [], UpdatesSlice> = 
       set({ updateCheck: result, updatesChecking: false })
     } catch {
       set({ updatesChecking: false })
+    }
+  },
+
+  checkDeps: async () => {
+    set({ depsChecking: true })
+    try {
+      const report = await tauriService.depsCheck()
+      set({ depsReport: report, depsChecking: false })
+    } catch {
+      set({ depsChecking: false })
     }
   },
 

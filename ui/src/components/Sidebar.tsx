@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react'
+import { getName, getVersion } from '@tauri-apps/api/app'
 import { Loader2, BookOpen, User, Settings2, Monitor, Terminal as TerminalIcon, Cpu, ShieldCheck, Download, Package, Keyboard, FileText, Image, FileCode, Network } from 'lucide-react'
 import { useAppStore } from '../store'
-import { workspaceFromWorkDir } from '../domain/scope'
+import { workspaceFromWorkDir, scopeArgsFromPath } from '../domain/scope'
 import { useScopeSession } from '../hooks/useScopeSession'
 import {
   computeSidebarItems,
@@ -28,7 +29,10 @@ import { ViewModeToggle, ScopeNavigator } from './sidebar/ScopePanel'
 import { SessionList, NewSessionButton } from './sidebar/SessionPanel'
 import { FilesPanel, DocsPanel, FileUploader } from './sidebar/DocumentPanel'
 import { TasksPanel } from './sidebar/TaskPanel'
+import { PluginsPanel } from './sidebar/PluginsPanel'
+import { McpsPanel } from './sidebar/McpsPanel'
 import { DropdownMenuItem } from './ui/dropdown-menu'
+import { Badge } from './ui/badge'
 import type { ActiveSettingsCategory } from '../store/slices/settings'
 import type { UpdateCheck, SetupStatus, AnyFileEntry } from '../types'
 
@@ -165,6 +169,7 @@ export function Sidebar({ width, collapsed }: { width: number; collapsed?: boole
   const tasksLoading         = useAppStore((s) => s.tasksLoading)
   const fetchTasks           = useAppStore((s) => s.fetchTasks)
   const openTask             = useAppStore((s) => s.openTask)
+  const fetchPlugins         = useAppStore((s) => s.fetchPlugins)
   const openFeaturePage      = useAppStore((s) => s.openFeaturePage)
   const registeredWorkspaces = useAppStore((s) => s.registeredWorkspaces)
   const scopeViewMode          = useAppStore((s) => s.scopeViewMode)
@@ -184,6 +189,16 @@ export function Sidebar({ width, collapsed }: { width: number; collapsed?: boole
   const [searchOpen,     setSearchOpen]     = useState(false)
   const [searchTerm,     setSearchTerm]     = useState('')
   const [fileKindFilter, setFileKindFilter] = useState<AnyFileEntry['kind'] | null>(null)
+  const [appChannel,     setAppChannel]     = useState<'DEV' | 'CANARY' | null>(null)
+  const [appVersion,     setAppVersion]     = useState<string | null>(null)
+
+  useEffect(() => {
+    getName().then((name) => {
+      if (name.endsWith('DEV')) setAppChannel('DEV')
+      else if (name.endsWith('CANARY')) setAppChannel('CANARY')
+    }).catch(() => void 0)
+    getVersion().then(setAppVersion).catch(() => void 0)
+  }, [])
 
   const { launchWithEngine } = useScopeSession()
 
@@ -205,6 +220,14 @@ export function Sidebar({ width, collapsed }: { width: number; collapsed?: boole
       openFeaturePage('tasks')
     }
   }, [navView, taskWorkspace])
+
+  useEffect(() => {
+    if (navView === 'plugins' || navView === 'mcps') {
+      void loadScopeTree()
+      const fullPath = selectedWorkspace ? [selectedWorkspace, ...scopePath] : scopePath
+      void fetchPlugins(scopeArgsFromPath(fullPath))
+    }
+  }, [navView, scopePath, selectedWorkspace])
 
   useEffect(() => {
     if (scopeViewMode === 'scope') void loadScopeTree()
@@ -356,8 +379,18 @@ export function Sidebar({ width, collapsed }: { width: number; collapsed?: boole
         className="flex flex-col shrink-0 select-none bg-sidebar pl-2 pt-0 pb-2"
       >
         {/* Header */}
-        <div data-tauri-drag-region data-orbit-zone="orbit.desktop.sidebar.header" className="h-10 flex items-center px-3 shrink-0">
-          <span className="text-sm font-semibold text-sidebar-foreground tracking-tight">orbit</span>
+        <div data-tauri-drag-region data-orbit-zone="orbit.desktop.sidebar.header" className="h-10 flex items-center px-3 gap-2 shrink-0">
+          <span className="text-sm font-semibold text-sidebar-foreground tracking-tight">Orbit Desktop</span>
+          {appChannel === 'DEV' && (
+            <span className="text-sm font-semibold text-destructive tracking-tight opacity-60">
+              dev
+            </span>
+          )}
+          {appChannel === 'CANARY' && (
+            <span className="text-sm font-semibold text-sidebar-foreground tracking-tight opacity-60">
+              canary{appVersion ? ` ${appVersion}` : ''}
+            </span>
+          )}
         </div>
 
         {/* Body */}
@@ -429,6 +462,7 @@ export function Sidebar({ width, collapsed }: { width: number; collapsed?: boole
                   {inScopeMode && (
                     <ScopeNavigator
                       selectedFolderName={selectedFolderName}
+                      folderMenu="session"
                     />
                   )}
                   {searchNode}
@@ -455,6 +489,7 @@ export function Sidebar({ width, collapsed }: { width: number; collapsed?: boole
                   {inScopeMode && (
                     <ScopeNavigator
                       selectedFolderName={selectedFolderName}
+                      folderMenu="folder"
                     />
                   )}
                   {searchNode}
@@ -506,7 +541,9 @@ export function Sidebar({ width, collapsed }: { width: number; collapsed?: boole
                   onOpenSetup={openSetupWizard}
                 />
               )}
-              {navView !== 'terminal' && navView !== 'docs' && navView !== 'documents' && navView !== 'tasks' && navView !== 'settings' && (
+              {navView === 'plugins' && <PluginsPanel />}
+              {navView === 'mcps' && <McpsPanel />}
+              {navView !== 'terminal' && navView !== 'docs' && navView !== 'documents' && navView !== 'tasks' && navView !== 'settings' && navView !== 'plugins' && navView !== 'mcps' && (
                 <p className="text-[10px] text-sidebar-foreground/25 px-2 pt-1">Coming soon</p>
               )}
             </SidebarPanel>

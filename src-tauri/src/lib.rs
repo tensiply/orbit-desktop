@@ -7,9 +7,11 @@ mod daemon;
 mod debug_buffer;
 mod debug_layer;
 mod debug_server;
+mod deps;
 mod documents;
 mod images;
 mod makefile;
+mod pipelines;
 mod plugins;
 mod pty;
 mod scopes;
@@ -37,43 +39,64 @@ use infrastructure::{
 };
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt, Layer};
 
-#[cfg(debug_assertions)]
+// DevTools ships in debug builds and in the dev/canary pre-release channels
+// (their features enable `tauri/devtools`); stable release strips it.
+#[cfg(any(debug_assertions, feature = "dev", feature = "canary"))]
 #[tauri::command]
 fn open_devtools(window: tauri::WebviewWindow) {
     window.open_devtools();
 }
 
-#[cfg(not(debug_assertions))]
+#[cfg(not(any(debug_assertions, feature = "dev", feature = "canary")))]
 #[tauri::command]
 fn open_devtools(_window: tauri::WebviewWindow) {}
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
-    #[cfg(all(feature = "dev", target_os = "linux"))]
-    let _ = std::fs::write("/proc/self/comm", "orbit-dev");
-    #[cfg(all(feature = "canary", not(feature = "dev"), target_os = "linux"))]
-    let _ = std::fs::write("/proc/self/comm", "orbit-canary");
+    use orbit_core::channel::Channel;
 
-    // Non-stable builds isolate the daemon, socket, and data under a
-    // channel-specific home so they never share orbitd with the stable install.
-    // Spawned orbit children inherit these env vars. Respect explicit overrides.
-    #[cfg(feature = "dev")]
-    let channel: Option<(&str, &str)> = Some(("dev", ".orbit-dev"));
-    #[cfg(all(feature = "canary", not(feature = "dev")))]
-    let channel: Option<(&str, &str)> = Some(("canary", ".orbit-canary"));
-    #[cfg(not(any(feature = "dev", feature = "canary")))]
-    let channel: Option<(&str, &str)> = None;
-
-    if let Some((name, home)) = channel {
-        if std::env::var_os("ORBIT_CHANNEL").is_none() {
-            std::env::set_var("ORBIT_CHANNEL", name);
-        }
-        if std::env::var_os("ORBIT_HOME").is_none() {
-            if let Some(dirs) = directories::BaseDirs::new() {
-                std::env::set_var("ORBIT_HOME", dirs.home_dir().join(home));
-            }
-        }
+    // WebKitGTK's DMABUF renderer freezes the web content when the window is
+    // occluded/backgrounded for a while and then refocused — the GTK window stays
+    // alive (native close button works) but the webview stops repainting. It bites
+    // hardest on Wayland + Mesa (Intel/AMD) and is made worse by a transparent
+    // window. Disabling the DMABUF renderer is the standard workaround; set it
+    // before GTK/WebView init. Only on Linux, and only if the user hasn't chosen.
+    #[cfg(target_os = "linux")]
+    if std::env::var_os("WEBKIT_DISABLE_DMABUF_RENDERER").is_none() {
+        std::env::set_var("WEBKIT_DISABLE_DMABUF_RENDERER", "1");
     }
+
+    // Compile-time channel of this desktop build — the single source of truth for
+    // its identity, home, process name and debug port (all derived from `Channel`
+    // in orbit-core, shared with the CLI and daemon).
+    #[cfg(feature = "dev")]
+    let channel: Option<Channel> = Some(Channel::Dev);
+    #[cfg(all(feature = "canary", not(feature = "dev")))]
+    let channel: Option<Channel> = Some(Channel::Canary);
+    #[cfg(not(any(feature = "dev", feature = "canary")))]
+    let channel: Option<Channel> = None;
+
+    // A packaged channel build is unambiguously that channel, so it forces its
+    // own channel/home — an inherited ORBIT_CHANNEL/ORBIT_HOME (e.g. launched
+    // from a terminal inside another channel's session) must not redirect it.
+    // Spawned orbit children then inherit the forced values.
+    if let Some(ch) = channel {
+        std::env::set_var("ORBIT_CHANNEL", ch.as_str());
+        if let Some(dirs) = directories::BaseDirs::new() {
+            std::env::set_var(
+                "ORBIT_HOME",
+                dirs.home_dir().join(format!(".orbit{}", ch.home_suffix())),
+            );
+        }
+        #[cfg(target_os = "linux")]
+        let _ = std::fs::write("/proc/self/comm", ch.process_name());
+    }
+
+    // Launched from a desktop shortcut, the app inherits the graphical session's
+    // reduced PATH — it lacks entries added in the user's shell rc (linuxbrew,
+    // nvm, etc.), so the daemon can't find engine binaries like `claude`. Resolve
+    // the login shell's real PATH and adopt it, the way editors like VSCode do.
+    crate::infrastructure::shell_path::hydrate_path();
 
     let buffer = debug_buffer::new_shared();
 
@@ -129,6 +152,7 @@ pub fn run() {
             plugins::plugin_list,
             plugins::plugin_enable,
             plugins::plugin_disable,
+            plugins::plugin_install,
             // Documents
             documents::document_list,
             documents::document_import,
@@ -167,6 +191,10 @@ pub fn run() {
             tasks::task_delete,
             // Makefile
             makefile::makefile_targets,
+            // Pipelines
+            pipelines::get_pipelines,
+            // File-generation host-tool checks
+            deps::deps_check,
             // Updates & CLI
             updates::check_updates,
             updates::setup_check,

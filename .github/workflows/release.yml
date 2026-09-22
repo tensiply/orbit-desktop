@@ -1,20 +1,17 @@
 name: Release
 
 on:
-  push:
-    tags:
-      # Stable ships only as vX.Y.0. Patch tags (vX.Y.Z, Z>=1) are canary
-      # pre-releases handled by canary.yml and must not trigger a full release.
-      - "v*.*.0"
+  # Stable releases are triggered manually only — never on tag push.
+  # Stable = vX.Y.0; canary = vX.Y.Z (Z>=1), published by canary.yml on every push to main.
   workflow_dispatch:
     inputs:
       tag:
-        description: "Tag to release (e.g. v0.3.0)"
+        description: "Tag to release (e.g. v0.4.0)"
         required: true
   workflow_call:
     inputs:
       tag:
-        description: "Tag to release (e.g. v0.2.0)"
+        description: "Tag to release (e.g. v0.4.0)"
         required: true
         type: string
 
@@ -107,6 +104,13 @@ jobs:
     needs: [verify, security]
     permissions:
       contents: write
+    # Windows is experimental until ORBIT_CLI_VERSION points at an orbit release
+    # that publishes a windows-x86_64 sidecar — keep it non-blocking meanwhile.
+    continue-on-error: ${{ matrix.experimental || false }}
+    # Run all steps under bash so the shell scripting works on the Windows runner.
+    defaults:
+      run:
+        shell: bash
     strategy:
       fail-fast: false
       matrix:
@@ -116,6 +120,13 @@ jobs:
             args: ""
             orbit_slug: linux-x86_64
             sidecar_triple: x86_64-unknown-linux-gnu
+
+          - platform: windows-latest
+            artifact_suffix: windows
+            args: "-c src-tauri/tauri.windows.conf.json"
+            orbit_slug: windows-x86_64
+            sidecar_triple: x86_64-pc-windows-msvc
+            experimental: true
 
           # macOS build temporarily disabled — re-enable when code signing is configured (gap #3)
           # - platform: macos-latest
@@ -178,12 +189,14 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           ORBIT_VER=$(cat ORBIT_CLI_VERSION)
-          ASSET="orbit-stable-${ORBIT_VER#v}-${{ matrix.orbit_slug }}"
+          EXT=""; [ "${{ runner.os }}" = "Windows" ] && EXT=".exe"
+          ASSET="orbit-stable-${ORBIT_VER#v}-${{ matrix.orbit_slug }}${EXT}"
+          OUT="src-tauri/binaries/orbit-${{ matrix.sidecar_triple }}${EXT}"
           mkdir -p src-tauri/binaries
           gh release download "${ORBIT_VER}" --repo tensiply/orbit \
             --pattern "${ASSET}" \
-            --output "src-tauri/binaries/orbit-${{ matrix.sidecar_triple }}"
-          chmod +x "src-tauri/binaries/orbit-${{ matrix.sidecar_triple }}"
+            --output "${OUT}"
+          [ "${{ runner.os }}" = "Windows" ] || chmod +x "${OUT}"
 
       - name: Build Tauri app
         uses: tauri-apps/tauri-action@v0

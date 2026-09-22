@@ -50,7 +50,19 @@ export const createTabsSlice: StateCreator<AppStore, [], [], TabsSlice> = (set, 
     opts: { focusPanel?: boolean; markBlank?: boolean } = {},
   ): Promise<string> => {
     if (opts.markBlank) get().markSessionBlank(launched.session_id)
-    const tabId = await tauriService.ptyOpen(launched.tmux_name)
+    let tabId: string
+    try {
+      tabId = await tauriService.ptyOpen(launched.tmux_name, launched.session_id)
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err)
+      console.error('[orbit] ptyOpen failed after launch for session', launched.session_id, err)
+      get().pushNotification({
+        title: 'Session launched but terminal failed to attach',
+        description: msg,
+        level: 'error',
+      })
+      throw err
+    }
     const tab: Tab = {
       id:          tabId,
       title:       label ?? '',
@@ -112,9 +124,15 @@ export const createTabsSlice: StateCreator<AppStore, [], [], TabsSlice> = (set, 
 
       let tabId: string
       try {
-        tabId = await tauriService.ptyOpen(session.tmux_session ?? null)
+        tabId = await tauriService.ptyOpen(session.tmux_session ?? null, session.id)
       } catch (err) {
+        const msg = err instanceof Error ? err.message : String(err)
         console.error('[orbit] ptyOpen failed for session', session.id, err)
+        get().pushNotification({
+          title: 'Failed to open terminal session',
+          description: msg,
+          level: 'error',
+        })
         return
       }
       const tab: Tab = {
