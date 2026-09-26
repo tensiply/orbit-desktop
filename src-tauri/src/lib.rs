@@ -56,20 +56,25 @@ fn open_devtools(_window: tauri::WebviewWindow) {}
 pub fn run() {
     use orbit_core::channel::Channel;
 
-    // WebKitGTK's DMABUF renderer freezes the web content when the window is
-    // occluded/backgrounded for a while and then refocused — the GTK window stays
-    // alive (native close button works) but the webview stops repainting. It bites
-    // hardest on Wayland + Mesa (Intel/AMD). Disabling the DMABUF renderer is the
-    // standard workaround; set it before GTK/WebView init. Only on Linux, and only
-    // if the user hasn't chosen.
+    // WebKitGTK's accelerated compositing freezes the web content when the window
+    // is occluded/backgrounded for a while and then refocused — the GTK window stays
+    // alive (native close button works, input still reaches the webview) but the
+    // webview stops repainting. It bites hardest on Wayland + Mesa (Intel/AMD).
+    //
+    // Disabling just the DMABUF renderer (WEBKIT_DISABLE_DMABUF_RENDERER) is enough
+    // on a recent system WebKitGTK (2.50), but NOT on the older WebKitGTK bundled
+    // into the packaged AppImage — there the freeze persists after occlusion. So we
+    // disable accelerated compositing entirely (WEBKIT_DISABLE_COMPOSITING_MODE),
+    // which subsumes the DMABUF path and repaints reliably across WebKit versions.
+    // Set it before GTK/WebView init, only on Linux, only if the user hasn't chosen.
     //
     // This pairs with `transparent: false` in tauri.conf.json: a *transparent*
-    // WebKitGTK window on the unaccelerated (DMABUF-disabled) path never repaints
-    // its background and stays frozen after occlusion, so the two must go together.
-    // The UI paints an opaque full-window background, so opacity costs nothing.
+    // WebKitGTK window on the unaccelerated path never repaints its background and
+    // stays frozen after occlusion, so the two must go together. The UI paints an
+    // opaque full-window background, so opacity costs nothing.
     #[cfg(target_os = "linux")]
-    if std::env::var_os("WEBKIT_DISABLE_DMABUF_RENDERER").is_none() {
-        std::env::set_var("WEBKIT_DISABLE_DMABUF_RENDERER", "1");
+    if std::env::var_os("WEBKIT_DISABLE_COMPOSITING_MODE").is_none() {
+        std::env::set_var("WEBKIT_DISABLE_COMPOSITING_MODE", "1");
     }
 
     // Compile-time channel of this desktop build — the single source of truth for
