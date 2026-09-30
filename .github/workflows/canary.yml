@@ -63,7 +63,13 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - platform: ubuntu-22.04
+          # Linux builds run inside a Debian 12 (bookworm) container so the
+          # AppImage bundles WebKitGTK 2.50.x. The older WebKitGTK on the
+          # ubuntu-22.04 runner froze the webview after the window was occluded
+          # and refocused on modern GNOME/Wayland hosts; WebKit 2.50 repaints
+          # reliably (verified by bundling it into a local build).
+          - platform: ubuntu-latest
+            container: debian:12
             artifact_suffix: linux
             args: ""
             orbit_slug: linux-x86_64
@@ -75,7 +81,19 @@ jobs:
             orbit_slug: windows-x86_64
             sidecar_triple: x86_64-pc-windows-msvc
     runs-on: ${{ matrix.platform }}
+    # Empty for the Windows entry → that job runs directly on the runner.
+    container: ${{ matrix.container }}
     steps:
+      # The Debian 12 container is minimal — install the tools the later steps
+      # and actions assume exist (git for checkout, python3 for the version
+      # stamp, curl/gnupg for the toolchain installers). Skipped on Windows.
+      - name: Bootstrap container tools (Linux)
+        if: matrix.artifact_suffix == 'linux'
+        run: |
+          apt-get update
+          apt-get install -y --no-install-recommends \
+            git curl wget file ca-certificates gnupg python3 xz-utils
+
       - uses: actions/checkout@v4
 
       - name: Stamp canary version
@@ -109,15 +127,28 @@ jobs:
           workspaces: ". -> target"
           key: canary-${{ matrix.platform }}
 
-      - name: Install Linux system deps
-        if: matrix.platform == 'ubuntu-22.04'
+      - name: Install Linux build deps
+        if: matrix.artifact_suffix == 'linux'
         run: |
-          sudo apt-get update
-          sudo apt-get install -y \
+          apt-get update
+          apt-get install -y --no-install-recommends \
+            build-essential \
             libwebkit2gtk-4.1-dev \
-            libappindicator3-dev \
+            libssl-dev \
+            libgtk-3-dev \
+            libayatana-appindicator3-dev \
             librsvg2-dev \
             patchelf
+          # The bundle steps below drive GitHub releases with `gh`, which the
+          # base image lacks — install it from GitHub's apt repository.
+          install -d -m 755 /etc/apt/keyrings
+          curl -fsSL https://cli.github.com/packages/githubcli-archive-keyring.gpg \
+            | tee /etc/apt/keyrings/githubcli-archive-keyring.gpg >/dev/null
+          chmod go+r /etc/apt/keyrings/githubcli-archive-keyring.gpg
+          echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/githubcli-archive-keyring.gpg] https://cli.github.com/packages stable main" \
+            > /etc/apt/sources.list.d/github-cli.list
+          apt-get update
+          apt-get install -y gh
 
       - name: Generate TypeScript bindings
         run: |
@@ -159,6 +190,9 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
           TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
+          # appimagetool/linuxdeploy are AppImages; the build container has no
+          # FUSE, so run them via extract-and-run instead of mounting.
+          APPIMAGE_EXTRACT_AND_RUN: 1
         with:
           tagName: ${{ needs.prepare.outputs.tag }}
           releaseName: ${{ needs.prepare.outputs.tag }}
