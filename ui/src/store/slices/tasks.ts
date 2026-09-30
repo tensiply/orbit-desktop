@@ -42,7 +42,7 @@ export const createTasksSlice: StateCreator<AppStore, [], [], TasksSlice> = (set
       set({ activeTabId: tabId })
       return
     }
-    const tab = { id: tabId, title: task.id, type: 'task' as const, taskId: task.id }
+    const tab = { id: tabId, title: task.id, type: 'task' as const, workspace: task.workspace, taskId: task.id }
     set((s) => ({ tabs: [...s.tabs, tab], activeTabId: tabId }))
   },
 

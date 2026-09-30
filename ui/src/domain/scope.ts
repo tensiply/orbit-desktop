@@ -1,4 +1,4 @@
-import type { Session, ScopeArgs } from '../types'
+import type { Session, ScopeArgs, Tab } from '../types'
 
 /** ScopeArgs (workspace→repository) from a full scope path `[ws, tenant, project, repo]`. */
 export function scopeArgsFromPath(fullPath: string[]): ScopeArgs {
@@ -34,6 +34,17 @@ export function scopeCliLevel(fullPath: string[]): string {
 export function workspaceFromWorkDir(workDir: string): string | null {
   const parts = workDir.split('/').filter(Boolean)
   return parts.length >= 3 && parts[0] === 'home' ? parts[2] : null
+}
+
+/**
+ * Whether a tab should be visible under the current workspace filter.
+ * A tab with no workspace (global utilities, plain shells) is always visible;
+ * a workspace-scoped tab is hidden when a different workspace is selected.
+ */
+export function tabMatchesWorkspace(tab: Tab, selectedWorkspace: string | null): boolean {
+  if (!selectedWorkspace) return true
+  if (!tab.workspace) return true
+  return tab.workspace === selectedWorkspace
 }
 
 /** Builds the scope path string[] from a Session for use with launchScopeSession. */

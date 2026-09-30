@@ -1,7 +1,24 @@
 import { SquareTerminal, Settings, Keyboard, Layers, FileText, Network, Waypoints, Map, ListChecks, X } from 'lucide-react'
+import {
+  DndContext,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  closestCenter,
+  type DragEndEvent,
+} from '@dnd-kit/core'
+import {
+  SortableContext,
+  horizontalListSortingStrategy,
+  useSortable,
+} from '@dnd-kit/sortable'
+import { restrictToHorizontalAxis, restrictToParentElement } from '@dnd-kit/modifiers'
+import { CSS } from '@dnd-kit/utilities'
+import type { CSSProperties, HTMLAttributes } from 'react'
 import { cn } from '@/lib/utils'
 import { useAppStore } from '../store'
 import type { Tab } from '../store'
+import { tabMatchesWorkspace } from '../domain/scope'
 import { Tooltip, TooltipContent, TooltipTrigger } from './ui/tooltip'
 import { Button } from './ui/button'
 
@@ -20,19 +37,32 @@ function tabIcon(type: Tab['type']) {
 }
 
 export function TabBar() {
-  const tabs         = useAppStore((s) => s.tabs)
-  const activeTabId  = useAppStore((s) => s.activeTabId)
-  const navView      = useAppStore((s) => s.navView)
-  const setActiveTab = useAppStore((s) => s.setActiveTab)
-  const closeTab     = useAppStore((s) => s.closeTab)
+  const tabs              = useAppStore((s) => s.tabs)
+  const activeTabId       = useAppStore((s) => s.activeTabId)
+  const navView           = useAppStore((s) => s.navView)
+  const selectedWorkspace = useAppStore((s) => s.selectedWorkspace)
+  const setActiveTab      = useAppStore((s) => s.setActiveTab)
+  const closeTab          = useAppStore((s) => s.closeTab)
+  const reorderTabs       = useAppStore((s) => s.reorderTabs)
 
   const featureTab  = tabs.find((t) => t.type === 'feature-page' && t.featureView === navView)
-  const regularTabs = tabs.filter((t) => t.type !== 'feature-page' && !(t.type === 'task' && navView !== 'tasks'))
+  const regularTabs = tabs
+    .filter((t) => t.type !== 'feature-page' && !(t.type === 'task' && navView !== 'tasks'))
+    .filter((t) => tabMatchesWorkspace(t, selectedWorkspace))
   const showFeature = !!featureTab
+
+  // A small activation distance keeps plain clicks (activate / close) working —
+  // a drag only begins once the pointer moves past the threshold.
+  const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 6 } }))
+
+  const handleDragEnd = (e: DragEndEvent) => {
+    const { active, over } = e
+    if (over && active.id !== over.id) reorderTabs(String(active.id), String(over.id))
+  }
 
   return (
     <div data-orbit-zone="orbit.desktop.principal.card.tabs" className="flex shrink-0 select-none bg-card h-[36px] border-b border-sidebar-border/60">
-      {/* Scrollable tab list */}
+      {/* Scrollable, drag-sortable tab list */}
       <div
         role="tablist"
         className="flex items-stretch flex-1 min-w-0 overflow-x-auto no-scrollbar"
@@ -42,15 +72,24 @@ export function TabBar() {
             No tabs open
           </span>
         )}
-        {regularTabs.map((tab) => (
-          <TabItem
-            key={tab.id}
-            tab={tab}
-            active={tab.id === activeTabId}
-            onActivate={() => setActiveTab(tab.id)}
-            onClose={() => closeTab(tab.id)}
-          />
-        ))}
+        <DndContext
+          sensors={sensors}
+          collisionDetection={closestCenter}
+          modifiers={[restrictToHorizontalAxis, restrictToParentElement]}
+          onDragEnd={handleDragEnd}
+        >
+          <SortableContext items={regularTabs.map((t) => t.id)} strategy={horizontalListSortingStrategy}>
+            {regularTabs.map((tab) => (
+              <SortableTabItem
+                key={tab.id}
+                tab={tab}
+                active={tab.id === activeTabId}
+                onActivate={() => setActiveTab(tab.id)}
+                onClose={() => closeTab(tab.id)}
+              />
+            ))}
+          </SortableContext>
+        </DndContext>
       </div>
 
       {/* Feature page tab — pinned right, no close button, visible only for the active nav view */}
@@ -68,18 +107,47 @@ export function TabBar() {
   )
 }
 
+function SortableTabItem(props: {
+  tab:        Tab
+  active:     boolean
+  onActivate: () => void
+  onClose:    () => void
+}) {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: props.tab.id })
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.6 : undefined,
+    zIndex:  isDragging ? 10 : undefined,
+  }
+  return (
+    <TabItem
+      {...props}
+      dragRef={setNodeRef}
+      dragStyle={style}
+      dragHandleProps={{ ...attributes, ...listeners }}
+    />
+  )
+}
+
 function TabItem({
   tab,
   active,
   onActivate,
   onClose,
   pinned = false,
+  dragRef,
+  dragStyle,
+  dragHandleProps,
 }: {
-  tab:        Tab
-  active:     boolean
-  onActivate: () => void
-  onClose?:   () => void
-  pinned?:    boolean
+  tab:              Tab
+  active:           boolean
+  onActivate:       () => void
+  onClose?:         () => void
+  pinned?:          boolean
+  dragRef?:         (node: HTMLElement | null) => void
+  dragStyle?:       CSSProperties
+  dragHandleProps?: HTMLAttributes<HTMLElement>
 }) {
   const Icon = tabIcon(tab.type)
 
@@ -87,6 +155,9 @@ function TabItem({
     <Tooltip>
       <TooltipTrigger asChild>
         <div
+          ref={dragRef}
+          style={dragStyle}
+          {...dragHandleProps}
           role="tab"
           aria-selected={active}
           onClick={onActivate}

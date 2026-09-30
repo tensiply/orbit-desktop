@@ -1,4 +1,5 @@
 import type { StateCreator } from 'zustand'
+import { arrayMove } from '@dnd-kit/sortable'
 import type { Tab, Session, LaunchedInfo, NavView, DiagramEntry } from '../../types'
 import { tauriService } from '../../services/tauri'
 import { sendTerminalCmd } from '../../lib/terminalBus'
@@ -23,6 +24,7 @@ export interface TabsSlice {
   openDiagram: (entry: DiagramEntry) => void
   removeFromArchHistory: (workspace: string, tenant: string) => void
   closeTab: (tabId: string) => Promise<void>
+  reorderTabs: (activeId: string, overId: string) => void
   setActiveTab: (tabId: string) => void
   killSession: (session: Session) => Promise<void>
   duplicateSession: (session: Session) => Promise<void>
@@ -47,7 +49,7 @@ export const createTabsSlice: StateCreator<AppStore, [], [], TabsSlice> = (set, 
   const attachLaunchedSession = async (
     launched: LaunchedInfo,
     label: string | undefined,
-    opts: { focusPanel?: boolean; markBlank?: boolean } = {},
+    opts: { focusPanel?: boolean; markBlank?: boolean; workspace?: string | null } = {},
   ): Promise<string> => {
     if (opts.markBlank) get().markSessionBlank(launched.session_id)
     let tabId: string
@@ -67,6 +69,7 @@ export const createTabsSlice: StateCreator<AppStore, [], [], TabsSlice> = (set, 
       id:          tabId,
       title:       label ?? '',
       type:        'terminal',
+      workspace:   opts.workspace ?? null,
       sessionId:   launched.session_id,
       tmuxSession: launched.tmux_name,
     }
@@ -118,7 +121,11 @@ export const createTabsSlice: StateCreator<AppStore, [], [], TabsSlice> = (set, 
           engine:      session.engine,
           new_session: true,
         })
-        await attachLaunchedSession(launched, label, { markBlank: true, focusPanel: true })
+        await attachLaunchedSession(launched, label, {
+          markBlank: true,
+          focusPanel: true,
+          workspace: workspaceFromWorkDir(session.work_dir),
+        })
         return
       }
 
@@ -139,6 +146,7 @@ export const createTabsSlice: StateCreator<AppStore, [], [], TabsSlice> = (set, 
         id:          tabId,
         title:       label,
         type:        'terminal',
+        workspace:   workspaceFromWorkDir(session.work_dir),
         sessionId:   session.id,
         tmuxSession: session.tmux_session,
       }
@@ -213,6 +221,7 @@ export const createTabsSlice: StateCreator<AppStore, [], [], TabsSlice> = (set, 
         id: tabId,
         title: entry.title,
         type: 'diagram',
+        workspace: entry.workspace,
         diagramEntry: entry,
       }
       set((state) => ({ tabs: [...state.tabs, tab], activeTabId: tabId, navView: 'documents', archHistory }))
@@ -245,6 +254,18 @@ export const createTabsSlice: StateCreator<AppStore, [], [], TabsSlice> = (set, 
       })
       saveOpenSessions()
       syncActive(get().activeTabId)
+    },
+
+    reorderTabs: (activeId: string, overId: string) => {
+      if (activeId === overId) return
+      set((state) => {
+        const from = state.tabs.findIndex((t) => t.id === activeId)
+        const to   = state.tabs.findIndex((t) => t.id === overId)
+        if (from === -1 || to === -1 || from === to) return {}
+        return { tabs: arrayMove(state.tabs, from, to) }
+      })
+      // Persist the new terminal-tab order so it survives a reload.
+      saveOpenSessions()
     },
 
     setActiveTab: (tabId: string) => {
@@ -282,7 +303,7 @@ export const createTabsSlice: StateCreator<AppStore, [], [], TabsSlice> = (set, 
         new_session: true,
       })
       const label = session.repository || session.project || session.tenant || 'shell'
-      await attachLaunchedSession(launched, label)
+      await attachLaunchedSession(launched, label, { workspace: workspaceFromWorkDir(session.work_dir) })
       await get().refreshSessions()
     },
 
@@ -297,7 +318,7 @@ export const createTabsSlice: StateCreator<AppStore, [], [], TabsSlice> = (set, 
         new_session: true,
       })
       const label = repository || project || tenant || workspace || 'shell'
-      await attachLaunchedSession(launched, label, { markBlank: true, focusPanel: true })
+      await attachLaunchedSession(launched, label, { markBlank: true, focusPanel: true, workspace: workspace ?? null })
       await get().refreshSessions()
     },
 
@@ -324,7 +345,7 @@ export const createTabsSlice: StateCreator<AppStore, [], [], TabsSlice> = (set, 
         new_session: true,
       })
       const label = session.repository || session.project || session.tenant || 'shell'
-      await attachLaunchedSession(launched, label)
+      await attachLaunchedSession(launched, label, { workspace: workspaceFromWorkDir(session.work_dir) })
       await get().refreshSessions()
     },
   }
