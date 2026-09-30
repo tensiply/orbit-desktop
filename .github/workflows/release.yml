@@ -155,6 +155,10 @@ jobs:
           apt-get update
           apt-get install -y --no-install-recommends \
             git curl wget file ca-certificates gnupg python3 xz-utils
+          # The checkout is owned by a different uid than root (the container
+          # user), so `gh`'s git calls in the release steps would otherwise fail
+          # with "detected dubious ownership". Trust the workspace up front.
+          git config --global --add safe.directory '*'
 
       - uses: actions/checkout@v4
         with:
