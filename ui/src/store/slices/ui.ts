@@ -2,6 +2,7 @@ import type { StateCreator } from 'zustand'
 import type { NavView, Theme } from '../../types'
 import type { AppStore } from '../types'
 import { tauriService } from '../../services/tauri'
+import { tabMatchesWorkspace } from '../../domain/scope'
 
 // Exported so store.ts can call it from onRehydrateStorage
 export function applyTheme(theme: Theme) {
@@ -177,6 +178,16 @@ export const createUiSlice: StateCreator<AppStore, [], [], UiSlice> = (set, get)
     const { selectedWorkspace } = get()
     if (ws === selectedWorkspace) return
     set({ previousWorkspace: selectedWorkspace, selectedWorkspace: ws })
+
+    // If the active tab now belongs to a different workspace, it's hidden from
+    // the tab bar — switch to the first tab still visible under the new filter.
+    const { tabs, activeTabId } = get()
+    const active = tabs.find((t) => t.id === activeTabId)
+    if (active && !tabMatchesWorkspace(active, ws)) {
+      const firstVisible = tabs.find((t) => tabMatchesWorkspace(t, ws))
+      if (firstVisible) get().setActiveTab(firstVisible.id)
+      else set({ activeTabId: null })
+    }
   },
 
   openLaunchPicker:  (scopePath) => set({ launchPickerOpen: true,  launchPickerScopePath: scopePath }),

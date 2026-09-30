@@ -145,7 +145,7 @@ export const createDocumentsSlice: StateCreator<AppStore, [], [], DocumentsSlice
       set({ activeTabId: tabId })
       return
     }
-    const tab = { id: tabId, title: doc.title, type: 'document' as const, docId: doc.id }
+    const tab = { id: tabId, title: doc.title, type: 'document' as const, workspace: doc.workspace, docId: doc.id }
     set((s) => ({ tabs: [...s.tabs, tab], activeTabId: tabId }))
   },
 
@@ -160,6 +160,7 @@ export const createDocumentsSlice: StateCreator<AppStore, [], [], DocumentsSlice
       id: tabId,
       title: img.title,
       type: 'file' as const,
+      workspace: img.workspace,
       filePath: img.output_path,
       fileFormat: img.format,
     }
@@ -177,6 +178,7 @@ export const createDocumentsSlice: StateCreator<AppStore, [], [], DocumentsSlice
       id: tabId,
       title: svg.title,
       type: 'file' as const,
+      workspace: svg.workspace,
       filePath: svg.output_path,
       fileFormat: 'svg',
     }

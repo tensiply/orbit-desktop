@@ -49,6 +49,8 @@ export interface Tab {
   id: string
   title: string
   type?: 'terminal' | 'shortcuts' | 'uikit' | 'colors' | 'settings' | 'document' | 'diagram' | 'ui-map' | 'task' | 'feature-page' | 'file'
+  /** Workspace this tab belongs to. Absent for global tabs (shortcuts, settings, plain shells) — those ignore the workspace filter. */
+  workspace?: string | null
   sessionId?: string
   tmuxSession?: string
   docId?: string
