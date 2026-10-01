@@ -6,6 +6,7 @@ import {
   workspaceFromWorkDir,
 } from '../lib/sidebarNav'
 import { mergeFiles } from '../store/slices/documents'
+import { tabMatchesWorkspace } from '../domain/scope'
 
 type ParsedKeys = {
   ctrl: boolean
@@ -341,17 +342,20 @@ export function useGlobalShortcuts() {
             if (activeTabId) void closeTab(activeTabId)
             break
           case 'next_tab': {
-            if (tabs.length > 1) {
-              const idx  = tabs.findIndex((t) => t.id === activeTabId)
-              const next = tabs[(idx + 1) % tabs.length]
+            // Cycle only through tabs visible under the current workspace filter.
+            const cycle = tabs.filter((t) => tabMatchesWorkspace(t, selectedWorkspace))
+            if (cycle.length > 1) {
+              const idx  = cycle.findIndex((t) => t.id === activeTabId)
+              const next = cycle[(idx + 1) % cycle.length]
               if (next) setActiveTab(next.id)
             }
             break
           }
           case 'prev_tab': {
-            if (tabs.length > 1) {
-              const idx  = tabs.findIndex((t) => t.id === activeTabId)
-              const prev = tabs[(idx - 1 + tabs.length) % tabs.length]
+            const cycle = tabs.filter((t) => tabMatchesWorkspace(t, selectedWorkspace))
+            if (cycle.length > 1) {
+              const idx  = cycle.findIndex((t) => t.id === activeTabId)
+              const prev = cycle[(idx - 1 + cycle.length) % cycle.length]
               if (prev) setActiveTab(prev.id)
             }
             break
