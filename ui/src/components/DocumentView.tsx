@@ -110,10 +110,12 @@ function PdfPreview({ path }: { path: string }) {
   const docRef         = useRef<PDFDocumentProxy | null>(null)
   const taskRef        = useRef<PDFDocumentLoadingTask | null>(null)
   const fitScaleRef    = useRef(1)
+  const pageDimsRef    = useRef<{ w: number; h: number } | null>(null)
   const [numPages,  setNumPages]  = useState(0)
   const [rendered,  setRendered]  = useState(false)
   const [zoom,      setZoom]      = useState(1.0)   // multiplier over fitScale
   const [page,      setPage]      = useState(1)
+  const [fitTick,   setFitTick]   = useState(0)     // bumped when the container re-fits
 
   // Load PDF + compute fit-page scale ─────────────────────────────────────────
   useEffect(() => {
@@ -141,6 +143,7 @@ function PdfPreview({ path }: { path: string }) {
 
       const availW = Math.max(el.clientWidth  - 48, 100)
       const availH = Math.max(el.clientHeight - 48, 100)
+      pageDimsRef.current = { w: vp1.width, h: vp1.height }
       fitScaleRef.current = Math.min(availW / vp1.width, availH / vp1.height)
 
       setNumPages(doc.numPages)
@@ -148,6 +151,28 @@ function PdfPreview({ path }: { path: string }) {
 
     return () => { cancelled = true }
   }, [url])
+
+  // Re-fit when the container resizes. The one-shot measurement above races with
+  // layout when the tab is opened programmatically (e.g. from a generated-file
+  // event) instead of clicked in the sidebar, which left PDFs rendering oversized.
+  // Re-fitting on resize self-corrects regardless of the initial measurement.
+  useEffect(() => {
+    const el = containerRef.current
+    if (!el) return
+    const ro = new ResizeObserver(() => {
+      const dims = pageDimsRef.current
+      if (!dims) return
+      const availW = Math.max(el.clientWidth  - 48, 100)
+      const availH = Math.max(el.clientHeight - 48, 100)
+      const next   = Math.min(availW / dims.w, availH / dims.h)
+      if (Math.abs(next - fitScaleRef.current) > 0.001) {
+        fitScaleRef.current = next
+        setFitTick(t => t + 1)
+      }
+    })
+    ro.observe(el)
+    return () => ro.disconnect()
+  }, [])
 
   // Render pages (re-runs on numPages change or zoom change) ──────────────────
   useEffect(() => {
@@ -172,7 +197,7 @@ function PdfPreview({ path }: { path: string }) {
     })().catch(() => {})
 
     return () => { cancelled = true }
-  }, [numPages, zoom])
+  }, [numPages, zoom, fitTick])
 
   // Toolbar actions ────────────────────────────────────────────────────────────
   const zoomIn  = () => setZoom(z => Math.min(z * ZOOM_STEP, ZOOM_MAX))
