@@ -91,12 +91,31 @@ pub async fn pty_open(
                 c.env("POWERLEVEL9K_INSTANT_PROMPT", "off");
             }
             c.env("ORBIT_TERMINAL", "1");
+
+            // Strip AppImage loader vars (PYTHONHOME, LD_LIBRARY_PATH, GTK/Qt
+            // paths, …) that the bundled GUI binary injected, so external
+            // Python/Perl/linked tools run in this terminal behave as they would
+            // in a normal shell. The GUI process must keep them to render; only
+            // this child shell is scrubbed.
+            let scrub = orbit_core::process::appimage_scrub_plan();
+            let mut clean_path = std::env::var_os("PATH").unwrap_or_default();
+            for (key, action) in &scrub {
+                match action {
+                    Some(value) => {
+                        if key == "PATH" {
+                            clean_path = value.clone().into();
+                        }
+                        c.env(key, value);
+                    }
+                    None => c.env_remove(key),
+                }
+            }
+
             // Make the bundled orbit CLI available to commands typed in the
-            // terminal. Prepend the sidecar dir using the platform PATH separator.
+            // terminal. Prepend the sidecar dir to the (scrubbed) PATH.
             if let Some(dir) = crate::infrastructure::orbit_sidecar::sidecar_dir() {
-                let existing = std::env::var_os("PATH").unwrap_or_default();
                 let mut entries = vec![dir];
-                entries.extend(std::env::split_paths(&existing));
+                entries.extend(std::env::split_paths(&clean_path));
                 if let Ok(joined) = std::env::join_paths(entries) {
                     c.env("PATH", joined);
                 }
