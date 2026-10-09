@@ -362,6 +362,10 @@ fn tool_definitions() -> Value {
                     "id": {
                         "type": "string",
                         "description": "Entry ID from the orbit index (e.g. DOC-000001, IMG-000001, SVG-000001)"
+                    },
+                    "workspace": {
+                        "type": "string",
+                        "description": "Workspace that owns the entry. Disambiguates `id` across workspaces (IDs are allocated per workspace). Optional; omit to match by ID alone."
                     }
                 },
                 "required": ["kind", "id"]
@@ -451,15 +455,16 @@ async fn call_tool(state: &ServerState, name: &str, args: &Value) -> Value {
         "open_file" => {
             let kind = args.get("kind").and_then(|v| v.as_str()).unwrap_or("");
             let id = args.get("id").and_then(|v| v.as_str()).unwrap_or("");
+            let workspace = args.get("workspace").and_then(|v| v.as_str()).unwrap_or("");
             if id.is_empty() || !matches!(kind, "doc" | "image" | "svg") {
                 return json!({
                     "error": "open_file requires `kind` (doc|image|svg) and a non-empty `id`"
                 });
             }
-            let payload = json!({ "kind": kind, "id": id });
+            let payload = json!({ "kind": kind, "id": id, "workspace": workspace });
             match state.app.emit("desktop:open-file", payload) {
                 Ok(_) => {
-                    json!({ "ok": true, "event": "desktop:open-file", "kind": kind, "id": id })
+                    json!({ "ok": true, "event": "desktop:open-file", "kind": kind, "id": id, "workspace": workspace })
                 }
                 Err(e) => json!({ "error": e.to_string() }),
             }
