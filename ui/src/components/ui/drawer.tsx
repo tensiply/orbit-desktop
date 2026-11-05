@@ -44,6 +44,7 @@ export function Drawer({
 }: DrawerProps) {
   const [mounted,      setMounted]      = useState(false)
   const [visible,      setVisible]      = useState(false)
+  const [collapsed,    setCollapsed]    = useState(false)
   const [contentReady, setContentReady] = useState(false)
   const [currentWidth, setCurrentWidth] = useState<number | string>(width)
   const [dragging,     setDragging]     = useState(false)
@@ -53,6 +54,7 @@ export function Drawer({
     if (open) {
       setCurrentWidth(width)
       setMounted(true)
+      setCollapsed(false)
       // Double RAF: paint at width:0 first so the CSS transition runs 0 → full
       requestAnimationFrame(() => requestAnimationFrame(() => setVisible(true)))
       if (contentDelayMs > 0) {
@@ -66,6 +68,10 @@ export function Drawer({
       setContentReady(false)
       if (persistContent) {
         // Keep children mounted — drawer shrinks to width 0 instead of unmounting.
+        // After the slide-out, drop it from flex flow so its zero-width slot stops
+        // contributing a `gap` against the neighbouring drawer.
+        const t = setTimeout(() => setCollapsed(true), 210)
+        return () => clearTimeout(t)
       } else {
         const t = setTimeout(() => setMounted(false), 210)
         return () => clearTimeout(t)
@@ -109,6 +115,7 @@ export function Drawer({
         data-orbit-zone={zone}
         className={cn(
           'relative flex shrink-0',
+          collapsed && 'hidden',
           !dragging && 'transition-all duration-200 ease-in-out',
         )}
         style={{ width: visible ? currentWidth : 0, opacity: visible ? 1 : 0 }}

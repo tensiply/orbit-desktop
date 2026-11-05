@@ -4,7 +4,7 @@ import type {
   ArchCatalogDto, ArchEntityDto, SaveEntityArgs, ArchLayout, ArchRoutes,
   HarnessReport, PluginInfo, ScopeArgs,
   SetupStatus, UpdateCheck, DepsReport, ImageEntry, SvgEntry, DocEntry,
-  PipelineStatus,
+  PipelineStatus, NoteInfo, NoteContent,
 } from '../types'
 
 export const tauriService = {
@@ -160,4 +160,21 @@ export const tauriService = {
     repository: string | null,
   ): Promise<PipelineStatus[]> =>
     invoke('get_pipelines', { workspace, tenant, project, repository }),
+
+  notesList: (scope: ScopeArgs): Promise<NoteInfo[]> =>
+    invoke('notes_list', scope),
+
+  noteRead: (path: string): Promise<NoteContent> =>
+    invoke('note_read', { path }),
+
+  noteSave: (
+    scope: ScopeArgs,
+    id: string | null,
+    title: string,
+    body: string,
+  ): Promise<NoteInfo> =>
+    invoke('note_save', { ...scope, id, title, body }),
+
+  noteDelete: (path: string): Promise<void> =>
+    invoke('note_delete', { path }),
 }

@@ -13,6 +13,7 @@ import { createArchDrawerSlice } from './store/slices/archDrawer'
 import { createHarnessDrawerSlice } from './store/slices/harnessDrawer'
 import { createPipelineDrawerSlice } from './store/slices/pipelineDrawer'
 import { createExecutionDrawerSlice } from './store/slices/executionDrawer'
+import { createNotesDrawerSlice } from './store/slices/notesDrawer'
 import { createUpdatesSlice } from './store/slices/updates'
 import { createNotificationsSlice } from './store/slices/notifications'
 import { createPluginsSlice } from './store/slices/plugins'
@@ -34,6 +35,7 @@ export const useAppStore = create<AppStore>()(
       ...createHarnessDrawerSlice(...a),
       ...createPipelineDrawerSlice(...a),
       ...createExecutionDrawerSlice(...a),
+      ...createNotesDrawerSlice(...a),
       ...createUpdatesSlice(...a),
       ...createNotificationsSlice(...a),
       ...createPluginsSlice(...a),

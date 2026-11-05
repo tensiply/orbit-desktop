@@ -47,6 +47,7 @@ export function useGlobalShortcuts() {
   const allSessions         = useAppStore((s) => s.sessions)
   const selectedWorkspace   = useAppStore((s) => s.selectedWorkspace)
   const openShell           = useAppStore((s) => s.openShell)
+  const toggleNotesDrawer   = useAppStore((s) => s.toggleNotesDrawer)
   const closeTab            = useAppStore((s) => s.closeTab)
   const setActiveTab        = useAppStore((s) => s.setActiveTab)
   const openShortcuts       = useAppStore((s) => s.openShortcuts)
@@ -337,6 +338,9 @@ export function useGlobalShortcuts() {
           case 'new_shell':
             void openShell()
             break
+          case 'new_note':
+            toggleNotesDrawer()
+            break
           case 'close_tab':
             if (drawerOpen) closeDrawer()
             if (activeTabId) void closeTab(activeTabId)
@@ -515,7 +519,7 @@ export function useGlobalShortcuts() {
       document.removeEventListener('focusout', onFocusOut)
     }
   }, [shortcuts, tabs, activeTabId, allSessions, selectedWorkspace,
-      openShell, closeTab, setActiveTab,
+      openShell, toggleNotesDrawer, closeTab, setActiveTab,
       openShortcuts, openSettings, toggleTheme, toggleSidebar, setNavView,
       toggleDrawer, restartSession, duplicateSession, killSession, openSession,
       drawerOpen, focusedPanel, closeDrawer, setFocusedPanel,

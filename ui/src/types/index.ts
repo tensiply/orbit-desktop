@@ -63,6 +63,26 @@ export interface Tab {
   fileFormat?: string
 }
 
+// ── Note types (source-of-truth per scope) — mirror src-tauri/src/notes.rs ──────
+
+export interface NoteInfo {
+  id: string
+  title: string
+  preview: string
+  path: string
+  created_at: number
+  updated_at: number
+}
+
+export interface NoteContent {
+  id: string
+  title: string
+  body: string
+  path: string
+  created_at: number
+  updated_at: number
+}
+
 // ── Task types ─────────────────────────────────────────────────────────────────
 
 export type TaskStatus = 'todo' | 'in_progress' | 'done' | 'blocked' | 'cancelled'

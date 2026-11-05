@@ -12,6 +12,7 @@ mod documents;
 mod exec;
 mod images;
 mod makefile;
+mod notes;
 mod pipelines;
 mod plugins;
 mod pty;
@@ -208,6 +209,11 @@ pub fn run() {
             exec::exec_kill,
             // Pipelines
             pipelines::get_pipelines,
+            // Notes (source-of-truth per scope)
+            notes::notes_list,
+            notes::note_read,
+            notes::note_save,
+            notes::note_delete,
             // File-generation host-tool checks
             deps::deps_check,
             // Updates & CLI
