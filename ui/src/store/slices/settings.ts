@@ -113,8 +113,8 @@ const DEFAULT_SETTINGS: Setting[] = [
     name: 'Copy on Select',
     description: 'Automatically copy selected text to the clipboard.',
     type: 'boolean',
-    value: false,
-    default: false,
+    value: true,
+    default: true,
   },
   {
     id: 'terminal.bell',

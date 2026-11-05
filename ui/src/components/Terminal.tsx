@@ -23,6 +23,11 @@ export function TerminalPane({ tabId, active, panelFocused, onCwdChange }: Props
   const fitRef       = useRef<FitAddon | null>(null)
   const theme        = useAppStore((s) => s.theme)
   const scrollback   = useAppStore((s) => s.getSettingValue('terminal.scrollback') as number ?? 5000)
+  const copyOnSelect = useAppStore((s) => s.getSettingValue('terminal.copy_on_select') as boolean ?? false)
+
+  // Read inside the selection handler so toggling the setting doesn't recreate the terminal.
+  const copyOnSelectRef = useRef(copyOnSelect)
+  copyOnSelectRef.current = copyOnSelect
 
   useEffect(() => {
     const el = containerRef.current
@@ -86,6 +91,12 @@ export function TerminalPane({ tabId, active, panelFocused, onCwdChange }: Props
     term.onData((data) => {
       markPtyInput(tabId)
       tauriService.ptyWrite(tabId, data).catch(console.error)
+    })
+
+    term.onSelectionChange(() => {
+      if (!copyOnSelectRef.current) return
+      const selection = term.getSelection()
+      if (selection) navigator.clipboard?.writeText(selection).catch(console.error)
     })
 
     term.onResize(({ cols, rows }) => {
