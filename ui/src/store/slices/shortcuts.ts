@@ -31,6 +31,7 @@ const DEFAULT_SHORTCUTS: Shortcut[] = [
   { id: 'scroll-up',         name: 'Scroll Up',           description: 'Scroll terminal output up',             keys: 'Shift+PageUp',   action: 'scroll_up',        category: 'terminal',   builtin: true },
   { id: 'scroll-down',       name: 'Scroll Down',         description: 'Scroll terminal output down',           keys: 'Shift+PageDown', action: 'scroll_down',      category: 'terminal',   builtin: true },
   // app
+  { id: 'new-note',          name: 'New Note',             description: 'Open notes for the current scope',      keys: 'Ctrl+N',         action: 'new_note',         category: 'app',        builtin: true },
   { id: 'toggle-sidebar',    name: 'Toggle Sidebar',      description: 'Show or hide the sidebar',              keys: 'Ctrl+B',         action: 'toggle_sidebar',   category: 'app',        builtin: true },
   { id: 'shortcuts',         name: 'Shortcuts',            description: 'Open keyboard shortcuts settings',      keys: 'Ctrl+,',         action: 'open_shortcuts',   category: 'app',        builtin: true },
   { id: 'settings',          name: 'Settings',             description: 'Open settings',                         keys: 'Ctrl+.',         action: 'open_settings',    category: 'app',        builtin: true },
@@ -38,7 +39,7 @@ const DEFAULT_SHORTCUTS: Shortcut[] = [
 ]
 
 // Bump this key name whenever defaults change to avoid stale user overrides.
-const STORAGE_KEY = 'orbit-shortcuts-v8'
+const STORAGE_KEY = 'orbit-shortcuts-v9'
 
 function loadShortcuts(): Shortcut[] {
   try {

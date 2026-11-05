@@ -148,7 +148,7 @@ pub async fn get_pipelines(
 /// the session workspace (by slug or name), falls back to the default entry, and
 /// finally to the personal `UserConfig`. This is what lets pipeline configs be
 /// found under a workspace whose root is not the default `~/AI`.
-fn resolve_ai_root(workspace: Option<&str>) -> PathBuf {
+pub(crate) fn resolve_ai_root(workspace: Option<&str>) -> PathBuf {
     let registry = WorkspaceRegistry::load();
     let entry = workspace
         .and_then(|w| registry.get(w))

@@ -39,6 +39,7 @@ export const createExecutionDrawerSlice: StateCreator<AppStore, [], [], Executio
     get().closeHarnessDrawer()
     get().closeArchDrawer()
     get().closePipelineDrawer()
+    get().closeNotesDrawer()
     get().closeDrawer()
 
     const execId = crypto.randomUUID()
@@ -65,6 +66,7 @@ export const createExecutionDrawerSlice: StateCreator<AppStore, [], [], Executio
     get().closeHarnessDrawer()
     get().closeArchDrawer()
     get().closePipelineDrawer()
+    get().closeNotesDrawer()
     get().closeDrawer()
     set({ executionDrawerOpen: true })
   },

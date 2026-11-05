@@ -135,6 +135,8 @@ export const createUiSlice: StateCreator<AppStore, [], [], UiSlice> = (set, get)
 
   syncDrawerToTab: (tabId: string | null) => {
     const { tabDrawers, focusedPanel, harnessDrawerOpen } = get()
+    // Notes drawer is per-tab, like the terminal drawer — follow the active tab.
+    get().syncNotesDrawerToTab(tabId)
     if (!tabId) {
       set({ drawerOpen: false, drawerTabId: null, focusedPanel: 'main' })
       if (harnessDrawerOpen) get().closeHarnessDrawer()

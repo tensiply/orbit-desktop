@@ -17,6 +17,7 @@ import { UIKitView } from './components/UIKitView'
 import { ColorsView } from './components/ColorsView'
 import { SettingsView } from './components/SettingsView'
 import { DocumentView, FileViewer } from './components/DocumentView'
+import { NotesDrawer } from './components/NotesDrawer'
 import { TaskView } from './components/TaskView'
 import { FEATURE_PAGES } from './lib/featurePages'
 import { DiagramTabView } from './components/diagram/DiagramTabView'
@@ -308,6 +309,7 @@ export default function App() {
             <ArchEditDrawer />
             <PipelineDrawer />
             <ExecutionDrawer />
+            <NotesDrawer />
             <TerminalDrawer />
           </div>
         </main>

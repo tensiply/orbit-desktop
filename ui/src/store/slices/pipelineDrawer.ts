@@ -56,6 +56,7 @@ export const createPipelineDrawerSlice: StateCreator<AppStore, [], [], PipelineD
     // Single right-docked drawer at a time — mirror the terminal drawer behavior.
     get().closeHarnessDrawer()
     get().closeArchDrawer()
+    get().closeNotesDrawer()
     get().closeDrawer()
     set({ pipelineDrawerOpen: true })
   },

@@ -11,8 +11,9 @@ import type { ArchDrawerSlice } from './slices/archDrawer'
 import type { HarnessDrawerSlice } from './slices/harnessDrawer'
 import type { PipelineDrawerSlice } from './slices/pipelineDrawer'
 import type { ExecutionDrawerSlice } from './slices/executionDrawer'
+import type { NotesDrawerSlice } from './slices/notesDrawer'
 import type { UpdatesSlice } from './slices/updates'
 import type { NotificationsSlice } from './slices/notifications'
 import type { PluginsSlice } from './slices/plugins'
 
-export type AppStore = TabsSlice & SessionsSlice & SessionStatusSlice & UiSlice & ShortcutsSlice & SettingsSlice & DocumentsSlice & TasksSlice & ScopeSlice & ArchDrawerSlice & HarnessDrawerSlice & PipelineDrawerSlice & ExecutionDrawerSlice & UpdatesSlice & NotificationsSlice & PluginsSlice
+export type AppStore = TabsSlice & SessionsSlice & SessionStatusSlice & UiSlice & ShortcutsSlice & SettingsSlice & DocumentsSlice & TasksSlice & ScopeSlice & ArchDrawerSlice & HarnessDrawerSlice & PipelineDrawerSlice & ExecutionDrawerSlice & NotesDrawerSlice & UpdatesSlice & NotificationsSlice & PluginsSlice
